@@ -7,10 +7,10 @@ on:
 
 jobs:
   lint:
-    uses: spuxx-dev/ci-cd/.github/workflows/npm_lint.yml@v4.1.0
+    uses: .github/workflows/npm_lint.yml
 
   test:
-    uses: spuxx-dev/ci-cd/.github/workflows/npm_test-coverage.yml@v4.1.0
+    uses: .github/workflows/npm_test-coverage.yml
 
   release_image:
     needs:
