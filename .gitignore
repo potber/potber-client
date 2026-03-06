@@ -34,3 +34,6 @@
 
 # environments
 /public/injected-config.js
+
+# macOS
+.DS_Store
