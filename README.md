@@ -5,10 +5,10 @@
 A mobile-first web client for the german internet forum <a href="https://forum.mods.de" target="_blank">forum.mods.de</a> built with <a href="https://emberjs.com/" target="_blank">ember.js</a>. If you're looking for potber-api, you can find it <a href="https://github.com/spuxx-dev/potber-api" target="_blank">here</a>.
 </p>
 
-![Production Builds](https://github.com/spuxx-dev/potber-client/actions/workflows/production.yml/badge.svg)
-![Staging Builds](https://github.com/spuxx-dev/potber-client/actions/workflows/staging.yml/badge.svg)
-![Latest Release](https://img.shields.io/github/v/release/spuxx-dev/potber-client)
-![License](https://img.shields.io/github/license/spuxx-dev/potber-client)
+![Production Builds](https://github.com/potber/potber-client/actions/workflows/production.yml/badge.svg)
+![Staging Builds](https://github.com/potber/potber-client/actions/workflows/staging.yml/badge.svg)
+![Latest Release](https://img.shields.io/github/v/release/potber/potber-client)
+![License](https://img.shields.io/github/license/potber/potber-client)
 
 ## Table of contents
 
@@ -100,7 +100,7 @@ You will need the following things properly installed on your computer.
 
 ### Installation
 
-- `git clone https://github.com/spuxx-dev/potber-client.git`
+- `git clone https://github.com/potber/potber-client.git`
 - `cd potber-client`
 - `npm install`
 
@@ -147,7 +147,7 @@ In case you're curious about how `potber.de` is hosted: Both the [test](https://
 
 - [ember.js](https://emberjs.com/) - The framework.
 - [potber-api](https://github.com/spuxx-dev/potber-api) - The web server that potber-client utilizes.
-- [dockerhub](https://hub.docker.com/repository/docker/spuxx/potber-client/general) - The dockerhub repository.
+- [GitHub Container Registry](https://github.com/potber/potber-client/pkgs/container/potber-client) - The published container image.
 
 ## Credit
 

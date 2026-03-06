@@ -5,6 +5,10 @@ on:
     tags:
     - v*
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   lint:
     uses: ./.github/workflows/npm_lint.yml
@@ -16,8 +20,9 @@ jobs:
     needs:
     - lint
     - test
-    uses: spuxx-dev/ci-cd/.github/workflows/docker_release_image.yml@v4.1.0
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/release_image.yml
     with:
       latest: true
-    secrets:
-      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}

@@ -1,0 +1,67 @@
+on:
+  workflow_call:
+    inputs:
+      latest:
+        description: "Whether the image should also be tagged as the latest image. Can be either 'auto', 'true' or 'false'. Defaults to 'auto'."
+        default: 'auto'
+        type: string
+    outputs:
+      image_name:
+        description: "The base image name."
+        value: ${{ jobs.get_metadata.outputs.image_name }}
+      image_names:
+        description: "The names of the image."
+        value: ${{ jobs.get_metadata.outputs.image_names }}
+      image_version:
+        description: "The version of the image."
+        value: ${{ jobs.get_metadata.outputs.image_version }}
+      image_labels:
+        description: "The image labels."
+        value: ${{ jobs.get_metadata.outputs.image_labels }}
+
+jobs:
+  get_metadata:
+    name: Get metadata for image and release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Prepare image name
+        id: image
+        shell: bash
+        run: |
+          echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare
+        id: prep
+        shell: bash
+        run: |
+          SUFFIX="-$(date +'%Y%m%d-%H%M%S')-${{ github.sha }}"
+          echo "suffix=$SUFFIX" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata for the container image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=ref,event=branch,suffix=${{ steps.prep.outputs.suffix }}
+            type=semver,pattern={{version}}
+          flavor: |
+            latest=${{ inputs.latest }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.description=An SPA client for the german board forum.mods.de built with Ember.js.
+
+      - name: Finish
+        shell: bash
+        run: |
+          echo "Finished retrieving metadata."
+          echo "Image name: ${{ steps.meta.outputs.tags }}"
+          echo "Image version: ${{ steps.meta.outputs.version }}"
+          echo "Image labels: ${{ steps.meta.outputs.labels }}"
+
+    outputs:
+      image_name: ${{ steps.image.outputs.name }}
+      image_names: ${{ steps.meta.outputs.tags }}
+      image_version: ${{ steps.meta.outputs.version }}
+      image_labels: ${{ steps.meta.outputs.labels }}
