@@ -13,14 +13,14 @@ A mobile-first web client for the german internet forum <a href="https://forum.m
 ## Table of contents
 
 - [How to use](#how-to-use)
-- [Core features](#how-to-use)
-  - [Browser support](#how-to-use)
+- [Core features](#core-features)
+  - [Browser support](#browser-support)
   - [Standalone mode (PWA)](#standalone-mode-pwa)
   - [BBCode parser](#bbcode-parser)
-  - [Gestures](##gestures)
+  - [Gestures](#gestures)
   - [Themes](#themes)
 - [How to develop or build the app](#how-to-develop-or-build-the-app)
-  - [Preqrequesites](#prerequisites)
+  - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Running / Development](#running--development)
     - [Linting](#linting)
@@ -47,11 +47,11 @@ Potber supports the following browsers. Other browser might work, but are not su
 
 ### Standalone mode (PWA)
 
-The app supports standalone mode ([PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)). In stadalone mode, the website behaves almost exactly like an App. Whether your browser supports standalone mode and how to enable it highly depends on your browser. Android Chrome offers an option to "Install app" in your website settings, while iOS Safari has an option to "Add website to home screen". If you're having trouble, maybe [this article](https://web.dev/learn/pwa/installation/) can be of help.
+The app supports standalone mode ([PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)). In standalone mode, the website behaves almost exactly like an app. Whether your browser supports standalone mode and how to enable it highly depends on your browser. Android Chrome offers an option to "Install app" in your website settings, while iOS Safari has an option to "Add website to home screen". If you're having trouble, maybe [this article](https://web.dev/learn/pwa/installation/) can be of help.
 
 ### BBCode parser
 
-The application includes a functioning and fully custom BBCode parser written in TypeScript. It is able to parse most of the board's BBCode without errors and is being continously worked on. You can find it [here](app/services//content-parser.ts).
+The application includes a functioning and fully custom BBCode parser written in TypeScript. It is able to parse most of the board's BBCode without errors and is being continuously worked on. You can find it [here](app/services/content-parser.ts).
 
 ### Gestures
 
@@ -65,10 +65,10 @@ The following gestures have been implemented so far:
 
 ### Themes
 
-You can customize the application's appearance via the available themes. Additionally, feel free to create your own theme and suggest adding it to the app. The individual steps might depend on your browser, but this is rougly how you do it:
+You can customize the application's appearance via the available themes. Additionally, feel free to create your own theme and suggest adding it to the app. The individual steps might depend on your browser, but this is roughly how you do it:
 
 1. Open the application on a desktop device. Make sure you have the 'default' theme selected as it'll make the process easier.
-2. Rightclick anywhere into the application and hit `Inspect` (or `Untersuchen` in german). What you see now is the inspector panel. In the panel, look for the `styles` container. It looks rougly like this:
+2. Right-click anywhere in the application and hit `Inspect` (or `Untersuchen` in German). What you see now is the inspector panel. In the panel, look for the `styles` container. It looks roughly like this:
 
 ```css
 element {
@@ -94,9 +94,9 @@ If you feel skilled enough, you can also create a PR of course. Themes are locat
 You will need the following things properly installed on your computer.
 
 - [Git](https://git-scm.com/)
-- [Node.js](https://nodejs.org/) (with npm)
+- [Node.js 20](https://nodejs.org/) (with npm)
 - [Ember CLI](https://cli.emberjs.com/release/)
-- [potber-api](ttps://github.com/spuxx-dev/potber-api) - Without this web server, potber-client does not function.
+- [potber-api](https://github.com/spuxx-dev/potber-api) - Without this web server, potber-client does not function.
 
 ### Installation
 
@@ -110,7 +110,7 @@ You can either run the application via a [Dev Container](https://code.visualstud
 
 #### Dev Container
 
-You need to have Docker installed on your system and have the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) setup in VSCode. Clone [potber-api](https://github.com/spuxx-dev/potber-api) and open it in VSCode. Click on `Reopen in container`. After finishing the setup, you can start the development server with `npm start` inside of the VSCode terminal. Visit the app at [http://localhost:4200](http://localhost:4200).
+You need to have Docker installed on your system and have the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) set up in VSCode. Open this repository in VSCode and click on `Reopen in container`. The dev container starts the client alongside containerized `potber-api` and `potber-auth` services. After finishing the setup, you can start the development server with `npm start` inside of the VSCode terminal. Visit the app at [http://localhost:4200](http://localhost:4200).
 
 #### Without Dev Container
 
@@ -136,12 +136,12 @@ You need to have Docker installed on your system and have the [Dev Containers ex
 
 #### Deploying
 
-The application can be deployed via [Docker](https://docker.com). The application provides two different Dockerfiles for the staging and production environments:
+The application can be deployed via [Docker](https://docker.com) using the repository's single [Dockerfile](Dockerfile).
 
-- [staging](Dockerfile.staging)
-- [production](Dockerfile.production)
+- Build the image with `docker build -t potber-client .`
+- Run it locally with `docker run --rm -p 8080:8080 potber-client`
 
-After building the Docker image, you can run it locally or on a remote host. In case you're curious about how `potber.de` is hosted: Both the [test](https://test.potber.de) and [production](https://potber.de) environments run on a [Flux](https://fluxcd.io)-controlled [MicroK8s](https://microk8s.io) cluster. The infrastructure is documented [here](https://github.com/spuxx-dev/flux/tree/main/clusters/constellation/apps/potber).
+In case you're curious about how `potber.de` is hosted: Both the [test](https://test.potber.de) and [production](https://potber.de) environments run on a [Flux](https://fluxcd.io)-controlled [MicroK8s](https://microk8s.io) cluster. The infrastructure is documented [here](https://github.com/spuxx-dev/flux/tree/main/clusters/constellation/apps/potber).
 
 ## Further Reading / Useful Links
 
@@ -151,4 +151,4 @@ After building the Docker image, you can run it locally or on a remote host. In 
 
 ## Credit
 
-- Credit goes to [fiskensen](instagram.com/fiskensen) for the [very cool whale animation](.logo/whale_animated_560x400.gif) that is used as a loading indicator and in the logo. Thank you!
+- Credit goes to [fiskensen](https://instagram.com/fiskensen) for the [very cool whale animation](.logo/whale_animated_560x400.gif) that is used as a loading indicator and in the logo. Thank you!
