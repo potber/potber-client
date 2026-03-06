@@ -1,0 +1,64 @@
+on:
+  workflow_call:
+    inputs:
+      image_names:
+        description: "The image names and tags."
+        type: string
+        required: true
+      image_labels:
+        description: "The OCI labels for the image."
+        type: string
+        required: false
+      registry:
+        description: "The registry to use. Defaults to 'ghcr.io'."
+        default: ghcr.io
+        type: string
+      context:
+        description: "The docker build context. Defaults to the repository root folder."
+        default: "."
+        type: string
+      dockerfile:
+        description: "Path to the Dockerfile. (default {context}/Dockerfile)"
+        default: Dockerfile
+        type: string
+
+jobs:
+  build_and_push_image:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: linux/amd64,linux/arm64
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        push: true
+        context: ${{ inputs.context }}
+        file: ${{ inputs.context }}/${{ inputs.dockerfile }}
+        tags: ${{ inputs.image_names }}
+        labels: ${{ inputs.image_labels }}
+        platforms: linux/amd64,linux/arm64
+
+    - name: Finish
+      shell: bash
+      run: |
+        echo "Image successfully built and pushed to ${{ inputs.registry }}."
