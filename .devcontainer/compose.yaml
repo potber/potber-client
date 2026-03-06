@@ -20,10 +20,14 @@ services:
     depends_on:
     - potber-api
     - potber-auth
+    ports:
+    - "4200:4200"
 
   potber-api:
     image: spuxx/potber-api
     restart: unless-stopped
+    ports:
+    - "3000:3000"
     environment:
       - APP_PORT=3000
       - APP_CLIENT_URL=http://localhost:4200
@@ -35,6 +39,8 @@ services:
   potber-auth:
     image: spuxx/potber-auth
     restart: unless-stopped
+    ports:
+    - "5173:5173"
     environment:
       - PORT=5173
       - ORIGIN=http://localhost:5173
