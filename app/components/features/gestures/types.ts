@@ -1,4 +1,5 @@
-import TinyGesture, { Events, Options } from 'tinygesture';
+import TinyGesture from 'tinygesture';
+import type { Events, Options } from 'tinygesture';
 
 export interface GestureEvent {
   type: keyof Events;

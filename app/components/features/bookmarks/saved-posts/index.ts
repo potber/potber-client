@@ -1,6 +1,6 @@
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
-import Post from 'potber-client/models/post';
+import type Post from 'potber-client/models/post';
 import LocalStorageService from 'potber-client/services/local-storage';
 
 interface Signature {

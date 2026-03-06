@@ -1,5 +1,6 @@
-import ApiService, { PublicFetchOptions } from 'potber-client/services/api';
-import { Session } from '../types/session';
+import ApiService from 'potber-client/services/api';
+import type { PublicFetchOptions } from 'potber-client/services/api';
+import type { Session } from '../types/session';
 /**
  * Returns the current session.
  * @param id The id of the board.

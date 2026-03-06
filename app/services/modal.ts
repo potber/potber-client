@@ -1,15 +1,15 @@
 import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
-import { ConfirmModalOptions } from 'potber-client/components/modal/types/confirm';
-import { IconSelectModalOptions } from 'potber-client/components/modal/types/icon-select';
-import { ImageInsertModalOptions } from 'potber-client/components/modal/types/image-insert';
-import { InfoModalOptions } from 'potber-client/components/modal/types/info/types';
-import { InputModalOptions } from 'potber-client/components/modal/types/input';
-import { LinkInsertModalOptions } from 'potber-client/components/modal/types/link-insert';
-import { ListModalOptions } from 'potber-client/components/modal/types/list';
-import { MemeSelectModalOptions } from 'potber-client/components/modal/types/meme-select';
-import { PostPreviewModalOptions } from 'potber-client/components/modal/types/post-preview';
-import { UserProfileModalOptions } from 'potber-client/components/modal/types/user-profile';
+import type { ConfirmModalOptions } from 'potber-client/components/modal/types/confirm';
+import type { IconSelectModalOptions } from 'potber-client/components/modal/types/icon-select';
+import type { ImageInsertModalOptions } from 'potber-client/components/modal/types/image-insert';
+import type { InfoModalOptions } from 'potber-client/components/modal/types/info/types';
+import type { InputModalOptions } from 'potber-client/components/modal/types/input';
+import type { LinkInsertModalOptions } from 'potber-client/components/modal/types/link-insert';
+import type { ListModalOptions } from 'potber-client/components/modal/types/list';
+import type { MemeSelectModalOptions } from 'potber-client/components/modal/types/meme-select';
+import type { PostPreviewModalOptions } from 'potber-client/components/modal/types/post-preview';
+import type { UserProfileModalOptions } from 'potber-client/components/modal/types/user-profile';
 import { sleep } from 'potber-client/utils/misc';
 
 const TIME_TO_DESTROY = 300;

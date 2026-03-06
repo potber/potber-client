@@ -2,7 +2,7 @@ import Component from '@glimmer/component';
 import { service } from '@ember/service';
 import { guidFor } from '@ember/object/internals';
 import RendererService from 'potber-client/services/renderer';
-import {
+import type {
   Gesture,
   GestureEvent,
   GestureOptions,

@@ -1,4 +1,4 @@
-import { IconName } from '@fortawesome/fontawesome-common-types';
+import type { IconName } from '@fortawesome/fontawesome-common-types';
 
 export interface PostIcon {
   key: string;
@@ -178,7 +178,7 @@ export const emojis: Emoji[] = [
   },
   {
     key: '8|',
-    pattern: /\8\|/g,
+    pattern: /8\|/g,
     filename: 'icon3.gif',
   },
   {

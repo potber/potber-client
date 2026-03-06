@@ -1,4 +1,4 @@
-import Owner from '@ember/owner';
+import type Owner from '@ember/owner';
 import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 

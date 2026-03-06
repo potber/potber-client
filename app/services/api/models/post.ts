@@ -1,6 +1,6 @@
-import EmberObject from '@ember/object';
 import { Model } from './model';
 import { Posts } from '../types';
+import ApiService from 'potber-client/services/api';
 
 interface IWritablePost extends Posts.Write {
   id?: string;
@@ -16,8 +16,8 @@ export class WritablePost extends Model implements IWritablePost {
   disableBbCode?: boolean;
   disableEmojis?: boolean;
 
-  constructor(init: IWritablePost, context: EmberObject) {
-    super(context);
+  constructor(api: ApiService, init: IWritablePost) {
+    super(api);
     Object.assign(this, init);
   }
 

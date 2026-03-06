@@ -1,5 +1,5 @@
 import { Model } from './model';
-import EmberObject from '@ember/object';
+import ApiService from 'potber-client/services/api';
 
 export interface IBookmark {
   id: string;
@@ -32,8 +32,8 @@ export class Bookmark extends Model implements IBookmark {
     name: string;
   };
 
-  constructor(init: IBookmark, context: EmberObject) {
-    super(context);
+  constructor(init: IBookmark, api: ApiService) {
+    super(api);
     Object.assign(this, init);
   }
 

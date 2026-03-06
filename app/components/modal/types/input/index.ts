@@ -32,8 +32,12 @@ interface Signature {
 
 export default class InputModalComponent extends Component<Signature> {
   @service declare modal: ModalService;
-  declare args: Signature['Args'];
-  value = this.args.options.value || '';
+  value = '';
+
+  constructor(owner: unknown, args: Signature['Args']) {
+    super(owner, args);
+    this.value = args.options.value ?? '';
+  }
 
   get type() {
     return this.args.options.type || 'text';

@@ -1,9 +1,11 @@
 import Service, { service } from '@ember/service';
 import { appConfig } from 'potber-client/config/app.config';
-import MessagesService, { MessageType } from './messages';
-import { IntlService } from 'ember-intl';
+import MessagesService from './messages';
+import type { MessageType } from './messages';
+import type IntlService from 'ember-intl';
 import * as Session from './api/endpoints/session.endpoints';
 import * as Boards from './api/endpoints/boards.endpoints';
+import * as BoardCategories from './api/endpoints/board-categories.endpoints';
 import * as Threads from './api/endpoints/threads.endpoints';
 import * as Users from './api/endpoints/users.endpoints';
 import * as Posts from './api/endpoints/posts.endpoints';
@@ -66,6 +68,7 @@ export default class ApiService extends Service {
   findManyUsernames = Users.findManyUsernames;
 
   findBoardById = Boards._findById;
+  findAllBoardCategories = BoardCategories._findAll;
 
   findThreadById = Threads._findById;
   createThread = Threads._create;

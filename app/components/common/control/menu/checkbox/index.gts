@@ -1,5 +1,8 @@
 import Component from '@glimmer/component';
-import { IconName, IconPrefix } from '@fortawesome/fontawesome-common-types';
+import type {
+  IconName,
+  IconPrefix,
+} from '@fortawesome/fontawesome-common-types';
 import Button from 'potber-client/components/common/control/button';
 import styles from '../styles.module.css';
 import { tracked } from '@glimmer/tracking';

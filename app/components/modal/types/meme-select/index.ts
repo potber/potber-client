@@ -3,7 +3,8 @@ import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import { parseMemeUrl } from 'potber-client/helpers/parse-meme-url';
 import ModalService from 'potber-client/services/modal';
-import { Meme, memeCategories } from 'potber-client/utils/memes';
+import type { Meme } from 'potber-client/utils/memes';
+import { memeCategories } from 'potber-client/utils/memes';
 
 export interface MemeSelectModalOptions {
   onSelect: (url: string) => void;

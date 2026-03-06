@@ -3,8 +3,8 @@ import { service } from '@ember/service';
 import styles from './styles.module.css';
 import ContentParserService from 'potber-client/services/content-parser';
 import MessagesService from 'potber-client/services/messages';
-import Post from 'potber-client/models/post';
-import Thread from 'potber-client/models/thread';
+import type Post from 'potber-client/models/post';
+import type Thread from 'potber-client/models/thread';
 import SettingsService, { AvatarStyle } from 'potber-client/services/settings';
 import RendererService from 'potber-client/services/renderer';
 import LocalStorageService from 'potber-client/services/local-storage';
@@ -13,7 +13,7 @@ import CustomSession from 'potber-client/services/custom-session';
 import { htmlSafe } from '@ember/template';
 import { appConfig } from 'potber-client/config/app.config';
 import ApiService from 'potber-client/services/api';
-import { IntlService } from 'ember-intl';
+import type IntlService from 'ember-intl';
 import BookmarkStore from 'potber-client/services/stores/bookmark';
 import { getAnchorId } from 'potber-client/utils/misc';
 import SocialsService from 'potber-client/services/socials';
@@ -181,13 +181,11 @@ export default class PostComponent extends Component<Signature> {
   }
 
   blockUser = () => {
-    this.socials.blockUser(
-      this.args.post.author.id,
-      this.args.post.author.name,
-    );
+    const username = this.args.post.author.name ?? 'Unbekannt';
+    this.socials.blockUser(this.args.post.author.id, username);
     this.messages.showNotification(
       this.intl.t('feature.blocklist.blocked-user', {
-        username: this.args.post.author.name,
+        username,
       }),
       'success',
     );

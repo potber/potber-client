@@ -7,7 +7,7 @@ import { on } from '@ember/modifier';
 import { fn } from '@ember/helper';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import eq from 'ember-truth-helpers/helpers/eq';
-import { DropdownOption } from './types';
+import type { DropdownOption } from './types';
 import InfoButton from 'potber-client/components/common/control/info-button';
 
 interface Args {

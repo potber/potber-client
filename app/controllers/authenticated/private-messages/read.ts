@@ -1,5 +1,5 @@
 import Controller from '@ember/controller';
-import { PrivateMessagesViewRouteModel } from 'potber-client/routes/authenticated/private-messages/view';
+import type { PrivateMessagesViewRouteModel } from 'potber-client/routes/authenticated/private-messages/view';
 import { createPrivateMessageSubtitle } from 'potber-client/utils/private-messages';
 
 export default class PrivateMessagesReadController extends Controller {

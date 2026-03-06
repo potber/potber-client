@@ -1,6 +1,3 @@
-import { getOwner, setOwner } from '@ember/application';
-import EmberObject from '@ember/object';
-import { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import ApiService from 'potber-client/services/api';
 
@@ -9,7 +6,7 @@ export interface IModel {
 }
 
 export class Model {
-  @service declare api: ApiService;
+  protected readonly api: ApiService;
   @tracked protected _isSaving = false;
   @tracked protected _isDeleted = false;
 
@@ -36,9 +33,7 @@ export class Model {
     this._isDeleted = true;
   }
 
-  constructor(context: EmberObject) {
-    const owner = getOwner(context);
-    if (!owner) throw new Error('No owner found.');
-    setOwner(this, owner);
+  constructor(api: ApiService) {
+    this.api = api;
   }
 }

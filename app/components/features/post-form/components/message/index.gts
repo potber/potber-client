@@ -44,7 +44,7 @@ export default class PostFormMessage extends Component<Signature> {
       @height='x-large'
       @value={{@post.message}}
       placeholder={{t 'feature.post-form.message.placeholder'}}
-      maxLength='15000'
+      maxlength='15000'
       {{on 'change' this.handleChange}}
     />
   </template>

@@ -1,6 +1,6 @@
 import Component from '@glimmer/component';
-import { TrackedState } from 'ember-resources';
-import { Threads } from 'potber-client/services/api/types';
+import type { TrackedState } from 'ember-resources';
+import type { Threads } from 'potber-client/services/api/types';
 
 interface Signature {
   Args: {

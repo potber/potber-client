@@ -15,23 +15,29 @@ export const appConfig = {
   /**
    * The current version of the application.
    */
-  version: clean(environment.APP?.version) ?? '0.0.0',
+  version: clean(String(environment.APP?.['version'] ?? '0.0.0')) ?? '0.0.0',
   /**
    * The hostname of the application.
    */
-  hostname: window.APP?.HOSTNAME ?? environment.APP.HOSTNAME ?? 'potber.de',
+  hostname: String(
+    window.APP?.HOSTNAME ?? environment.APP['HOSTNAME'] ?? 'potber.de',
+  ),
   /**
    * The API URL for the application.
    */
-  apiUrl:
-    window.APP?.API_URL ?? environment.APP.API_URL ?? 'https://api.potber.de',
+  apiUrl: String(
+    window.APP?.API_URL ??
+      environment.APP['API_URL'] ??
+      'https://api.potber.de',
+  ),
   /**
    * The URL for the meme host.
    */
-  memeHostUrl:
+  memeHostUrl: String(
     window.APP?.MEME_HOST_URL ??
-    environment.APP.MEME_HOST_URL ??
-    'https://potber.de',
+      environment.APP['MEME_HOST_URL'] ??
+      'https://potber.de',
+  ),
   /**
    * The URL for the forum.
    */

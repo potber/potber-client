@@ -1,9 +1,10 @@
 import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
-import ApiService, { PublicFetchOptions } from '../api';
+import ApiService from '../api';
+import type { PublicFetchOptions } from '../api';
 import { Bookmark } from '../api/models/bookmark';
-import { trackedFunction } from 'ember-resources/util/function';
-import { TrackedState } from 'ember-resources';
+import { trackedFunction } from 'reactiveweb/function';
+import type { TrackedState } from 'ember-resources';
 import { sleep } from 'potber-client/utils/misc';
 
 interface ReloadOptions extends PublicFetchOptions {

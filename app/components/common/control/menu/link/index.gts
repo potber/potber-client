@@ -1,6 +1,6 @@
 import Component from '@glimmer/component';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
-import { IconName } from '@fortawesome/fontawesome-common-types';
+import type { IconName } from '@fortawesome/fontawesome-common-types';
 import ButtonLink from 'potber-client/components/common/button-link';
 import styles from '../styles.module.css';
 

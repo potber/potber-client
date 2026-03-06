@@ -2,11 +2,10 @@ import { on } from '@ember/modifier';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
-import { IntlService } from 'ember-intl';
+import type IntlService from 'ember-intl';
 import t from 'ember-intl/helpers/t';
-import Input, {
-  Suggestion,
-} from 'potber-client/components/common/control/input';
+import Input from 'potber-client/components/common/control/input';
+import type { Suggestion } from 'potber-client/components/common/control/input';
 import Textarea from 'potber-client/components/common/control/textarea';
 import classNames from 'potber-client/helpers/class-names';
 import ApiService from 'potber-client/services/api';
@@ -82,7 +81,7 @@ export default class PrivateMessageForm extends Component<Signature> {
         @required={{true}}
         {{on 'input' this.handleRecipientInput}}
         type='text'
-        maxLength='255'
+        maxlength='255'
       />
       <Input
         @label={{t 'feature.private-messages.form.title.label'}}
@@ -91,7 +90,7 @@ export default class PrivateMessageForm extends Component<Signature> {
         @onChange={{this.handleTitleChange}}
         @required={{true}}
         type='text'
-        maxLength='255'
+        maxlength='255'
       />
       <Textarea
         @id='textarea-private-message-form'
@@ -101,7 +100,7 @@ export default class PrivateMessageForm extends Component<Signature> {
         @value={{@message.content}}
         @onChange={{this.handleContentChange}}
         placeholder={{t 'feature.private-messages.form.content.placeholder'}}
-        maxLength='15000'
+        maxlength='15000'
       />
     </form>
   </template>

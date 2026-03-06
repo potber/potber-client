@@ -16,7 +16,8 @@ import NavHeader from '../../component/header';
 import MenuButton from 'potber-client/components/common/control/menu/button';
 import MenuLinkExternal from 'potber-client/components/common/control/menu/link-external';
 import MenuLink from 'potber-client/components/common/control/menu/link';
-import { IntlService, t } from 'ember-intl';
+import type IntlService from 'ember-intl';
+import t from 'ember-intl/helpers/t';
 import BoardRoute from 'potber-client/routes/authenticated/board';
 import { Boards } from 'potber-client/services/api/types';
 

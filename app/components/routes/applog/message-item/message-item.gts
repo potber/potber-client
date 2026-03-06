@@ -1,5 +1,5 @@
 import Component from '@glimmer/component';
-import { Message } from 'potber-client/services/messages';
+import type { Message } from 'potber-client/services/messages';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 
 interface Signature {

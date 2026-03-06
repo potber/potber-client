@@ -2,8 +2,9 @@ import Component from '@glimmer/component';
 import { service } from '@ember/service';
 import didInsert from '@ember/render-modifiers/modifiers/did-insert';
 import { guidFor } from '@ember/object/internals';
-import TinyGesture, { Options } from 'tinygesture';
-import { Gesture } from 'potber-client/components/features/gestures/types';
+import TinyGesture from 'tinygesture';
+import type { Options } from 'tinygesture';
+import type { Gesture } from 'potber-client/components/features/gestures/types';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService, { Gestures } from 'potber-client/services/settings';
 

@@ -1,5 +1,5 @@
 import Component from '@glimmer/component';
-import Post from 'potber-client/models/post';
+import type Post from 'potber-client/models/post';
 import styles from './styles.module.css';
 import classNames from 'potber-client/helpers/class-names';
 

@@ -1,7 +1,7 @@
 import { reject } from 'rsvp';
 import ThreadController from 'potber-client/controllers/authenticated/thread';
 import SlowRoute from '../base/slow';
-import Transition from '@ember/routing/transition';
+import type Transition from '@ember/routing/transition';
 import { service } from '@ember/service';
 import ThreadStore from 'potber-client/services/stores/thread';
 import SettingsService from 'potber-client/services/settings';

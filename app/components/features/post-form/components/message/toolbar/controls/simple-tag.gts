@@ -1,5 +1,8 @@
 import { on } from '@ember/modifier';
-import { IconName, IconPrefix } from '@fortawesome/fontawesome-common-types';
+import type {
+  IconName,
+  IconPrefix,
+} from '@fortawesome/fontawesome-common-types';
 import Component from '@glimmer/component';
 import Button from 'potber-client/components/common/control/button';
 import { Posts, Threads } from 'potber-client/services/api/types';

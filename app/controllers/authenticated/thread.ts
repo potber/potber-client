@@ -1,6 +1,6 @@
 import Controller from '@ember/controller';
 import { service } from '@ember/service';
-import { ThreadRouteModel } from 'potber-client/routes/authenticated/thread';
+import type { ThreadRouteModel } from 'potber-client/routes/authenticated/thread';
 import SettingsService from 'potber-client/services/settings';
 import ThreadStore from 'potber-client/services/stores/thread';
 

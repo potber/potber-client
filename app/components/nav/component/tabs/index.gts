@@ -1,13 +1,13 @@
-import { TOC } from '@ember/component/template-only';
+import type { TOC } from '@ember/component/template-only';
 import ButtonLink from 'potber-client/components/common/button-link';
 
-export interface NavTab {
+export interface NavHeaderTab {
   title: string;
   route: string;
 }
 
-export const NavTabs: TOC<{
-  Args: { tabs: NavTab[] };
+const NavTabs: TOC<{
+  Args: { tabs: NavHeaderTab[] };
 }> = <template>
   <div class='nav-tabs'>
     {{#each @tabs as |tab|}}
@@ -17,3 +17,5 @@ export const NavTabs: TOC<{
     {{/each}}
   </div>
 </template>;
+
+export default NavTabs;

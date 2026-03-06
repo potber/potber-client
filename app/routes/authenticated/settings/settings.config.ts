@@ -3,10 +3,10 @@ import {
   FontSize,
   Gestures,
   LandingPage,
-  Settings,
   SidebarLayout,
   Theme,
 } from 'potber-client/services/settings';
+import type { Settings } from 'potber-client/services/settings';
 
 /**
  * Defines all available options for seach setting.

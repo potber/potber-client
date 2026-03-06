@@ -1,6 +1,7 @@
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
-import SocialsService, { BlockedUser } from 'potber-client/services/socials';
+import SocialsService from 'potber-client/services/socials';
+import type { BlockedUser } from 'potber-client/services/socials';
 import Button from 'potber-client/components/common/control/button';
 
 export interface Signature {

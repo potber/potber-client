@@ -13,38 +13,12 @@
 
     {{content-for "head"}}
 
-    <link rel="manifest" href="{{rootURL}}manifest.webmanifest" />
-    <meta name="msapplication-config" content="{{rootURL}}browserconfig.xml" />
-
-    <link integrity="" rel="icon" href="{{rootURL}}favicon.png" />
-    <link integrity="" rel="stylesheet" href="{{rootURL}}assets/vendor.css" />
-    <link
-      integrity=""
-      rel="stylesheet"
-      href="{{rootURL}}assets/potber-client.css"
-    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
 
     {{content-for "head-footer"}}
   </head>
   <body>
-    <span id="app-skeleton">
-      <span id="app-skeleton-top-nav"></span>
-      <span id="app-skeleton-content">
-        <img
-          id="app-skeleton-loading-indicator"
-          src="{{rootURL}}images/logo/loading-indicator.gif"
-          alt="loading..."
-        />
-      </span>
-      <span id="app-skeleton-bottom-nav"></span>
-    </span>
-
-    {{content-for "body"}}
-
-    <script src="/injected-config.js" data-embroider-ignore></script>
-    <script src="{{rootURL}}assets/vendor.js"></script>
-    <script src="{{rootURL}}assets/potber-client.js"></script>
-
-    {{content-for "body-footer"}}
+    {{content-for "body"}} {{content-for "body-footer"}}
   </body>
 </html>

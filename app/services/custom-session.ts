@@ -2,7 +2,7 @@ import { getOwner } from '@ember/application';
 import { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import BaseSessionService from 'ember-simple-auth/services/session';
-import { Session } from './api/types/session';
+import type { Session } from './api/types/session';
 import ApiService from './api';
 
 export default class CustomSession extends BaseSessionService {

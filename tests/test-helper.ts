@@ -7,18 +7,20 @@ import {
 } from 'ember-cli-code-coverage/test-support';
 import { setApplication } from '@ember/test-helpers';
 import { setup } from 'qunit-dom';
-import { start } from 'ember-qunit';
+import { start as startTests } from 'ember-qunit';
 
-setApplication(Application.create(ENV.APP as any));
+export function start() {
+  setApplication(Application.create(ENV.APP as any));
 
-QUnit.config.maxDepth = 12;
-QUnit.dump.maxDepth = 12;
+  QUnit.config.maxDepth = 12;
+  QUnit.dump.maxDepth = 12;
 
-setup(QUnit.assert);
+  setup(QUnit.assert);
 
-start();
+  QUnit.done(async function () {
+    forceModulesToBeLoaded();
+    await sendCoverage();
+  });
 
-QUnit.done(async function () {
-  forceModulesToBeLoaded();
-  await sendCoverage();
-});
+  startTests();
+}

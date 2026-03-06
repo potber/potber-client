@@ -3,7 +3,7 @@ import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
 import { on } from '@ember/modifier';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
-import BoardCategory from 'potber-client/models/board-category';
+import type BoardCategory from 'potber-client/models/board-category';
 import RendererService from 'potber-client/services/renderer';
 import BoardCategoryItem from 'potber-client/components/routes/board-overview/item';
 import classNames from 'potber-client/helpers/class-names';

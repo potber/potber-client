@@ -5,7 +5,7 @@ import SettingsService, {
   Gestures,
   SidebarLayout,
 } from 'potber-client/services/settings';
-import {
+import type {
   Gesture,
   GestureEvent,
 } from 'potber-client/components/features/gestures/types';

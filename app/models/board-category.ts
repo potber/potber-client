@@ -1,19 +1,5 @@
-import Model, { attr } from '@ember-data/model';
+import type { BoardCategories } from 'potber-client/services/api/types';
 
-export default class BoardCategory extends Model {
-  @attr()
-  declare name: string;
+type BoardCategory = BoardCategories.Read;
 
-  @attr()
-  declare description: string;
-
-  @attr()
-  declare boards: any[];
-}
-
-// DO NOT DELETE: this is how TypeScript knows how to look up your models.
-declare module 'ember-data/types/registries/model' {
-  export default interface ModelRegistry {
-    boardCategory: BoardCategory;
-  }
-}
+export type { BoardCategory as default };

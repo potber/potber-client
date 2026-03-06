@@ -5,7 +5,7 @@ export type Author = Users.Read;
 export interface Read {
   id: string;
   message: string;
-  date: Date;
+  date: string;
   threadId: string;
   boardId: string;
   author: Users.Read;
@@ -13,7 +13,13 @@ export interface Read {
   icon?: string;
   avatarUrl?: string;
   editedCount?: number;
+  lastEdit?: LastEdit;
   contentHidden?: boolean;
+}
+
+export interface LastEdit {
+  user: Users.Read;
+  date: string;
 }
 
 export interface Write {

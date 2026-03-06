@@ -1,7 +1,7 @@
 import isFinalElement from 'potber-client/helpers/is-final-element';
 import { getOwner } from '@ember/application';
 import { service } from '@ember/service';
-import { Owner } from '@ember/test-helpers/build-owner';
+import type { Owner } from '@ember/test-helpers/build-owner';
 import Component from '@glimmer/component';
 import BoardRoute from 'potber-client/routes/authenticated/board';
 import SettingsService, { Gestures } from 'potber-client/services/settings';

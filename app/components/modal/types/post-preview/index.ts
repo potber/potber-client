@@ -22,7 +22,7 @@ export default class PostPreviewModalComponent extends Component<Signature> {
   get preview(): Partial<Posts.Read> {
     const preview: Partial<Posts.Read> = {
       ...this.args.options.post,
-      date: new Date(),
+      date: new Date().toISOString(),
       author: {
         id: this.session.sessionData?.userId ?? '',
         name: this.session.sessionData?.username,

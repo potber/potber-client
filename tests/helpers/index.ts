@@ -54,10 +54,7 @@ function setupRenderingTest(
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface TestOptions extends SetupTestOptions {}
-
-function setupTest(hooks: NestedHooks, options?: TestOptions) {
+function setupTest(hooks: NestedHooks, options?: SetupTestOptions) {
   upstreamSetupTest(hooks, options);
 
   // hooks.beforeEach(async function () {
