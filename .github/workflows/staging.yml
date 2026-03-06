@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   lint:
-    uses: potber/.github/workflows/npm_lint.yml@v1
+    uses: potber/.github/.github/workflows/npm_lint.yml@v1
 
   test:
-    uses: potber/.github/workflows/npm_test-coverage.yml@v1
+    uses: potber/.github/.github/workflows/npm_test-coverage.yml@v1
 
   release_image:
     needs:
@@ -24,4 +24,4 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: potber/.github/workflows/release_image.yml@v1
+    uses: potber/.github/.github/workflows/release_image.yml@v1
