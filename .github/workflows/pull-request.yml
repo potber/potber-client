@@ -6,7 +6,7 @@ on:
 
 jobs:
   lint:
-    uses: ./.github/workflows/npm_lint.yml
+    uses: potber/.github/.github/workflows/npm_lint.yml@v1
 
   test:
-    uses: ./.github/workflows/npm_test-coverage.yml
+    uses: potber/.github/.github/workflows/npm_test-coverage.yml@v1
