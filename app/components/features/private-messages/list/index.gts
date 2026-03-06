@@ -1,10 +1,12 @@
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
+import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import { PrivateMessage } from 'potber-client/services/api/models/private-message';
 import ScrollObserverService from 'potber-client/services/scroll-observer';
 import type { ScrollPosition } from 'potber-client/services/scroll-observer';
 import { sleep } from 'potber-client/utils/misc';
+import PrivateMessageListItem from './item';
 
 interface Signature {
   Args: {
@@ -38,4 +40,18 @@ export default class PrivateMessageListComponent extends Component<Signature> {
       this.limit += 10;
     }
   }
+
+  <template>
+    {{#each this.messages as |message|}}
+      <PrivateMessageListItem @message={{message}} />
+    {{/each}}
+    {{#if this.showLoadingIndicator}}
+      <FaIcon
+        @icon='circle-notch'
+        @spin={{true}}
+        @size='2x'
+        class='margin-small'
+      />
+    {{/if}}
+  </template>
 }
