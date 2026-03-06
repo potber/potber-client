@@ -6,6 +6,9 @@ on:
         default: 'auto'
         type: string
     outputs:
+      image_name:
+        description: "The base image name."
+        value: ${{ jobs.get_metadata.outputs.image_name }}
       image_names:
         description: "The names of the image."
         value: ${{ jobs.get_metadata.outputs.image_names }}
@@ -58,6 +61,7 @@ jobs:
           echo "Image labels: ${{ steps.meta.outputs.labels }}"
 
     outputs:
+      image_name: ${{ steps.image.outputs.name }}
       image_names: ${{ steps.meta.outputs.tags }}
       image_version: ${{ steps.meta.outputs.version }}
       image_labels: ${{ steps.meta.outputs.labels }}

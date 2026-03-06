@@ -21,6 +21,7 @@ jobs:
       - get_metadata
     uses: ./.github/workflows/build_and_push_image.yml
     with:
+      image_name: ${{ needs.get_metadata.outputs.image_name }}
       image_names: ${{ needs.get_metadata.outputs.image_names }}
       image_labels: ${{ needs.get_metadata.outputs.image_labels }}
       dockerfile: ${{ inputs.dockerfile }}
