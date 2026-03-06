@@ -1,10 +1,15 @@
+import eq from 'ember-truth-helpers/helpers/eq';
+import { on } from '@ember/modifier';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
+import GesturesContainer from 'potber-client/components/features/gestures/container';
+import Quickstart from 'potber-client/components/features/quickstart';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService, {
   Gestures,
   SidebarLayout,
 } from 'potber-client/services/settings';
+import SidebarNav from './nav';
 import type {
   Gesture,
   GestureEvent,
@@ -112,7 +117,7 @@ export default class SidebarComponent extends Component {
     });
   };
 
-  gestures: Record<string, Gesture[]> = {
+  gestures: { inner: Gesture[]; outer: Gesture[] } = {
     inner: [
       {
         type: 'swipeleft',
@@ -142,4 +147,44 @@ export default class SidebarComponent extends Component {
   get disableGestures() {
     return this.settings.getSetting('gestures') === Gestures.none;
   }
+
+  get innerGestures() {
+    return this.gestures.inner;
+  }
+
+  get outerGestures() {
+    return this.gestures.outer;
+  }
+
+  <template>
+    <div id='sidebar' role='navigation'>
+      <GesturesContainer
+        @id='sidebar-gestures-container-inner'
+        @disabled={{this.disableGestures}}
+        @gestures={{this.innerGestures}}
+      >
+        {{#if (eq this.navVerticalPosition 'top')}}
+          <SidebarNav />
+        {{/if}}
+
+        <div id='sidebar-content'>
+          <Quickstart @inSidebar={{true}} />
+        </div>
+
+        {{#if (eq this.navVerticalPosition 'bottom')}}
+          <SidebarNav />
+        {{/if}}
+      </GesturesContainer>
+      <GesturesContainer
+        @id='sidebar-gestures-container-outer'
+        @gestures={{this.outerGestures}}
+      />
+    </div>
+    <button
+      id='sidebar-backdrop'
+      type='button'
+      aria-hidden='true'
+      {{on 'click' this.handleSidebarBackdropClick}}
+    />
+  </template>
 }
