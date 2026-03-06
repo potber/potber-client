@@ -1,0 +1,24 @@
+on:
+  workflow_call:
+
+jobs:
+  test:
+    name: 'Test'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Tests (with coverage)
+        run: npm run test:coverage
+      - name: Create coverage report
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-report
+          path: coverage/index.html
