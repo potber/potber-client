@@ -14,8 +14,8 @@
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
     "forwardPorts": [
         4200,
-        "potber-api:3000",
-        "potber-auth:5173"
+        3000,
+        5173
     ],
     "customizations": {
         "vscode": {
