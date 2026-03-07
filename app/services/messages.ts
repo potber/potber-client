@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
 import Service, { service } from '@ember/service';
 import SettingsService from './settings';
+import type NotificationsService from './notifications';
+import type { NotificationEntry } from './notifications';
 
 export type MessageType = 'info' | 'success' | 'warning' | 'error';
 
@@ -17,7 +19,7 @@ export interface LogOptions {
 }
 
 export default class MessagesService extends Service {
-  @service declare notifications: any;
+  @service declare notifications: NotificationsService;
   @service declare settings: SettingsService;
 
   messages: Message[] = [];
@@ -57,7 +59,7 @@ export default class MessagesService extends Service {
   showNotification(
     message: string,
     type: MessageType,
-    options?: { callback?: (notification: any) => void },
+    options?: { callback?: (notification: NotificationEntry) => void },
   ) {
     const notificationOptions = {
       autoClear: true,
@@ -85,10 +87,10 @@ export default class MessagesService extends Service {
    * @param error The error.
    * @param context The calling context.
    */
-  logErrorAndNotify(text: string, error: any, context: any) {
-    this.log(error, {
+  logErrorAndNotify(text: string, error: unknown, context: string) {
+    this.log(error instanceof Error ? error.message : String(error), {
       type: 'error',
-      context: context,
+      context,
     });
     this.showNotification(text, 'error');
   }
@@ -97,7 +99,7 @@ export default class MessagesService extends Service {
    * Removes the given notification.
    * @param notification The notification.
    */
-  removeNotification(notification: any) {
+  removeNotification(notification: NotificationEntry) {
     this.notifications.removeNotification(notification);
   }
 }

@@ -1,5 +1,6 @@
 import { action } from '@ember/object';
 import { on } from '@ember/modifier';
+import type Owner from '@ember/owner';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import type {
@@ -45,7 +46,7 @@ export default class InputModalComponent extends Component<Signature> {
   @service declare modal: ModalService;
   value = '';
 
-  constructor(owner: unknown, args: Signature['Args']) {
+  constructor(owner: Owner, args: Signature['Args']) {
     super(owner, args);
     this.value = args.options.value ?? '';
   }

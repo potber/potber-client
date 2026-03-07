@@ -1,4 +1,5 @@
 import { guidFor } from '@ember/object/internals';
+import type Owner from '@ember/owner';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
@@ -33,7 +34,7 @@ export default class DropdownComponent extends Component<Signature> {
   @tracked selectedOption: DropdownOption | undefined;
   @tracked expanded = false;
 
-  constructor(owner: unknown, args: Args) {
+  constructor(owner: Owner, args: Args) {
     super(owner, args);
     if (args.options.length > 0) {
       if (args.default) {
