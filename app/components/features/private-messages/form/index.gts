@@ -2,7 +2,7 @@ import { on } from '@ember/modifier';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
-import type IntlService from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
 import t from 'ember-intl/helpers/t';
 import Input from 'potber-client/components/common/control/input';
 import type { Suggestion } from 'potber-client/components/common/control/input';

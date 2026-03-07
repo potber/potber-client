@@ -20,7 +20,7 @@ interface Signature {
     variant?: ControlVariant;
     busy?: boolean;
     disabled?: boolean;
-    iconSize?: 'normal' | 'small';
+    iconSize?: IconSize;
     onClick?: () => void;
   };
   Blocks: {

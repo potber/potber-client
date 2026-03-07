@@ -25,7 +25,7 @@ export default class NavGenericComponent extends Component<Signature> {
     {{#if @enableBackNavigation}}
       <Portal @target='bottom-nav'>
         <Button
-          @title='Zurück'
+          @text='Zurück'
           @icon='arrow-up'
           @size='square'
           @variant='primary-transparent'

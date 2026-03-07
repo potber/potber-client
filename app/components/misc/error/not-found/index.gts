@@ -1,7 +1,7 @@
 import { service } from '@ember/service';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import Component from '@glimmer/component';
-import type IntlService from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
 import t from 'ember-intl/helpers/t';
 import ButtonLink from 'potber-client/components/common/button-link';
 import Button from 'potber-client/components/common/control/button';

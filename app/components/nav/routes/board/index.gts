@@ -16,7 +16,7 @@ import NavHeader from '../../component/header';
 import MenuButton from 'potber-client/components/common/control/menu/button';
 import MenuLinkExternal from 'potber-client/components/common/control/menu/link-external';
 import MenuLink from 'potber-client/components/common/control/menu/link';
-import type IntlService from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
 import t from 'ember-intl/helpers/t';
 import BoardRoute from 'potber-client/routes/authenticated/board';
 import { Boards } from 'potber-client/services/api/types';
@@ -144,7 +144,7 @@ export default class NavBoardComponent extends Component<Signature> {
 
         {{#if this.nextPageVisible}}
           <ButtonLink
-            @title={{'route.board.next-page'}}
+            @title={{t 'route.board.next-page'}}
             @size='square'
             @route='authenticated.board'
             @query={{hash BID=@board.id page=this.nextPage}}

@@ -1,7 +1,7 @@
 import Route from '@ember/routing/route';
 import RouterService from '@ember/routing/router-service';
 import { service } from '@ember/service';
-import type IntlService from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
 import CustomSession from 'potber-client/services/custom-session';
 import MessagesService from 'potber-client/services/messages';
 

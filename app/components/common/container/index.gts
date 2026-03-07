@@ -1,6 +1,7 @@
 import Component from '@glimmer/component';
 
 interface Signature {
+  Element: HTMLDivElement;
   Args: {
     title?: string;
     size?: 'small' | 'medium' | 'large' | 'max';

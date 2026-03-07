@@ -2,7 +2,7 @@ import Service, { service } from '@ember/service';
 import { appConfig } from 'potber-client/config/app.config';
 import MessagesService from './messages';
 import type { MessageType } from './messages';
-import type IntlService from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
 import * as Session from './api/endpoints/session.endpoints';
 import * as Boards from './api/endpoints/boards.endpoints';
 import * as BoardCategories from './api/endpoints/board-categories.endpoints';

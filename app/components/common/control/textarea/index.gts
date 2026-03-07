@@ -13,7 +13,7 @@ interface Signature {
     required?: boolean;
     selectAllOnFocus?: boolean;
     height?: 'small' | 'medium' | 'large' | 'x-large';
-    onChange?: (value: string, event: InputEvent) => void;
+    onChange?: (value: string, event: Event) => void;
   };
 }
 
@@ -42,13 +42,13 @@ export default class CommonTextareaComponent extends Component<Signature> {
 
   @action handleFocus(event: FocusEvent) {
     if (this.args.selectAllOnFocus) {
-      const input = event.target as HTMLInputElement;
-      input.setSelectionRange(0, input.value.length);
+      const textarea = event.target as HTMLTextAreaElement;
+      textarea.setSelectionRange(0, textarea.value.length);
     }
   }
 
-  @action handleChange(event: InputEvent) {
-    const value = (event.currentTarget as HTMLInputElement).value;
+  @action handleChange(event: Event) {
+    const value = (event.currentTarget as HTMLTextAreaElement).value;
     if (this.args.onChange) {
       this.args.onChange(value, event);
     }

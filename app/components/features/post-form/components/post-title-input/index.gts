@@ -3,7 +3,7 @@ import { service } from '@ember/service';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
-import type IntlService from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
 import t from 'ember-intl/helpers/t';
 import eq from 'ember-truth-helpers/helpers/eq';
 import Icon from 'potber-client/components/board/icon';
