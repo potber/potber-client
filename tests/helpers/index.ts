@@ -6,8 +6,11 @@ import {
   setupTest as upstreamSetupTest,
 } from 'ember-qunit';
 import type { SetupTestOptions } from 'ember-qunit';
+import type Owner from '@ember/owner';
+import type IntlService from 'ember-intl/services/intl';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import ModalService from 'potber-client/services/modal';
+import translationsForDeDe from 'virtual:ember-intl/translations/de-de';
 
 // This file exists to provide wrappers around ember-qunit's / ember-mocha's
 // test setup functions. This way, you can easily extend the setup that is
@@ -17,6 +20,12 @@ interface ApplicationTestOptions extends SetupTestOptions {
   authenticate?: boolean;
 }
 
+function registerTranslations(context: { owner: Owner }): void {
+  const intl = context.owner.lookup('service:intl') as IntlService;
+  intl.addTranslations('de-de', translationsForDeDe);
+  intl.setLocale(['de-de']);
+}
+
 function setupApplicationTest(
   hooks: NestedHooks,
   options?: ApplicationTestOptions,
@@ -24,6 +33,8 @@ function setupApplicationTest(
   upstreamSetupApplicationTest(hooks, options);
 
   hooks.beforeEach(async function () {
+    registerTranslations(this);
+
     if (options?.authenticate) {
       await authenticateSession();
     }
@@ -47,6 +58,8 @@ function setupRenderingTest(
   upstreamSetupRenderingTest(hooks, options);
 
   hooks.beforeEach(async function () {
+    registerTranslations(this);
+
     if (options?.includeModals) {
       await render(hbs`<Modal />`);
       this.owner.register('service:modal', ModalService);
@@ -57,11 +70,9 @@ function setupRenderingTest(
 function setupTest(hooks: NestedHooks, options?: SetupTestOptions) {
   upstreamSetupTest(hooks, options);
 
-  // hooks.beforeEach(async function () {
-  //   // if (options?.authenticate) {
-  //   await authenticateSession();
-  //   // }
-  // });
+  hooks.beforeEach(function () {
+    registerTranslations(this);
+  });
 }
 
 export { setupApplicationTest, setupRenderingTest, setupTest };

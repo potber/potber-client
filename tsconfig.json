@@ -17,7 +17,7 @@
       "potber-client/*": ["app/*"],
       "*": ["types/*"]
     },
-    "types": ["@embroider/core/virtual", "vite/client"]
+    "types": ["@embroider/core/virtual", "vite/client", "@ember-intl/vite/virtual"]
   },
   "include": ["app/**/*", "tests/**/*", "types/**/*"],
   "glint": {
