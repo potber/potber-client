@@ -5,7 +5,7 @@ import Component from '@glimmer/component';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService from 'potber-client/services/settings';
 import { next } from '@ember/runloop';
-import { getAnchorId } from 'potber-client/utils/misc';
+import { getAnchorId, getPostIdFromHash } from 'potber-client/utils/misc';
 
 export default class UpdateScrollPositionComponent extends Component {
   @service declare renderer: RendererService;
@@ -19,14 +19,13 @@ export default class UpdateScrollPositionComponent extends Component {
     next(this, function () {
       // Read URL parameters
       const params = new URLSearchParams(window.location.search);
-      if (
-        params.has('PID') &&
-        this.router.currentRouteName === 'authenticated.thread'
-      ) {
-        // If a PID has been provided and we're on /thread, we
-        // need to scroll to the corresponding post
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        this.renderer.scrollToElement(getAnchorId(params.get('PID')!));
+      const postId =
+        params.get('PID') ?? getPostIdFromHash(window.location.hash);
+
+      if (postId && this.router.currentRouteName === 'authenticated.thread') {
+        // If a PID or supported thread hash has been provided and we're on /thread,
+        // we need to scroll to the corresponding post.
+        this.renderer.scrollToElement(getAnchorId(postId));
       } else if (
         params.has('scrollToBottom') &&
         this.settings.getSetting('goToBottomOfThreadPage')
@@ -37,7 +36,7 @@ export default class UpdateScrollPositionComponent extends Component {
           behavior: 'auto',
         });
       } else {
-        // By default, rscroll to top
+        // By default, scroll to top
         this.renderer.trySetScrollPosition({
           behavior: 'auto',
         });
