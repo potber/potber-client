@@ -36,6 +36,8 @@ declare global {
     API_URL: string;
     AUTH_ISSUER_URL: string;
     MEME_HOST_URL: string;
+    DEBUG?: boolean;
+    version?: string;
   }
   interface Window {
     APP?: AppEnvironmentOptions;

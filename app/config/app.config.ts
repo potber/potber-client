@@ -15,7 +15,7 @@ export const appConfig = {
   /**
    * The current version of the application.
    */
-  version: clean(String(environment.APP?.['version'] ?? '0.0.0')) ?? '0.0.0',
+  version: clean(environment.APP.version ?? '0.0.0') ?? '0.0.0',
   /**
    * The hostname of the application.
    */
