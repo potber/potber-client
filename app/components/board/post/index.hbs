@@ -61,16 +61,18 @@
           @icon='floppy-disk'
           @onClick={{this.savePost}}
         />
-        <Common::Control::Menu::Link
-          @text='Zitieren'
-          @icon='comment-dots'
-          @route='authenticated.post.quote'
-          @query={{hash
-            TID=@post.threadId
-            page=@thread.pagesCount
-            PID=@post.id
-          }}
-        />
+        {{#if @thread}}
+          <Common::Control::Menu::Link
+            @text='Zitieren'
+            @icon='comment-dots'
+            @route='authenticated.post.quote'
+            @query={{hash
+              TID=@post.threadId
+              page=@thread.pagesCount
+              PID=@post.id
+            }}
+          />
+        {{/if}}
         {{#if this.canEdit}}
           <Common::Control::Menu::Link
             @text='Bearbeiten'

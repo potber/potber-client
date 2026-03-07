@@ -22,7 +22,7 @@ import ClassNames from 'potber-client/helpers/class-names';
 interface Signature {
   Args: {
     post: Post;
-    thread: Thread;
+    thread?: Thread;
     subtle?: boolean;
     disableMenu?: boolean;
   };
