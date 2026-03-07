@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## [1.25.0] - 2026-03-07
 
+### Added
+
+- Added a modal for adding lists
+
+### Fixed
+
+- Reply anchors from forum.mods.de now work with potber.
+
 ### Chores
 
 - Upgraded the app onto the current Ember 6.8 / Embroider / Vite stack and aligned the repo on Node 24.
