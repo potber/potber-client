@@ -73,7 +73,7 @@ export default class NavRoutesThreadComponent extends Component<Signature> {
   }
 
   get nextPage() {
-    if (!this.currentPage) return;
+    if (!this.currentPage) return undefined;
     return this.currentPage + 1;
   }
 
@@ -83,7 +83,7 @@ export default class NavRoutesThreadComponent extends Component<Signature> {
   }
 
   get previousPage() {
-    if (!this.currentPage) return;
+    if (!this.currentPage) return undefined;
     return this.currentPage - 1;
   }
 

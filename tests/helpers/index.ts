@@ -4,8 +4,8 @@ import {
   setupApplicationTest as upstreamSetupApplicationTest,
   setupRenderingTest as upstreamSetupRenderingTest,
   setupTest as upstreamSetupTest,
-  SetupTestOptions,
 } from 'ember-qunit';
+import type { SetupTestOptions } from 'ember-qunit';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import ModalService from 'potber-client/services/modal';
 

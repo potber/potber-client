@@ -192,6 +192,8 @@ export default class PostComponent extends Component<Signature> {
         this.post.lastEdit.user.name
       } am ${new Date(this.post.lastEdit.date).toLocaleString()}`;
     }
+
+    return undefined;
   }
 
   blockUser = () => {

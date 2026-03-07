@@ -1,5 +1,4 @@
 import { action } from '@ember/object';
-import eq from 'ember-truth-helpers/helpers/eq';
 import { on } from '@ember/modifier';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
@@ -49,52 +48,52 @@ export default class ModalComponent extends Component {
   }
 
   get confirmOptions() {
-    if (this.activeModal.type !== ModalType.confirm) return;
+    if (this.activeModal.type !== ModalType.confirm) return undefined;
     return this.activeModal.options as ConfirmModalOptions;
   }
 
   get infoOptions() {
-    if (this.activeModal.type !== ModalType.info) return;
+    if (this.activeModal.type !== ModalType.info) return undefined;
     return this.activeModal.options as InfoModalOptions;
   }
 
   get inputOptions() {
-    if (this.activeModal.type !== ModalType.input) return;
+    if (this.activeModal.type !== ModalType.input) return undefined;
     return this.activeModal.options as InputModalOptions;
   }
 
   get iconSelectOptions() {
-    if (this.activeModal.type !== ModalType.iconSelect) return;
+    if (this.activeModal.type !== ModalType.iconSelect) return undefined;
     return this.activeModal.options as IconSelectModalOptions;
   }
 
   get memeSelectOptions() {
-    if (this.activeModal.type !== ModalType.memeSelect) return;
+    if (this.activeModal.type !== ModalType.memeSelect) return undefined;
     return this.activeModal.options as MemeSelectModalOptions;
   }
 
   get linkInsertOptions() {
-    if (this.activeModal.type !== ModalType.linkInsert) return;
+    if (this.activeModal.type !== ModalType.linkInsert) return undefined;
     return this.activeModal.options as LinkInsertModalOptions;
   }
 
   get listOptions() {
-    if (this.activeModal.type !== ModalType.list) return;
+    if (this.activeModal.type !== ModalType.list) return undefined;
     return this.activeModal.options as ListModalOptions;
   }
 
   get imageInsertOptions() {
-    if (this.activeModal.type !== ModalType.imageInsert) return;
+    if (this.activeModal.type !== ModalType.imageInsert) return undefined;
     return this.activeModal.options as ImageInsertModalOptions;
   }
 
   get postPreviewOptions() {
-    if (this.activeModal.type !== ModalType.postPreview) return;
+    if (this.activeModal.type !== ModalType.postPreview) return undefined;
     return this.activeModal.options as PostPreviewModalOptions;
   }
 
   get userProfileOptions() {
-    if (this.activeModal.type !== ModalType.userProfile) return;
+    if (this.activeModal.type !== ModalType.userProfile) return undefined;
     return this.activeModal.options as UserProfileModalOptions;
   }
 

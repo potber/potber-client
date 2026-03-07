@@ -1,4 +1,5 @@
-import { click, render, TestContext } from '@ember/test-helpers';
+import { click, render } from '@ember/test-helpers';
+import type { TestContext } from '@ember/test-helpers';
 import { module, test } from 'qunit';
 import { setupRenderingTest } from 'potber-client/tests/helpers';
 import { hbs } from 'ember-cli-htmlbars';
