@@ -149,10 +149,6 @@
   overflow-wrap: break-word;
 }
 
-.message :global(.katex-html) {
-  display: none;
-}
-
 .message :global(.katex-placeholder) {
   display: inline-block;
   min-width: 1ch;
