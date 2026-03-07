@@ -27,7 +27,7 @@ import { appConfig } from 'potber-client/config/app.config';
 import ApiService from 'potber-client/services/api';
 import type IntlService from 'ember-intl/services/intl';
 import BookmarkStore from 'potber-client/services/stores/bookmark';
-import { getAnchorId } from 'potber-client/utils/misc';
+import { getAnchorId, getLegacyReplyAnchorId } from 'potber-client/utils/misc';
 import SocialsService from 'potber-client/services/socials';
 import { renderTexPlaceholders } from 'potber-client/services/content-parser/tex';
 
@@ -57,6 +57,10 @@ export default class PostComponent extends Component<Signature> {
 
   get elementId() {
     return getAnchorId(this.args.post.id);
+  }
+
+  get legacyElementId() {
+    return getLegacyReplyAnchorId(this.args.post.id);
   }
 
   get post() {
@@ -250,6 +254,7 @@ export default class PostComponent extends Component<Signature> {
   };
 
   <template>
+    <span id={{this.legacyElementId}} aria-hidden='true'></span>
     <div id={{this.elementId}} class='post'>
       {{#if @subtle}}
         <span class={{classNames this 'subtle-mask'}} />
