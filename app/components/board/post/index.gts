@@ -1,6 +1,7 @@
 import { hash } from '@ember/helper';
 import { on } from '@ember/modifier';
 import didInsert from '@ember/render-modifiers/modifiers/did-insert';
+import didUpdate from '@ember/render-modifiers/modifiers/did-update';
 import Component from '@glimmer/component';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import { service } from '@ember/service';
@@ -28,6 +29,7 @@ import type IntlService from 'ember-intl/services/intl';
 import BookmarkStore from 'potber-client/services/stores/bookmark';
 import { getAnchorId } from 'potber-client/utils/misc';
 import SocialsService from 'potber-client/services/socials';
+import { renderTexPlaceholders } from 'potber-client/services/content-parser/tex';
 
 interface Signature {
   Args: {
@@ -243,6 +245,10 @@ export default class PostComponent extends Component<Signature> {
     }
   };
 
+  renderTex = (element: HTMLParagraphElement) => {
+    void renderTexPlaceholders(element);
+  };
+
   <template>
     <div id={{this.elementId}} class='post'>
       {{#if @subtle}}
@@ -343,7 +349,11 @@ export default class PostComponent extends Component<Signature> {
               {{this.post.title}}
             </p>
           {{/if}}
-          <p class={{classNames this 'message'}}>
+          <p
+            class={{classNames this 'message'}}
+            {{didInsert this.renderTex}}
+            {{didUpdate this.renderTex this.post.message}}
+          >
             {{this.message}}
           </p>
         {{/if}}

@@ -153,6 +153,12 @@
   display: none;
 }
 
+.message :global(.katex-placeholder) {
+  display: inline-block;
+  min-width: 1ch;
+  min-height: 1em;
+}
+
 .message pre {
   margin: unset;
   font-size: larger;
