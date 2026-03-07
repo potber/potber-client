@@ -87,3 +87,20 @@ export function isNullOrWhitespace(input: string) {
 export function getAnchorId(postId: string) {
   return `post-${postId}`;
 }
+
+/**
+ * Returns the legacy forum.mods.de-style reply anchor id for the given post.
+ * @param postId The post id.
+ */
+export function getLegacyReplyAnchorId(postId: string) {
+  return `reply_${postId}`;
+}
+
+/**
+ * Extracts a post id from a supported thread hash.
+ * Supports both potber's "#post-<id>" and forum.mods.de's "#reply_<id>".
+ * @param hash The URL hash.
+ */
+export function getPostIdFromHash(hash: string) {
+  return hash.match(/^#(?:post-|reply_)(\d+)$/)?.[1] ?? null;
+}
