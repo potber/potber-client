@@ -3,7 +3,8 @@
 if (typeof module !== 'undefined') {
   const browser = process.env.TESTEM_BROWSER ?? 'chromium';
   const needsNoSandbox =
-    typeof process.getuid === 'function' && process.getuid() === 0;
+    process.env.CI === 'true' ||
+    (typeof process.getuid === 'function' && process.getuid() === 0);
 
   module.exports = {
     test_page: 'tests/index.html?hidepassed',
@@ -14,7 +15,7 @@ if (typeof module !== 'undefined') {
     browser_args: {
       [browser]: {
         ci: [
-          // --no-sandbox is needed when running Chrome inside a container
+          // Chromium needs --no-sandbox in CI and in our root-run devcontainer.
           needsNoSandbox ? '--no-sandbox' : null,
           '--headless',
           '--disable-dev-shm-usage',
