@@ -22,7 +22,7 @@ export default class PostFormThreadTitle extends Component<Signature> {
       @onChange={{this.handleChange}}
       @required={{true}}
       type='text'
-      maxLength='255'
+      maxlength='255'
     />
   </template>
 }

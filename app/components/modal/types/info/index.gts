@@ -6,7 +6,7 @@ import ModalContent from 'potber-client/components/modal/component/content';
 import ModalFooter from 'potber-client/components/modal/component/footer';
 import Button from 'potber-client/components/common/control/button';
 import t from 'ember-intl/helpers/t';
-import { InfoModalOptions } from './types';
+import type { InfoModalOptions } from './types';
 
 interface Signature {
   Args: {

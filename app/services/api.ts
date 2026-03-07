@@ -1,9 +1,11 @@
 import Service, { service } from '@ember/service';
 import { appConfig } from 'potber-client/config/app.config';
-import MessagesService, { MessageType } from './messages';
-import { IntlService } from 'ember-intl';
+import MessagesService from './messages';
+import type { MessageType } from './messages';
+import type IntlService from 'ember-intl/services/intl';
 import * as Session from './api/endpoints/session.endpoints';
 import * as Boards from './api/endpoints/boards.endpoints';
+import * as BoardCategories from './api/endpoints/board-categories.endpoints';
 import * as Threads from './api/endpoints/threads.endpoints';
 import * as Users from './api/endpoints/users.endpoints';
 import * as Posts from './api/endpoints/posts.endpoints';
@@ -66,6 +68,7 @@ export default class ApiService extends Service {
   findManyUsernames = Users.findManyUsernames;
 
   findBoardById = Boards._findById;
+  findAllBoardCategories = BoardCategories._findAll;
 
   findThreadById = Threads._findById;
   createThread = Threads._create;
@@ -105,14 +108,11 @@ export default class ApiService extends Service {
       ...options,
     };
     if (!path.startsWith('/')) path = `/${path}`;
-    let url = `${appConfig.apiUrl}${path}`;
-    const baseUrl = url;
+    const url = new URL(path, appConfig.apiUrl);
     if (query) {
-      Object.keys(query).forEach((key) => {
-        if (!query[key]) return;
-        if (url === baseUrl) url += '?';
-        else url += '&';
-        url += `${key}=${query[key]}`;
+      Object.entries(query).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        url.searchParams.set(key, String(value));
       });
     }
     const headers: Record<string, string> = {
@@ -124,10 +124,13 @@ export default class ApiService extends Service {
         'Authorization'
       ] = `Bearer ${this.session.data.authenticated.access_token}`;
     }
-    this.messages.log(`Outgoing request: ${request?.method ?? 'GET'} ${url}`, {
-      context: this.constructor.name,
-      type: 'info',
-    });
+    this.messages.log(
+      `Outgoing request: ${request?.method ?? 'GET'} ${url.toString()}`,
+      {
+        context: this.constructor.name,
+        type: 'info',
+      },
+    );
     // The forum can take a long time to respond. We want to warn the user if that happens.
     const timeoutId = window.setTimeout(() => {
       if (timeoutWarning) {
@@ -138,12 +141,17 @@ export default class ApiService extends Service {
       }
     }, appConfig.httpTimeoutWarningThreshold);
     try {
-      const response = await fetch(url, {
+      const response = await fetch(url.toString(), {
         ...request,
         headers: { ...headers, ...request?.headers },
       });
       window.clearTimeout(timeoutId);
-      if (response.ok && response.headers.get('content-length') === '0') return;
+      if (
+        response.ok &&
+        (response.status === 204 ||
+          response.headers.get('content-length') === '0')
+      )
+        return;
       const data = await response.json();
       if (!response.ok) {
         throw new ApiError(

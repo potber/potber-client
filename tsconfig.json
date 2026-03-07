@@ -3,6 +3,8 @@
   "compilerOptions": {
     "allowJs": true,
     "skipLibCheck": true,
+    "noImplicitThis": false,
+    "verbatimModuleSyntax": false,
     // Required for ember-cli-code-coverage
     "inlineSourceMap": true,
     "inlineSources": true,
@@ -14,7 +16,8 @@
       "potber-client/tests/*": ["tests/*"],
       "potber-client/*": ["app/*"],
       "*": ["types/*"]
-    }
+    },
+    "types": ["@embroider/core/virtual", "vite/client", "@ember-intl/vite/virtual"]
   },
   "include": ["app/**/*", "tests/**/*", "types/**/*"],
   "glint": {

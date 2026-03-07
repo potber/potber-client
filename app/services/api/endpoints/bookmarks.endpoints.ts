@@ -1,5 +1,7 @@
-import ApiService, { PublicFetchOptions } from 'potber-client/services/api';
-import { Bookmark, IBookmark } from '../models/bookmark';
+import ApiService from 'potber-client/services/api';
+import type { PublicFetchOptions } from 'potber-client/services/api';
+import { Bookmark } from '../models/bookmark';
+import type { IBookmark } from '../models/bookmark';
 
 /**
  * Finds and returns all bookmarks for the user that is currently logged in.

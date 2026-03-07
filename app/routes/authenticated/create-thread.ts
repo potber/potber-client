@@ -29,19 +29,16 @@ export default class CreateThreadRoute extends Route {
   async model(params: Params): Promise<CreateThreadRouteModel> {
     const { BID } = params;
     const board = await this.api.findBoardById(BID);
-    const thread = new WritableThread(
-      {
-        boardId: BID,
+    const thread = new WritableThread(this.api, {
+      boardId: BID,
+      title: '',
+      tags: [],
+      openingPost: {
         title: '',
-        tags: [],
-        openingPost: {
-          title: '',
-          icon: '0',
-          message: '',
-        },
+        icon: '0',
+        message: '',
       },
-      this,
-    );
+    });
     return { thread, board };
   }
 

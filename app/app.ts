@@ -1,16 +1,21 @@
 import Application from '@ember/application';
 import Resolver from 'ember-resolver';
 import loadInitializers from 'ember-load-initializers';
-import config from 'potber-client/config/environment';
+import config from './config/environment';
 import 'potber-client/assets/styles/global.css';
+import './font-awesome';
 
 // import polyfills
 import './polyfills/crypto.randomuuid.polyfill';
 
+import setupInspector from '@embroider/legacy-inspector-support/ember-source-4.12';
+import compatModules from '@embroider/virtual/compat-modules';
+
 export default class App extends Application {
   modulePrefix = config.modulePrefix;
   podModulePrefix = config.podModulePrefix;
-  Resolver = Resolver;
+  Resolver = Resolver.withModules(compatModules);
+  inspector = setupInspector(this);
 }
 
-loadInitializers(App, config.modulePrefix);
+loadInitializers(App, config.modulePrefix, compatModules);

@@ -1,6 +1,6 @@
 import Helper from '@ember/component/helper';
 import { service } from '@ember/service';
-import Post from 'potber-client/models/post';
+import type Post from 'potber-client/models/post';
 import SettingsService from 'potber-client/services/settings';
 
 export function isPostSubtle([post, lastReadPost, darkenReadPosts]: [

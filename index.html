@@ -1,0 +1,63 @@
+<!doctype html>
+<html data-theme="default">
+  <head>
+    <meta charset="utf-8" />
+    <title>potber</title>
+    <meta name="description" content="" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#0c1c2c" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="#0c1c2c" />
+
+    {{content-for "head"}}
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <link integrity="" rel="icon" href="/favicon.png" />
+    <link integrity="" rel="stylesheet" href="/@embroider/virtual/vendor.css" />
+    <link integrity="" rel="stylesheet" href="/@embroider/virtual/app.css" />
+
+    {{content-for "head-footer"}}
+  </head>
+  <body>
+    <span id="app-skeleton">
+      <span id="app-skeleton-top-nav"></span>
+      <span id="app-skeleton-content">
+        <img
+          id="app-skeleton-loading-indicator"
+          src="/images/logo/loading-indicator.gif"
+          alt="loading..."
+        />
+      </span>
+      <span id="app-skeleton-bottom-nav"></span>
+    </span>
+
+    {{content-for "body"}}
+
+    <script type="module">
+      async function loadClassicScript(src) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = false;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error(`Failed to load ${src}`));
+          document.head.appendChild(script);
+        });
+      }
+
+      await loadClassicScript('/@embroider/virtual/vendor.js');
+    </script>
+
+    <script type="module">
+      import Application from './app/app';
+      import environment from './app/config/environment';
+      Application.create(environment.APP);
+    </script>
+
+    {{content-for "body-footer"}}
+  </body>
+</html>

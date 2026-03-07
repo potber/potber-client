@@ -3,8 +3,8 @@ import { action } from '@ember/object';
 import RouterService from '@ember/routing/router-service';
 import { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
-import { IntlService } from 'ember-intl';
-import { PostEditRouteModel } from 'potber-client/routes/authenticated/post/edit';
+import type IntlService from 'ember-intl/services/intl';
+import type { PostEditRouteModel } from 'potber-client/routes/authenticated/post/edit';
 import ApiService from 'potber-client/services/api';
 import MessagesService from 'potber-client/services/messages';
 

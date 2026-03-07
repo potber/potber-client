@@ -1,8 +1,5 @@
-import {
-  findIconDefinition,
-  icon,
-  IconLookup,
-} from '@fortawesome/fontawesome-svg-core';
+import { findIconDefinition, icon } from '@fortawesome/fontawesome-svg-core';
+import type { IconLookup } from '@fortawesome/fontawesome-svg-core';
 
 /**
  * Returns the given `font-awesome` icon as a pure string containing parseable HTML.

@@ -1,7 +1,8 @@
 import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import { sleep } from 'potber-client/utils/misc';
-import ApiService, { PublicFetchOptions } from './api';
+import ApiService from './api';
+import type { PublicFetchOptions } from './api';
 import BookmarkStore from './stores/bookmark';
 import { appConfig } from 'potber-client/config/app.config';
 import SettingsService from './settings';

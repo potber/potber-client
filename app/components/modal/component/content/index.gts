@@ -1,4 +1,4 @@
-import { TOC } from '@ember/component/template-only';
+import type { TOC } from '@ember/component/template-only';
 
 const ModalContent: TOC<{ Blocks: { default: [] } }> = <template>
   <div class='modal-content'>

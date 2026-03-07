@@ -1,6 +1,6 @@
-import EmberObject from '@ember/object';
 import { Model } from './model';
 import { Threads } from '../types';
+import ApiService from 'potber-client/services/api';
 
 export class WritableThread extends Model implements Threads.Create {
   boardId!: string;
@@ -12,8 +12,8 @@ export class WritableThread extends Model implements Threads.Create {
     icon: '0',
   };
 
-  constructor(init: Threads.Create, context: EmberObject) {
-    super(context);
+  constructor(api: ApiService, init: Threads.Create) {
+    super(api);
     Object.assign(this, init);
   }
 

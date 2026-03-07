@@ -1,14 +1,14 @@
 import { action } from '@ember/object';
 import Route from '@ember/routing/route';
-import Transition from '@ember/routing/transition';
+import type Transition from '@ember/routing/transition';
 import { service } from '@ember/service';
 import RendererService from 'potber-client/services/renderer';
 import SessionService from 'potber-client/services/session';
 import ApiService from 'potber-client/services/api';
-import { Threads } from 'potber-client/services/api/types';
+import type { Threads } from 'potber-client/services/api/types';
 import { WritablePost } from 'potber-client/services/api/models/post';
-import { trackedFunction } from 'ember-resources/util/function';
-import { TrackedState } from 'ember-resources';
+import { trackedFunction } from 'reactiveweb/function';
+import type { TrackedState } from 'ember-resources';
 
 interface Params extends Record<string, unknown> {
   TID: string;
@@ -44,13 +44,10 @@ export default class PostCreateRoute extends Route {
           query: { page: params.page, updateBookmark: false },
         }),
       );
-      const post = new WritablePost(
-        {
-          message: '',
-          threadId: params.TID,
-        },
-        this,
-      );
+      const post = new WritablePost(this.api, {
+        message: '',
+        threadId: params.TID,
+      });
       return {
         threadState,
         post,

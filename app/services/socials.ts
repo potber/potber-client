@@ -24,7 +24,6 @@ export default class SocialsService extends Service implements Socials {
   };
 
   save = (): void => {
-    console.log(this.blockedUsers);
     this.localStorage.writeSocials({ blockedUsers: this.blockedUsers });
   };
 
@@ -39,11 +38,10 @@ export default class SocialsService extends Service implements Socials {
   };
 
   unblockUser = (userId: string) => {
+    const index = this.blockedUsers.findIndex((user) => user.id === userId);
+    if (index === -1) return;
     const newArray = [...this.blockedUsers];
-    newArray.splice(
-      this.blockedUsers.findIndex((user) => user.id === userId),
-      1,
-    );
+    newArray.splice(index, 1);
     this.blockedUsers = newArray;
     this.save();
   };

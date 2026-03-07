@@ -4,11 +4,11 @@ import SettingsService, {
   FontSize,
   Gestures,
   LandingPage,
-  Settings,
   SidebarLayout,
   Theme,
   Transitions,
 } from 'potber-client/services/settings';
+import type { Settings } from 'potber-client/services/settings';
 import { setupTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 

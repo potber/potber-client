@@ -1,8 +1,8 @@
 import { service } from '@ember/service';
+import RouterService from '@ember/routing/router-service';
 import Component from '@glimmer/component';
 import LocalStorageService from 'potber-client/services/local-storage';
 import { action } from '@ember/object';
-import { getOwner } from '@ember/application';
 import RendererService from 'potber-client/services/renderer';
 import MessagesService from 'potber-client/services/messages';
 import { appConfig } from 'potber-client/config/app.config';
@@ -16,8 +16,8 @@ import NavHeader from '../../component/header';
 import MenuButton from 'potber-client/components/common/control/menu/button';
 import MenuLinkExternal from 'potber-client/components/common/control/menu/link-external';
 import MenuLink from 'potber-client/components/common/control/menu/link';
-import { IntlService, t } from 'ember-intl';
-import BoardRoute from 'potber-client/routes/authenticated/board';
+import type IntlService from 'ember-intl/services/intl';
+import t from 'ember-intl/helpers/t';
 import { Boards } from 'potber-client/services/api/types';
 
 export interface Signature {
@@ -28,6 +28,7 @@ export interface Signature {
 
 export default class NavBoardComponent extends Component<Signature> {
   @service declare renderer: RendererService;
+  @service declare router: RouterService;
   @service declare localStorage: LocalStorageService;
   @service declare messages: MessagesService;
   @service declare intl: IntlService;
@@ -75,13 +76,11 @@ export default class NavBoardComponent extends Component<Signature> {
 
   @action async reload() {
     this.renderer.showLoadingIndicator();
-    const owner = getOwner(this);
-    if (!owner) throw new Error('Owner not found');
-    (owner.lookup('route:authenticated.board') as BoardRoute)
-      .refresh()
-      .finally(() => {
+    await Promise.resolve(this.router.refresh('authenticated.board')).finally(
+      () => {
         this.renderer.hideLoadingIndicator();
-      });
+      },
+    );
   }
 
   <template>
@@ -143,7 +142,7 @@ export default class NavBoardComponent extends Component<Signature> {
 
         {{#if this.nextPageVisible}}
           <ButtonLink
-            @title={{'route.board.next-page'}}
+            @title={{t 'route.board.next-page'}}
             @size='square'
             @route='authenticated.board'
             @query={{hash BID=@board.id page=this.nextPage}}

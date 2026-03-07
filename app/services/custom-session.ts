@@ -1,12 +1,13 @@
-import { getOwner } from '@ember/application';
 import { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
+import type CookiesService from 'ember-cookies/services/cookies';
 import BaseSessionService from 'ember-simple-auth/services/session';
-import { Session } from './api/types/session';
+import type { Session } from './api/types/session';
 import ApiService from './api';
 
 export default class CustomSession extends BaseSessionService {
   @service declare api: ApiService;
+  @service declare cookies: CookiesService;
   @tracked sessionData: Session | null = null;
   declare data: any;
   declare isAuthenticated?: boolean;
@@ -44,14 +45,15 @@ export default class CustomSession extends BaseSessionService {
     // We don't want the session service to redirect to a route automatically after
     // successful login, so we override this method.
     const attemptedTransition = this.data.attemptedTransition;
-    const cookies = (getOwner(this) as any).lookup('service:cookies');
-    const redirectTarget = cookies.read('ember_simple_auth-redirectTarget');
+    const redirectTarget = this.cookies.read(
+      'ember_simple_auth-redirectTarget',
+    );
     if (attemptedTransition) {
       attemptedTransition.retry();
       this.data.attemptedTransition = null;
     } else if (redirectTarget) {
       this.transitionTo(redirectTarget);
-      cookies.clear('ember_simple_auth-redirectTarget');
+      this.cookies.clear('ember_simple_auth-redirectTarget');
     }
   }
 }

@@ -123,21 +123,18 @@ export default class NavRoutesPrivateMessagesViewComponent extends Component<Sig
               @text='Als ungelesen markieren'
               @icon='envelope'
               @onClick={{this.markAsUnread}}
-              target='_blank'
             />
             {{#each this.otherFolders as |folder|}}
               <MenuButton
                 @text='Verschieben nach {{folder.label}}'
                 @icon='folder'
                 @onClick={{fn this.moveToFolder folder.key}}
-                target='_blank'
               />
             {{/each}}
             <MenuButton
               @text='Nachricht löschen'
               @icon='trash'
               @onClick={{this.delete}}
-              target='_blank'
             />
             <MenuLink
               @text='Weiterleiten'

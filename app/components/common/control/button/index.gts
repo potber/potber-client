@@ -2,7 +2,10 @@ import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import RendererService from 'potber-client/services/renderer';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
-import { IconName, IconPrefix } from '@fortawesome/fontawesome-common-types';
+import type {
+  IconName,
+  IconPrefix,
+} from '@fortawesome/fontawesome-common-types';
 import { on } from '@ember/modifier';
 import eq from 'ember-truth-helpers/helpers/eq';
 
@@ -17,7 +20,7 @@ interface Signature {
     variant?: ControlVariant;
     busy?: boolean;
     disabled?: boolean;
-    iconSize?: 'normal' | 'small';
+    iconSize?: IconSize;
     onClick?: () => void;
   };
   Blocks: {

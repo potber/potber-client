@@ -1,5 +1,5 @@
 import { action } from '@ember/object';
-import Transition from '@ember/routing/transition';
+import type Transition from '@ember/routing/transition';
 import { service } from '@ember/service';
 import SlowRoute from 'potber-client/routes/base/slow';
 import ApiService from 'potber-client/services/api';
@@ -34,7 +34,7 @@ export default class PostEditRoute extends SlowRoute {
   async model(params: Params, transition: Transition) {
     try {
       const currentPost = await this.api.findPostById(params.PID, params.TID);
-      const post = new WritablePost({ ...currentPost }, this);
+      const post = new WritablePost(this.api, { ...currentPost });
       return {
         threadId: params.TID,
         post,

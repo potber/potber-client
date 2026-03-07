@@ -3,20 +3,18 @@ import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import MessagesService from './messages';
 import { clean, valid, gt } from 'semver';
-import { Settings } from './settings';
-import Post from 'potber-client/models/post';
-import { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
+import type Post from 'potber-client/models/post';
+import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
 import { appConfig } from 'potber-client/config/app.config';
 import { Boards } from './api/types';
 import ApiService from './api';
-import CustomStore from './custom-store';
-import { Socials } from './socials';
+import type { Settings } from './settings';
+import type { Socials } from './socials';
 
 const PREFIX = 'potber-';
 
 export default class LocalStorageService extends Service {
   @service declare api: ApiService;
-  @service declare store: CustomStore;
   @service declare messages: MessagesService;
 
   @tracked boardFavorites: Boards.Read[] | null = [];
@@ -83,12 +81,10 @@ export default class LocalStorageService extends Service {
   @action async getBoardFavorites() {
     const string = localStorage.getItem(`${PREFIX}boardFavorites`);
     try {
-      const boards: Boards.Read[] = [];
+      let boards: Boards.Read[] = [];
       if (string) {
         const ids = string?.split(',') || [];
-        for (const id of ids) {
-          boards.push(await this.api.findBoardById(id));
-        }
+        boards = await Promise.all(ids.map((id) => this.api.findBoardById(id)));
       }
       this.boardFavorites = boards;
     } catch (error) {
@@ -124,20 +120,14 @@ export default class LocalStorageService extends Service {
     if (!this.savedPosts || this.savedPosts.length === 0 || options?.reload) {
       const string = localStorage.getItem(`${PREFIX}savedPosts`);
       try {
-        const posts: Post[] = [];
+        let posts: Post[] = [];
         if (string) {
           const persistedPosts: PersistedSavedPost[] = JSON.parse(string);
-          for (const persistedPost of persistedPosts) {
-            posts.push(
-              await this.store.findRecord('post', persistedPost.id, {
-                adapterOptions: {
-                  queryParams: {
-                    threadId: persistedPost.threadId,
-                  },
-                },
-              }),
-            );
-          }
+          posts = await Promise.all(
+            persistedPosts.map((persistedPost) =>
+              this.api.findPostById(persistedPost.id, persistedPost.threadId),
+            ),
+          );
         }
         this.savedPosts = posts;
       } catch (error) {

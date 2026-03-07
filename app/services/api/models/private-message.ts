@@ -1,20 +1,18 @@
-import EmberObject from '@ember/object';
 import { Model } from './model';
 import { PrivateMessages } from '../types';
-import { service } from '@ember/service';
 import ApiService from 'potber-client/services/api';
-import {
+import type {
   PrivateMessageFolder,
   RecipientOrSender,
 } from '../types/private-messages';
-import PrivateMessageStore from 'potber-client/services/stores/private-message';
 import { tracked } from '@glimmer/tracking';
 
-export class PrivateMessage extends Model implements PrivateMessages.Read {
-  @service declare api: ApiService;
-  @service('stores/private-message')
-  declare privateMessageStore: PrivateMessageStore;
+interface PrivateMessageDependencies {
+  api: ApiService;
+  refreshUnread?: () => void | Promise<void>;
+}
 
+export class PrivateMessage extends Model implements PrivateMessages.Read {
   id!: string;
   title!: string;
   date!: string;
@@ -24,9 +22,14 @@ export class PrivateMessage extends Model implements PrivateMessages.Read {
   recipient?: RecipientOrSender;
   sender?: RecipientOrSender;
   content?: string;
+  private readonly refreshUnread?: () => void | Promise<void>;
 
-  constructor(init: PrivateMessages.Read, context: EmberObject) {
-    super(context);
+  constructor(
+    init: PrivateMessages.Read,
+    dependencies: PrivateMessageDependencies,
+  ) {
+    super(dependencies.api);
+    this.refreshUnread = dependencies.refreshUnread;
     Object.assign(this, init);
   }
 
@@ -36,7 +39,7 @@ export class PrivateMessage extends Model implements PrivateMessages.Read {
   async markAsUnread(): Promise<void> {
     await this.api.markPrivateMessageAsUnread(this.id);
     this.unread = true;
-    this.privateMessageStore.getUnread({ reload: true, delay: 500 });
+    await this.refreshUnread?.();
   }
 
   async moveToFolder(folder: PrivateMessageFolder): Promise<void> {
@@ -54,15 +57,13 @@ export class PrivateMessage extends Model implements PrivateMessages.Read {
 }
 
 export class NewPrivateMessage extends Model implements PrivateMessages.Create {
-  @service declare api: ApiService;
-
   title = '';
   content = '';
   recipientName = '';
   saveCopy = true;
 
-  constructor(context: EmberObject, init?: Partial<PrivateMessages.Create>) {
-    super(context);
+  constructor(api: ApiService, init?: Partial<PrivateMessages.Create>) {
+    super(api);
     if (init) Object.assign(this, init);
   }
 

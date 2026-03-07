@@ -1,9 +1,8 @@
 import Component from '@glimmer/component';
-import {
-  postIcons,
+import { postIcons, emojis } from 'potber-client/config/icons.config';
+import type {
   PostIcon,
   PostIconKey,
-  emojis,
   Emoji,
   EmojiKey,
 } from 'potber-client/config/icons.config';

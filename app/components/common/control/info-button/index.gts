@@ -2,7 +2,7 @@ import Component from '@glimmer/component';
 import Button from 'potber-client/components/common/control/button';
 import { service } from '@ember/service';
 import ModalService from 'potber-client/services/modal';
-import { Info } from './types';
+import type { Info } from './types';
 
 interface Signature {
   Element: HTMLButtonElement;

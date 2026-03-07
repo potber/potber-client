@@ -1,9 +1,7 @@
 import isFinalElement from 'potber-client/helpers/is-final-element';
-import { getOwner } from '@ember/application';
 import { service } from '@ember/service';
-import { Owner } from '@ember/test-helpers/build-owner';
+import RouterService from '@ember/routing/router-service';
 import Component from '@glimmer/component';
-import BoardRoute from 'potber-client/routes/authenticated/board';
 import SettingsService, { Gestures } from 'potber-client/services/settings';
 import styles from './styles.module.css';
 import classNames from 'potber-client/helpers/class-names';
@@ -19,6 +17,7 @@ interface Signature {
 }
 
 export default class BoardPage extends Component<Signature> {
+  @service declare router: RouterService;
   @service declare settings: SettingsService;
 
   styles = styles;
@@ -35,10 +34,7 @@ export default class BoardPage extends Component<Signature> {
   }
 
   handleOverscroll = () => {
-    const route = (getOwner(this) as Owner).lookup(
-      'route:authenticated.board',
-    ) as BoardRoute;
-    route.refresh();
+    this.router.refresh('authenticated.board');
   };
 
   <template>

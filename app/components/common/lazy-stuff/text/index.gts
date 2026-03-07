@@ -2,7 +2,7 @@ import Component from '@glimmer/component';
 import classNames from 'potber-client/helpers/class-names';
 import styles from './styles.module.css';
 import { htmlSafe } from '@ember/template';
-import { SafeString } from '@ember/template/-private/handlebars';
+import type { SafeString } from '@ember/template';
 
 interface Signature {
   Element: HTMLSpanElement;

@@ -1,4 +1,4 @@
-import Post from 'potber-client/models/post';
+import type Post from 'potber-client/models/post';
 
 export const postMocks = {
   simple: {

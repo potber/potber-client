@@ -1,4 +1,5 @@
-import ApiService, { PublicFetchOptions } from 'potber-client/services/api';
+import ApiService from 'potber-client/services/api';
+import type { PublicFetchOptions } from 'potber-client/services/api';
 import { Boards } from '../types';
 
 interface FindByIdOptions extends PublicFetchOptions {

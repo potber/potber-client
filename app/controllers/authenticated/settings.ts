@@ -1,17 +1,16 @@
 import Controller from '@ember/controller';
 import { service } from '@ember/service';
-import { DropdownOption } from 'potber-client/components/common/control/dropdown/types';
+import type { DropdownOption } from 'potber-client/components/common/control/dropdown/types';
 import RendererService from 'potber-client/services/renderer';
 import MessagesService from 'potber-client/services/messages';
 import AppService from 'potber-client/services/app';
 import ModalService from 'potber-client/services/modal';
-import SettingsService, { Settings } from 'potber-client/services/settings';
+import type { SettingsRouteModel } from 'potber-client/routes/authenticated/settings';
+import type { Settings } from 'potber-client/services/settings';
+import SettingsService from 'potber-client/services/settings';
 import DeviceManagerService from 'potber-client/services/device-manager';
 import CustomSession from 'potber-client/services/custom-session';
-import {
-  SettingsRouteModel,
-  settingsConfig,
-} from 'potber-client/routes/authenticated/settings';
+import { settingsConfig } from 'potber-client/routes/authenticated/settings';
 
 export default class SettingsController extends Controller {
   declare model: SettingsRouteModel;

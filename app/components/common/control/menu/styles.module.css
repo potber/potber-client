@@ -31,7 +31,7 @@
   width: max-content;
   min-width: 100%;
   max-width: 100%;
-  justify-content: start;
+  justify-content: flex-start;
 }
 
 :global(.menu-button menu > * > *) {

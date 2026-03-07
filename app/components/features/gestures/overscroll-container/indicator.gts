@@ -2,7 +2,7 @@ import Component from '@glimmer/component';
 import { service } from '@ember/service';
 import type { IntlService } from 'ember-intl';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
-import { IconName } from '@fortawesome/fontawesome-common-types';
+import type { IconName } from '@fortawesome/fontawesome-common-types';
 
 interface Signature {
   Element: HTMLSpanElement;

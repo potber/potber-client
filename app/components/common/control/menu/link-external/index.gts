@@ -1,6 +1,6 @@
 import Component from '@glimmer/component';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
-import { IconName } from '@fortawesome/fontawesome-common-types';
+import type { IconName } from '@fortawesome/fontawesome-common-types';
 import styles from '../styles.module.css';
 
 interface Signature {

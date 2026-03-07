@@ -153,7 +153,7 @@
 }
 
 .align-items-start {
-  align-items: start !important;
+  align-items: flex-start !important;
 }
 
 .align-items-center {
@@ -161,7 +161,7 @@
 }
 
 .justify-content-start {
-  justify-content: start !important;
+  justify-content: flex-start !important;
 }
 
 .justify-content-center {

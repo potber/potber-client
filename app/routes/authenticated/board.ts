@@ -1,5 +1,5 @@
 import RouterService from '@ember/routing/router-service';
-import Transition from '@ember/routing/transition';
+import type Transition from '@ember/routing/transition';
 import { service } from '@ember/service';
 import MessagesService from 'potber-client/services/messages';
 import SlowRoute from '../base/slow';

@@ -1,7 +1,7 @@
 import Controller from '@ember/controller';
 import RouterService from '@ember/routing/router-service';
 import { service } from '@ember/service';
-import { PostCreateRouteModel } from 'potber-client/routes/authenticated/post/create';
+import type { PostCreateRouteModel } from 'potber-client/routes/authenticated/post/create';
 import ApiService from 'potber-client/services/api';
 import { WritablePost } from 'potber-client/services/api/models/post';
 import MessagesService from 'potber-client/services/messages';

@@ -1,3 +1,3 @@
-import { State } from 'ember-resources/util/function';
+import { State } from 'reactiveweb/function';
 
 export type TrackedState<T> = State<Promise<T>>;

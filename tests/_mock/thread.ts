@@ -1,4 +1,4 @@
-import Thread from 'potber-client/models/thread';
+import type Thread from 'potber-client/models/thread';
 
 export const threadMocks = {
   potber: {

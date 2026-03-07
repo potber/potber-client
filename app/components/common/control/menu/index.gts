@@ -5,11 +5,14 @@ import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
 import { guidFor } from '@ember/object/internals';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
-import { IconName, IconPrefix } from '@fortawesome/fontawesome-common-types';
+import type {
+  IconName,
+  IconPrefix,
+} from '@fortawesome/fontawesome-common-types';
 import RendererService from 'potber-client/services/renderer';
 import classNames from 'potber-client/helpers/class-names';
 import styles from './styles.module.css';
-import { IntlService } from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
 
 export interface Signature {
   Args: {
@@ -75,7 +78,7 @@ export default class MenuComponent extends Component<Signature> {
     this.position = this.calculatePosition();
   }
 
-  @action handleClick(event: any) {
+  @action handleClick(event: MouseEvent) {
     this.updatePosition();
     this.renderer.createClickRipple(event);
     const element = document.getElementById(`${this.id}-menu`) as Element;
@@ -85,8 +88,13 @@ export default class MenuComponent extends Component<Signature> {
     );
   }
 
-  @action handleBlur(event: any) {
-    if (event.currentTarget.contains(event.relatedTarget)) {
+  @action handleBlur(event: FocusEvent) {
+    const currentTarget = event.currentTarget;
+
+    if (
+      currentTarget instanceof HTMLElement &&
+      currentTarget.contains(event.relatedTarget as Node | null)
+    ) {
       return;
     }
     const element = document.getElementById(`${this.id}-menu`) as Element;

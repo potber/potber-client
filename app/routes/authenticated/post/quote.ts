@@ -1,6 +1,7 @@
-import Transition from '@ember/routing/transition';
-import Post from 'potber-client/models/post';
-import PostCreateRoute, { PostCreateRouteModel } from './create';
+import type Transition from '@ember/routing/transition';
+import type Post from 'potber-client/models/post';
+import type { PostCreateRouteModel } from './create';
+import PostCreateRoute from './create';
 import { service } from '@ember/service';
 import ApiService from 'potber-client/services/api';
 

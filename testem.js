@@ -1,23 +1,30 @@
 'use strict';
 
-module.exports = {
-  test_page: 'tests/index.html?hidepassed',
-  disable_watching: true,
-  launch_in_ci: ['Chrome'],
-  launch_in_dev: ['Chrome'],
-  browser_start_timeout: 120,
-  browser_args: {
-    Chrome: {
-      ci: [
-        // --no-sandbox is needed when running Chrome inside a container
-        process.env.CI ? '--no-sandbox' : null,
-        '--headless',
-        '--disable-dev-shm-usage',
-        '--disable-software-rasterizer',
-        '--mute-audio',
-        '--remote-debugging-port=0',
-        '--window-size=1440,900',
-      ].filter(Boolean),
+if (typeof module !== 'undefined') {
+  const browser = process.env.TESTEM_BROWSER ?? 'chromium';
+  const needsNoSandbox =
+    process.env.CI === 'true' ||
+    (typeof process.getuid === 'function' && process.getuid() === 0);
+
+  module.exports = {
+    test_page: 'tests/index.html?hidepassed',
+    disable_watching: true,
+    launch_in_ci: [browser],
+    launch_in_dev: [browser],
+    browser_start_timeout: 120,
+    browser_args: {
+      [browser]: {
+        ci: [
+          // Chromium needs --no-sandbox in CI and in our root-run devcontainer.
+          needsNoSandbox ? '--no-sandbox' : null,
+          '--headless',
+          '--disable-dev-shm-usage',
+          '--disable-software-rasterizer',
+          '--mute-audio',
+          '--remote-debugging-port=0',
+          '--window-size=1440,900',
+        ].filter(Boolean),
+      },
     },
-  },
-};
+  };
+}

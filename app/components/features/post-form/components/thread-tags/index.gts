@@ -32,7 +32,7 @@ export default class PostFormThreadTags extends Component<Signature> {
       @value={{this.tags}}
       @onChange={{this.handleChange}}
       type='text'
-      maxLength='255'
+      maxlength='255'
     />
   </template>
 }

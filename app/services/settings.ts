@@ -3,18 +3,27 @@ import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import LocalStorageService from './local-storage';
 import RendererService from './renderer';
+import type { Settings } from './settings/types';
 import {
   AvatarStyle,
   FontSize,
   Gestures,
   LandingPage,
-  Settings,
   SidebarLayout,
   Theme,
   Transitions,
 } from './settings/types';
 
-export * from './settings/types';
+export {
+  AvatarStyle,
+  FontSize,
+  Gestures,
+  LandingPage,
+  SidebarLayout,
+  Theme,
+  Transitions,
+} from './settings/types';
+export type { Settings } from './settings/types';
 export default class SettingsService extends Service {
   @service declare localStorage: LocalStorageService;
   @service declare renderer: RendererService;

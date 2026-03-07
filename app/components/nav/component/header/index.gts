@@ -1,4 +1,4 @@
-import { TOC } from '@ember/component/template-only';
+import type { TOC } from '@ember/component/template-only';
 import LazyText from 'potber-client/components/common/lazy-stuff/text';
 
 const NavHeader: TOC<{

@@ -1,7 +1,6 @@
-import { IconName } from '@fortawesome/fontawesome-common-types';
+import type { IconName } from '@fortawesome/fontawesome-common-types';
+import type { EmojiKey, PostIconKey } from 'potber-client/config/icons.config';
 import {
-  EmojiKey,
-  PostIconKey,
   emojis,
   fontAwesomeEmojiPaths,
   postIcons,

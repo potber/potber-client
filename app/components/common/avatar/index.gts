@@ -47,7 +47,7 @@ export default class Avatar extends Component<Signature> {
       type='button'
       class='avatar
         {{classNames this this.size (if this.args.showSkeleton "loading" "")}}'
-      aria-role={{if this.interactable 'button' 'span'}}
+      role={{if this.interactable 'button' 'span'}}
       disabled={{unless this.interactable true}}
       {{on 'click' this.showUserProfile}}
       ...attributes

@@ -1,1 +1,7 @@
-FROM node:20 AS build
+FROM node:24 AS build
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends chromium \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV CHROME_BIN=/usr/bin/chromium

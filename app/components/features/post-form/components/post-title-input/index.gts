@@ -3,7 +3,8 @@ import { service } from '@ember/service';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
-import { IntlService, t } from 'ember-intl';
+import type IntlService from 'ember-intl/services/intl';
+import t from 'ember-intl/helpers/t';
 import eq from 'ember-truth-helpers/helpers/eq';
 import Icon from 'potber-client/components/board/icon';
 import Button from 'potber-client/components/common/control/button';
@@ -79,7 +80,7 @@ export default class PostFormPostTitle extends Component<Signature> {
         @value={{this.title}}
         @onChange={{this.handleTitleChange}}
         type='text'
-        maxLength='255'
+        maxlength='255'
       />
     </div>
   </template>

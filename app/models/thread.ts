@@ -1,55 +1,11 @@
-import Model, { attr } from '@ember-data/model';
-import Post, { PostPreview } from './post';
+import type Post from './post';
+import type { PostPreview } from './post';
+import type { Threads } from 'potber-client/services/api/types';
 
-export default class Thread extends Model {
-  @attr()
-  declare title: string;
-
-  @attr()
-  declare subtitle: string;
-
-  @attr()
-  declare repliesCount: number;
-
-  @attr()
-  declare hitsCount: number;
-
-  @attr()
-  declare pagesCount: number;
-
-  @attr()
-  declare isClosed: boolean;
-
-  @attr()
-  declare isSticky: boolean;
-
-  @attr()
-  declare isImportant: boolean;
-
-  @attr()
-  declare isAnnouncement: boolean;
-
-  @attr()
-  declare isGlobal: boolean;
-
-  @attr()
-  declare boardId: string;
-
-  @attr()
-  declare firstPost?: PostPreview;
-
-  @attr()
-  declare lastPost?: PostPreview;
-
-  @attr()
-  declare page?: ThreadPage;
-}
-
-// DO NOT DELETE: this is how TypeScript knows how to look up your models.
-declare module 'ember-data/types/registries/model' {
-  export default interface ModelRegistry {
-    thread: Thread;
-  }
+export default interface Thread extends Omit<Threads.Read, 'page'> {
+  firstPost?: PostPreview;
+  lastPost?: PostPreview;
+  page?: ThreadPage;
 }
 
 export interface ThreadPage {
