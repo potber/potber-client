@@ -38,17 +38,27 @@
     {{content-for "body"}}
 
     <script type="module">
-      async function loadClassicScript(src) {
+      async function loadClassicScript(src, { optional = false } = {}) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
           script.src = src;
           script.async = false;
           script.onload = () => resolve();
-          script.onerror = () => reject(new Error(`Failed to load ${src}`));
+          script.onerror = () => {
+            script.remove();
+
+            if (optional) {
+              resolve();
+              return;
+            }
+
+            reject(new Error(`Failed to load ${src}`));
+          };
           document.head.appendChild(script);
         });
       }
 
+      await loadClassicScript('/injected-config.js', { optional: true });
       await loadClassicScript('/@embroider/virtual/vendor.js');
     </script>
 

@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.25.0] - 2026-03-07
+
+### Chores
+
+- Upgraded the app onto the current Ember 6.8 / Embroider / Vite stack and aligned the repo on Node 24.
+- Migrated the build and test pipeline from the old setup to Vite.
+- Removed the remaining Ember Data usage in the app layer.
+- Normalized the component structure across the app to a more consistent `.gts`-based shape.
+- Replaced the old notifications addon with a local Glimmer/service-based implementation to remove classic/deprecated addon behavior.
+- Switched `ember-intl` translation loading to the Vite-supported path.
+- Lazy-loaded KaTeX so it is no longer on the initial app startup path.
+- Added regression coverage for settings, API, socials, and messages.
+
 ## [1.24.0] - 2024-10-16
 
 ### Fixed

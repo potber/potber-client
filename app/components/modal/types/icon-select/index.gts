@@ -72,6 +72,7 @@ export default class IconSelectModalComponent extends Component<Signature> {
     <ModalHeader
       @title={{this.title}}
       @icon={{this.randomEmojiIcon}}
+      @prefix='far'
       @variant='default'
     />
     <ModalContent>

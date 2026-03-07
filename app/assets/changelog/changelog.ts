@@ -1,5 +1,15 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.25.0',
+    type: 'minor',
+    chores: [
+      'Upgrade auf Ember 6.8 / Embroider / Vite-Stack inkl. Migration der Build- und Test-Pipeline sowie Umstieg auf Node 24.',
+      'Entfernung der verbleibenden Ember Data-Nutzung und Vereinheitlichung der Komponentenstruktur auf ein konsistentes `.gts`-Format.',
+      'Erneuerung der Benachrichtigungslogik durch eine lokale Glimmer/Service-Implementierung sowie Anpassung des `ember-intl` Translation-Loadings für Vite.',
+      'KaTeX wird nun lazy geladen und ist nicht mehr Teil des initialen App-Starts. Zusätzlich wurde Regressionstests für Settings, API, Socials und Messages hinzugefügt.',
+    ],
+  },
+  {
     version: '1.24.0',
     type: 'minor',
     fixed: [

@@ -7,7 +7,7 @@
   "license": "GNU General Public License",
   "author": "https://github.com/spuxx-dev",
   "scripts": {
-    "start": "vite --host 0.0.0.0",
+    "start": "vite --mode development --host 0.0.0.0",
     "start:remote": "vite --mode development:remote --host 0.0.0.0",
     "start:mobile": "vite --mode development:mobile --host 0.0.0.0",
     "preview": "vite preview --host 0.0.0.0",
