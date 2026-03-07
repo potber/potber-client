@@ -75,20 +75,20 @@ export default class SidebarComponent extends Component {
   };
 
   handlePanstartInner = ({ gesture }: GestureEvent) => {
-     gesture.on('panend', () => {
-       // Update the sidebar depending on whether the user has dragged
-       // the sidebar 50% of the way open or not.
-       this.renderer.toggleLeftSidebar(this.width > this.maxWidth / 2);
-     });
-   };
+    gesture.on('panend', () => {
+      // Update the sidebar depending on whether the user has dragged
+      // the sidebar 50% of the way open or not.
+      this.renderer.toggleLeftSidebar(this.width > this.maxWidth / 2);
+    });
+  };
 
-   handlePanstartOuter = ({ gesture }: GestureEvent) => {
-     gesture.on('panend', () => {
-       // Update the sidebar depending on whether the user has dragged
-       // the sidebar 50% of the way open or not.
-       this.renderer.toggleLeftSidebar(this.width > this.maxWidth / 2);
-     });
-   };
+  handlePanstartOuter = ({ gesture }: GestureEvent) => {
+    gesture.on('panend', () => {
+      // Update the sidebar depending on whether the user has dragged
+      // the sidebar 50% of the way open or not.
+      this.renderer.toggleLeftSidebar(this.width > this.maxWidth / 2);
+    });
+  };
 
   handlePanmoveInner = ({ gesture }: GestureEvent) => {
     if (
