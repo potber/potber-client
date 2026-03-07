@@ -2,6 +2,9 @@ export const changelog: ChangelogItem[] = [
   {
     version: '1.25.0',
     type: 'minor',
+    fixed: [
+      'Reply Anchors von forum.mods.de funktionieren jetzt auch mit potber.',
+    ],
     chores: [
       'Upgrade auf Ember 6.8 / Embroider / Vite-Stack inkl. Migration der Build- und Test-Pipeline sowie Umstieg auf Node 24.',
       'Entfernung der verbleibenden Ember Data-Nutzung und Vereinheitlichung der Komponentenstruktur auf ein konsistentes `.gts`-Format.',
