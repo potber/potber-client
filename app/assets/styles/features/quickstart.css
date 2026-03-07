@@ -28,7 +28,7 @@
   margin-bottom: max(1px, var(--global-border-radius));
   border-radius: var(--global-border-radius);
   align-items: stretch;
-  justify-content: start;
+  justify-content: flex-start;
 }
 
 .quickstart-item > button:first-child,

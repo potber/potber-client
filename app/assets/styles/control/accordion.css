@@ -4,7 +4,7 @@
 }
 
 .accordion-toggle {
-  justify-content: start;
+  justify-content: flex-start;
   padding: 0 0.5rem;
   justify-content: space-between;
 }

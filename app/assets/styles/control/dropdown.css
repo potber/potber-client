@@ -86,7 +86,7 @@
   white-space: initial;
   border-radius: 0px !important;
   text-align: start;
-  justify-content: start;
+  justify-content: flex-start;
 }
 
 .dropdown-item:focus,

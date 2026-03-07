@@ -37,12 +37,24 @@
 
     {{content-for "body"}}
 
-    <script src="/injected-config.js" data-embroider-ignore></script>
-    <script src="/@embroider/virtual/vendor.js"></script>
+    <script type="module">
+      async function loadClassicScript(src) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = false;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error(`Failed to load ${src}`));
+          document.head.appendChild(script);
+        });
+      }
+
+      await loadClassicScript('/@embroider/virtual/vendor.js');
+    </script>
+
     <script type="module">
       import Application from './app/app';
       import environment from './app/config/environment';
-
       Application.create(environment.APP);
     </script>
 

@@ -9,6 +9,21 @@ import { setApplication } from '@ember/test-helpers';
 import { setup } from 'qunit-dom';
 import { start as startTests } from 'ember-qunit';
 
+const testWindow = window as Window & {
+  __coverage__?: unknown;
+  __webpack_require__?: unknown;
+  requirejs?: {
+    entries?: Record<string, unknown>;
+  };
+};
+
+function shouldForceModulesToBeLoaded() {
+  return (
+    typeof testWindow.__webpack_require__ !== 'undefined' ||
+    typeof testWindow.requirejs?.entries !== 'undefined'
+  );
+}
+
 export function start() {
   setApplication(Application.create(ENV.APP as any));
 
@@ -18,7 +33,14 @@ export function start() {
   setup(QUnit.assert);
 
   QUnit.done(async function () {
-    forceModulesToBeLoaded();
+    if (!testWindow.__coverage__) {
+      return;
+    }
+
+    if (shouldForceModulesToBeLoaded()) {
+      forceModulesToBeLoaded();
+    }
+
     await sendCoverage();
   });
 

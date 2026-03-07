@@ -60,7 +60,7 @@
 .private-message-view {
   box-sizing: border-box;
   background-color: var(--color-content-header);
-  align-items: start;
+  align-items: flex-start;
   padding: 0;
   margin: var(--global-gap);
   border-radius: var(--global-border-radius);
