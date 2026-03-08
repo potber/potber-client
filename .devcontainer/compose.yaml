@@ -24,7 +24,7 @@ services:
     - "4200:4200"
 
   potber-api:
-    image: spuxx/potber-api
+    image: ghcr.io/potber/potber-api
     restart: unless-stopped
     ports:
     - "3000:3000"
@@ -37,7 +37,7 @@ services:
       - AUTH_JWT_SECRET=imnotarealsecret
 
   potber-auth:
-    image: spuxx/potber-auth
+    image: ghcr.io/potber/potber-auth
     restart: unless-stopped
     ports:
     - "5173:5173"
@@ -47,5 +47,3 @@ services:
       - VITE_API_URL=http://potber-api:3000
       - VITE_API_LOGIN_ENDPOINT=/auth/login
       - VITE_API_SESSION_ENDPOINT=/auth/session
-
-  

@@ -2,6 +2,7 @@ export const changelog: ChangelogItem[] = [
   {
     version: '1.25.0',
     type: 'minor',
+    added: ['Listen können jetzt über ein Modal hinzugefügt werden'],
     fixed: [
       'Reply Anchors von forum.mods.de funktionieren jetzt auch mit potber.',
     ],
