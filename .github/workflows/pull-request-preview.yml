@@ -29,6 +29,7 @@ jobs:
   deploy:
     if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: pr
 
     steps:
       - uses: actions/checkout@v5
@@ -307,6 +308,7 @@ jobs:
   cleanup:
     if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: pr
 
     steps:
       - name: Derive preview metadata
