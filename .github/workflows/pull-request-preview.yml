@@ -102,7 +102,7 @@ jobs:
               -H "AccessKey: ${BUNNY_API_KEY}" \
               "${BUNNY_API_URL}/storagezone" |
             jq -r --arg name "${{ steps.meta.outputs.storage_zone_name }}" \
-              '.Items[]? | select(.Name == $name) | .Id' |
+              'if type == "array" then .[] else .Items[]? end | select(.Name == $name) | .Id' |
             head -n 1
           )"
 
@@ -171,7 +171,7 @@ jobs:
               -H "AccessKey: ${BUNNY_API_KEY}" \
               "${BUNNY_API_URL}/pullzone" |
             jq -r --arg name "${{ steps.meta.outputs.pull_zone_name }}" \
-              '.Items[]? | select(.Name == $name) | .Id' |
+              'if type == "array" then .[] else .Items[]? end | select(.Name == $name) | .Id' |
             head -n 1
           )"
 
@@ -376,7 +376,7 @@ jobs:
               -H "AccessKey: ${BUNNY_API_KEY}" \
               "${BUNNY_API_URL}/storagezone" |
             jq -r --arg name "${{ steps.meta.outputs.storage_zone_name }}" \
-              '.Items[]? | select(.Name == $name) | .Id' |
+              'if type == "array" then .[] else .Items[]? end | select(.Name == $name) | .Id' |
             head -n 1
           )"
 
