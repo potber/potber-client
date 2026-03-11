@@ -75,17 +75,29 @@ export default class SidebarComponent extends Component {
 
   handlePanstartInner = ({ gesture }: GestureEvent) => {
     gesture.on('panend', () => {
-      // Update the sidebar depending on whether the user has dragged
-      // the sidebar 50% of the way open or not.
-      this.renderer.toggleLeftSidebar(this.width > this.maxWidth / 2);
+      // Only snap open/closed if the user actually dragged horizontally.
+      // Use the gesture's own touchMoveX rather than reading back from the DOM,
+      // so the threshold is based on how far the finger actually traveled.
+      if (!gesture.swipingHorizontal || !gesture.touchMoveX) {
+        this.renderer.toggleLeftSidebar(false);
+        return;
+      }
+
+      const draggedWidth = this.maxWidth - Math.abs(gesture.touchMoveX);
+      this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
     });
   };
 
   handlePanstartOuter = ({ gesture }: GestureEvent) => {
     gesture.on('panend', () => {
-      // Update the sidebar depending on whether the user has dragged
-      // the sidebar 50% of the way open or not.
-      this.renderer.toggleLeftSidebar(this.width > this.maxWidth / 2);
+      // Only snap open if the user actually dragged horizontally far enough.
+      if (!gesture.swipingHorizontal || !gesture.touchMoveX) {
+        this.renderer.toggleLeftSidebar(false);
+        return;
+      }
+
+      const draggedWidth = Math.abs(gesture.touchMoveX);
+      this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
     });
   };
 
@@ -108,6 +120,7 @@ export default class SidebarComponent extends Component {
 
   handlePanmoveOuter = ({ gesture }: GestureEvent) => {
     if (
+      !gesture.swipingHorizontal ||
       !gesture.touchMoveX ||
       (this.settings.isRightSidebar() && gesture.touchMoveX > 0) ||
       (!this.settings.isRightSidebar() && gesture.touchMoveX < 0) ||
