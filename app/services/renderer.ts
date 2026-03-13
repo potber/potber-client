@@ -9,6 +9,11 @@ import { next } from '@ember/runloop';
 const LOADING_INDICATOR_DELAY = 500;
 const DESKTOP_MIN_WIDTH = 1200;
 
+export interface ScrollToElementOptions {
+  highlight?: boolean;
+  behavior?: ScrollBehavior;
+}
+
 export default class RendererService extends Service {
   @service declare settings: SettingsService;
   @service declare messages: MessagesService;
@@ -240,11 +245,13 @@ export default class RendererService extends Service {
    */
   scrollToElement(
     element: string | HTMLElement | null,
-    options?: {
-      highlight?: boolean;
-    },
+    options?: ScrollToElementOptions,
   ) {
-    const { highlight } = { highlight: false, ...options };
+    const { highlight, behavior } = {
+      highlight: false,
+      behavior: 'smooth' as ScrollBehavior,
+      ...options,
+    };
 
     if (typeof element === 'string') {
       element = document.getElementById(element);
@@ -257,7 +264,7 @@ export default class RendererService extends Service {
       .clientHeight;
     this.trySetScrollPosition({
       top: currentScrollTop + rect.top - topNavHeight,
-      behavior: 'smooth',
+      behavior,
     });
     if (highlight) {
       element.removeAttribute('data-highlighted');

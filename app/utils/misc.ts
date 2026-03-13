@@ -104,3 +104,50 @@ export function getLegacyReplyAnchorId(postId: string) {
 export function getPostIdFromHash(hash: string) {
   return hash.match(/^#(?:post-|reply_)(\d+)$/)?.[1] ?? null;
 }
+
+export type ThreadScrollTarget =
+  | {
+      type: 'post';
+      postId: string;
+    }
+  | {
+      type: 'bottom';
+    }
+  | {
+      type: 'top';
+    };
+
+/**
+ * Determines where the thread page should initially scroll to.
+ */
+export function getThreadScrollTarget({
+  search,
+  hash,
+  currentRouteName,
+  goToBottomOfThreadPage,
+}: {
+  search: string;
+  hash: string;
+  currentRouteName: string | null;
+  goToBottomOfThreadPage: boolean;
+}): ThreadScrollTarget {
+  const params = new URLSearchParams(search);
+  const postId = params.get('PID') ?? getPostIdFromHash(hash);
+
+  if (postId && currentRouteName === 'authenticated.thread') {
+    return {
+      type: 'post',
+      postId,
+    };
+  }
+
+  if (params.has('scrollToBottom') && goToBottomOfThreadPage) {
+    return {
+      type: 'bottom',
+    };
+  }
+
+  return {
+    type: 'top',
+  };
+}

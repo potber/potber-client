@@ -3,6 +3,7 @@ import {
   getAnchorId,
   getLegacyReplyAnchorId,
   getPostIdFromHash,
+  getThreadScrollTarget,
 } from 'potber-client/utils/misc';
 
 module('Unit | Utils | misc', function () {
@@ -24,5 +25,63 @@ module('Unit | Utils | misc', function () {
 
   test('returns null for unrelated hashes', function (assert) {
     assert.strictEqual(getPostIdFromHash('#something-else'), null);
+  });
+
+  test('prefers scrolling to a targeted thread post', function (assert) {
+    assert.deepEqual(
+      getThreadScrollTarget({
+        search: '?PID=123',
+        hash: '',
+        currentRouteName: 'authenticated.thread',
+        goToBottomOfThreadPage: true,
+      }),
+      {
+        type: 'post',
+        postId: '123',
+      },
+    );
+  });
+
+  test('accepts legacy forum reply hashes as focused post targets', function (assert) {
+    assert.deepEqual(
+      getThreadScrollTarget({
+        search: '',
+        hash: '#reply_123',
+        currentRouteName: 'authenticated.thread',
+        goToBottomOfThreadPage: true,
+      }),
+      {
+        type: 'post',
+        postId: '123',
+      },
+    );
+  });
+
+  test('uses bottom scroll mode when enabled and requested', function (assert) {
+    assert.deepEqual(
+      getThreadScrollTarget({
+        search: '?scrollToBottom=true',
+        hash: '',
+        currentRouteName: 'authenticated.thread',
+        goToBottomOfThreadPage: true,
+      }),
+      {
+        type: 'bottom',
+      },
+    );
+  });
+
+  test('falls back to top scroll mode when no focus target exists', function (assert) {
+    assert.deepEqual(
+      getThreadScrollTarget({
+        search: '',
+        hash: '',
+        currentRouteName: 'authenticated.thread',
+        goToBottomOfThreadPage: false,
+      }),
+      {
+        type: 'top',
+      },
+    );
   });
 });
