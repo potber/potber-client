@@ -1,6 +1,7 @@
 import eq from 'ember-truth-helpers/helpers/eq';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
+import type Post from 'potber-client/models/post';
 import OverscrollContainer from 'potber-client/components/features/gestures/overscroll-container';
 import UpdateScrollPosition from 'potber-client/components/misc/update-scroll-position';
 import BoardPost from 'potber-client/components/board/post';
@@ -40,18 +41,14 @@ export default class ThreadPage extends Component<Signature> {
     return this.thread?.page?.posts ?? [];
   }
 
-  get renderedPosts() {
-    return this.posts.map((post) => ({
-      post,
-      subtle: Boolean(
-        getIsPostSubtle([
-          post,
-          this.args.lastReadPost ?? '',
-          this.settings.getSetting('darkenReadPosts'),
-        ]),
-      ),
-    }));
-  }
+  isPostSubtle = (post: Post) =>
+    Boolean(
+      getIsPostSubtle([
+        post,
+        this.args.lastReadPost ?? '',
+        this.settings.getSetting('darkenReadPosts'),
+      ]),
+    );
 
   get disableOverscroll() {
     return (
@@ -78,19 +75,16 @@ export default class ThreadPage extends Component<Signature> {
             @disabled={{this.disableOverscroll}}
             @onOverscroll={{this.handleOverscroll}}
           >
-            {{#each this.renderedPosts as |renderedPost|}}
+            {{#each this.posts key='id' as |post|}}
               <BoardPost
-                @post={{renderedPost.post}}
+                @post={{post}}
                 @thread={{this.thread}}
-                @subtle={{renderedPost.subtle}}
+                @subtle={{this.isPostSubtle post}}
               />
-              {{#if (eq @lastReadPost renderedPost.post.id)}}
-                <UnreadPostsSeparator
-                  @post={{renderedPost.post}}
-                  @posts={{this.posts}}
-                />
+              {{#if (eq @lastReadPost post.id)}}
+                <UnreadPostsSeparator @post={{post}} @posts={{this.posts}} />
               {{/if}}
-              {{#if (isFinalElement renderedPost.post this.posts)}}
+              {{#if (isFinalElement post this.posts)}}
                 <UpdateScrollPosition />
               {{/if}}
             {{/each}}

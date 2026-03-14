@@ -94,6 +94,11 @@ export default class UpdateScrollPositionComponent extends Component<Signature> 
     this.cancelStabilizationListeners = [];
   };
 
+  private getLastThreadPost = (container: HTMLElement) => {
+    const posts = container.querySelectorAll<HTMLElement>('.post');
+    return posts.item(posts.length - 1) ?? null;
+  };
+
   updateScrollPosition = async (element: HTMLSpanElement) => {
     // Schedule the scroll for the next run loop to make sure the page has already rendered
     next(this, function () {
@@ -111,6 +116,10 @@ export default class UpdateScrollPositionComponent extends Component<Signature> 
         target.type === 'post'
           ? document.getElementById(getAnchorId(target.postId))
           : null;
+      const lastThreadPostElement =
+        target.type === 'bottom'
+          ? this.getLastThreadPost(threadPageContainer)
+          : null;
 
       if (threadAnchorElement) {
         // If a PID or supported thread hash has been provided and we're on /thread,
@@ -120,12 +129,15 @@ export default class UpdateScrollPositionComponent extends Component<Signature> 
         });
         this.setupScrollStabilization(threadPageContainer, threadAnchorElement);
       } else if (target.type === 'bottom') {
-        // If 'scrollToBottom' to bottom has been provided, scroll to bottom
-        this.renderer.trySetScrollPosition({
-          top: document.body.scrollHeight,
+        // If "scrollToBottom" has been provided, focus the last post instead of
+        // the literal document bottom so long final posts stay visible from the top.
+        this.renderer.scrollToElement(lastThreadPostElement, {
           behavior: 'auto',
         });
-        this.setupScrollStabilization(threadPageContainer, element);
+        this.setupScrollStabilization(
+          threadPageContainer,
+          lastThreadPostElement ?? element,
+        );
       } else {
         // By default, scroll to top
         this.renderer.trySetScrollPosition({
