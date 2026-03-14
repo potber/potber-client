@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.26.0] - 2026-03-14
+
+### Fixed
+
+- Focusing a post now works moore reliable.
+- Thread page navigation no longer causes premature scroll jumps while paginating.
+- Mobile gestures for overscroll and the sidebar have been improved and feel more reliable.
+
 ## [1.25.0] - 2026-03-07
 
 ### Added

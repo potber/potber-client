@@ -1,5 +1,14 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.26.0',
+    type: 'minor',
+    fixed: [
+      'Fokusieren eines Posts funktioniert nun zuverlässiger.',
+      'Beim Blättern innerhalb eines Threads kommt es nicht länger zu vorzeitigen Scroll-Sprüngen.',
+      'Die mobile Gestensteuerung für Overscroll und Sidebar reagiert nun zuverlässiger.',
+    ],
+  },
+  {
     version: '1.25.0',
     type: 'minor',
     added: ['Listen können jetzt über ein Modal hinzugefügt werden'],
