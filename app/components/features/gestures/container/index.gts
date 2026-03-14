@@ -1,11 +1,11 @@
 import Component from '@glimmer/component';
 import { service } from '@ember/service';
 import didInsert from '@ember/render-modifiers/modifiers/did-insert';
+import didUpdate from '@ember/render-modifiers/modifiers/did-update';
 import { guidFor } from '@ember/object/internals';
 import TinyGesture from 'tinygesture';
 import type { Options } from 'tinygesture';
 import type { Gesture } from 'potber-client/components/features/gestures/types';
-import RendererService from 'potber-client/services/renderer';
 import SettingsService, { Gestures } from 'potber-client/services/settings';
 
 interface Signature {
@@ -35,16 +35,13 @@ interface Signature {
 
 export default class GesturesContainer extends Component<Signature> {
   @service declare settings: SettingsService;
-  @service declare renderer: RendererService;
 
   private _tinyGesture: TinyGesture<HTMLElement> | undefined;
-  private listeners: any[] = [];
+  private listeners: Array<{ cancel: () => void }> = [];
 
   willDestroy() {
     super.willDestroy();
-    for (const listener of this.listeners) {
-      listener.cancel();
-    }
+    this.teardownGestures();
   }
 
   get id() {
@@ -77,8 +74,28 @@ export default class GesturesContainer extends Component<Signature> {
     else return this.args.disabled ?? false;
   }
 
-  didInsert = () => {
-    if (this.disabled) return;
+  get gestureSignature() {
+    return this.gestures.map((gesture) => gesture.type).join('|');
+  }
+
+  get optionsSignature() {
+    return JSON.stringify(this.args.options ?? {});
+  }
+
+  private teardownGestures = () => {
+    for (const listener of this.listeners) {
+      listener.cancel();
+    }
+    this.listeners = [];
+    this._tinyGesture?.destroy();
+    this._tinyGesture = undefined;
+  };
+
+  syncGestures = () => {
+    this.teardownGestures();
+
+    if (this.disabled || !this.container) return;
+
     this._tinyGesture = new TinyGesture(this.container, this.args.options);
     for (const gesture of this.gestures) {
       const listener = this.tinyGesture.on(
@@ -91,7 +108,9 @@ export default class GesturesContainer extends Component<Signature> {
           });
         },
       );
-      this.listeners.push(listener);
+      if (listener) {
+        this.listeners.push(listener);
+      }
     }
   };
 
@@ -99,7 +118,13 @@ export default class GesturesContainer extends Component<Signature> {
     <div
       ...attributes
       class='gestures-container'
-      {{didInsert this.didInsert}}
+      {{didInsert this.syncGestures}}
+      {{didUpdate
+        this.syncGestures
+        this.disabled
+        this.gestureSignature
+        this.optionsSignature
+      }}
       id={{this.id}}
     >
       {{yield}}

@@ -10,6 +10,8 @@
   --sidebar-right: unset;
   --sidebar-backdrop-opacity: 0;
   --sidebar-backdrop-pointer-events: none;
+  --sidebar-gesture-edge-inset-left: max(env(safe-area-inset-left), 20px);
+  --sidebar-gesture-edge-inset-right: max(env(safe-area-inset-right), 20px);
 }
 
 #sidebar {
@@ -96,8 +98,14 @@
   width: 3rem;
   height: var(--sidebar-height);
   top: var(--top-nav-height);
-  left: calc(var(--sidebar-width) + var(--sidebar-left));
-  right: calc(var(--sidebar-width) + var(--sidebar-right));
+  left: calc(
+    var(--sidebar-width) + var(--sidebar-left) +
+      var(--sidebar-gesture-edge-inset-left)
+  );
+  right: calc(
+    var(--sidebar-width) + var(--sidebar-right) +
+      var(--sidebar-gesture-edge-inset-right)
+  );
 }
 
 #sidebar .control-variant-primary,

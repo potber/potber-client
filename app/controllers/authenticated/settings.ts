@@ -65,7 +65,6 @@ export default class SettingsController extends Controller {
   handleGesturesSelect = (option: DropdownOption) => {
     this.settings.setSetting('gestures', option.data);
     this.deviceManager.toggleGesturesSupport();
-    window.location.reload();
   };
 
   handleDebugSelect = (option: DropdownOption) => {
