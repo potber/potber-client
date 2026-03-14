@@ -9,6 +9,10 @@ import type {
 } from 'potber-client/components/features/gestures/types';
 import GesturesContainer from '../container';
 import OverscrollIndicator from './indicator';
+import {
+  normalizeOverscrollTolerance,
+  shouldTriggerOverscroll,
+} from 'potber-client/utils/gestures';
 import { debounce } from 'potber-client/utils/misc';
 
 interface Signature {
@@ -54,24 +58,26 @@ interface Signature {
 
 export default class OverscrollContainer extends Component<Signature> {
   @service declare renderer: RendererService;
+  private debouncedHideIndicator?: () => Promise<void>;
+  private gestureStartedAtOverscrollEdge = false;
+
+  willDestroy() {
+    super.willDestroy();
+    this.debouncedHideIndicator = undefined;
+    this.gestureStartedAtOverscrollEdge = false;
+  }
 
   get id() {
     return this.args.id ?? `${guidFor(this)}`;
   }
 
   get scrollContainer() {
-    if (!this.args.scrollContainer) return document.documentElement;
-    else if (typeof this.args.scrollContainer === 'string')
+    if (!this.args.scrollContainer) {
+      return (document.scrollingElement ??
+        document.documentElement) as HTMLElement;
+    } else if (typeof this.args.scrollContainer === 'string')
       return document.getElementById(this.args.scrollContainer) as HTMLElement;
     else return this.args.scrollContainer;
-  }
-
-  get scrollContainerContentHeight() {
-    let height = 0;
-    for (const child of this.scrollContainer.children) {
-      height += child.clientHeight;
-    }
-    return height;
   }
 
   get gesturesContainerId() {
@@ -82,7 +88,15 @@ export default class OverscrollContainer extends Component<Signature> {
     return `${this.id}-overscroll-indicator`;
   }
 
-  get indicatorHeight() {
+  get delay(): number {
+    return this.args.delay ?? 1000;
+  }
+
+  get tolerance() {
+    return normalizeOverscrollTolerance(this.args.tolerance);
+  }
+
+  get minimumPullDistance() {
     return parseInt(
       this.renderer
         .getStyleVariable('--control-default-height')
@@ -90,56 +104,84 @@ export default class OverscrollContainer extends Component<Signature> {
     );
   }
 
-  get delay(): number {
-    return this.args.delay ?? 1000;
-  }
-
-  get tolerance() {
-    if (
-      typeof this.args.tolerance !== 'number' ||
-      this.args.tolerance < 0 ||
-      this.args.tolerance > 1
-    )
-      return 5;
-    else return this.args.tolerance;
-  }
-
   get indicator() {
-    return document.getElementById(this.indicatorId) as HTMLElement;
+    return document.getElementById(this.indicatorId) as HTMLElement | null;
   }
+
+  getHideIndicatorDebounced = () => {
+    if (!this.debouncedHideIndicator) {
+      this.debouncedHideIndicator = debounce(this.hideIndicator, this.delay);
+    }
+
+    return this.debouncedHideIndicator;
+  };
 
   get gestures(): Gesture[] {
     return [
       {
-        type: this.args.direction === 'down' ? 'swipedown' : 'swipeup',
-        onGesture: this.handleSwipe,
+        type: 'panstart',
+        onGesture: this.handlePanStart,
+      },
+      {
+        type: 'panend',
+        onGesture: this.handlePanEnd,
       },
     ];
   }
 
-  handleSwipe = ({ type }: GestureEvent) => {
-    const { scrollTop, scrollHeight } = this.scrollContainer;
-    const contentHeight = this.scrollContainerContentHeight;
-    if (type === 'swipedown' && scrollTop <= scrollHeight + this.tolerance) {
-      this.showIndicator();
-      this.args.onOverscroll();
-    } else if (
-      type === 'swipeup' &&
-      scrollTop + contentHeight >= scrollHeight - this.tolerance
-    ) {
-      this.showIndicator();
-      this.args.onOverscroll();
+  handlePanStart = () => {
+    const { scrollTop, clientHeight, scrollHeight } = this.scrollContainer;
+
+    this.gestureStartedAtOverscrollEdge = shouldTriggerOverscroll({
+      direction: this.args.direction,
+      scrollTop,
+      clientHeight,
+      scrollHeight,
+      tolerance: this.tolerance,
+    });
+  };
+
+  handlePanEnd = ({ gesture }: GestureEvent) => {
+    const deltaY = gesture.touchMoveY ?? 0;
+    const deltaX = gesture.touchMoveX ?? 0;
+
+    if (!this.gestureStartedAtOverscrollEdge) {
+      return;
     }
+
+    if (
+      Math.abs(deltaY) < this.minimumPullDistance ||
+      Math.abs(deltaY) <= Math.abs(deltaX)
+    ) {
+      return;
+    }
+
+    const direction = deltaY > 0 ? 'down' : 'up';
+    if (direction !== this.args.direction) {
+      return;
+    }
+
+    this.showIndicator();
+    this.args.onOverscroll();
   };
 
   showIndicator = () => {
-    this.indicator.style.height = 'var(--control-default-height)';
-    const debouncedHideIndicator = debounce(this.hideIndicator, this.delay);
-    debouncedHideIndicator();
+    const indicator = this.indicator;
+    if (!indicator) {
+      return;
+    }
+
+    indicator.style.height = 'var(--control-default-height)';
+    void this.getHideIndicatorDebounced()();
   };
 
   hideIndicator = () => {
-    this.indicator.style.height = '0px';
+    const indicator = this.indicator;
+    if (!indicator) {
+      return;
+    }
+
+    indicator.style.height = '0px';
   };
 
   <template>

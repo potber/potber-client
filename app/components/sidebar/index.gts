@@ -14,6 +14,7 @@ import type {
   Gesture,
   GestureEvent,
 } from 'potber-client/components/features/gestures/types';
+import { getSidebarSwipeType } from 'potber-client/utils/gestures';
 
 export default class SidebarComponent extends Component {
   @service declare settings: SettingsService;
@@ -24,11 +25,6 @@ export default class SidebarComponent extends Component {
       .getPropertyValue('--sidebar-expanded-width')
       .replace(/\D/g, ''),
   );
-
-  gestureState = {
-    startWidth: 0,
-    newWidth: 0,
-  };
 
   get navVerticalPosition(): 'top' | 'bottom' {
     if (
@@ -48,16 +44,18 @@ export default class SidebarComponent extends Component {
     return width;
   }
 
-  get side(): 'left' | 'right' {
-    const side =
-      this.renderer.getStyleVariable('--sidebar-right') === 'unset'
-        ? 'left'
-        : 'right';
-    return side;
+  get closeSwipeType(): Gesture['type'] {
+    return getSidebarSwipeType({
+      isRightSidebar: this.settings.isRightSidebar(),
+      action: 'close',
+    });
   }
 
-  get enableGestures() {
-    return this.settings.getSetting('gestures');
+  get openSwipeType(): Gesture['type'] {
+    return getSidebarSwipeType({
+      isRightSidebar: this.settings.isRightSidebar(),
+      action: 'open',
+    });
   }
 
   handleSidebarBackdropClick = () => {
@@ -68,37 +66,29 @@ export default class SidebarComponent extends Component {
     if (!gesture.velocityX) return;
     this.renderer.toggleLeftSidebar(false);
   };
+
   handleSwipeOuter = ({ gesture }: GestureEvent) => {
     if (!gesture.velocityX) return;
     this.renderer.toggleLeftSidebar(true);
   };
 
-  handlePanstartInner = ({ gesture }: GestureEvent) => {
-    gesture.on('panend', () => {
-      // Only snap open/closed if the user actually dragged horizontally.
-      // Use the gesture's own touchMoveX rather than reading back from the DOM,
-      // so the threshold is based on how far the finger actually traveled.
-      if (!gesture.swipingHorizontal || !gesture.touchMoveX) {
-        this.renderer.toggleLeftSidebar(false);
-        return;
-      }
+  handlePanendInner = ({ gesture }: GestureEvent) => {
+    // Keep the sidebar state unchanged for vertical drags/scrolling.
+    if (!gesture.swipingHorizontal || gesture.touchMoveX === null) {
+      return;
+    }
 
-      const draggedWidth = this.maxWidth - Math.abs(gesture.touchMoveX);
-      this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
-    });
+    const draggedWidth = this.maxWidth - Math.abs(gesture.touchMoveX);
+    this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
   };
 
-  handlePanstartOuter = ({ gesture }: GestureEvent) => {
-    gesture.on('panend', () => {
-      // Only snap open if the user actually dragged horizontally far enough.
-      if (!gesture.swipingHorizontal || !gesture.touchMoveX) {
-        this.renderer.toggleLeftSidebar(false);
-        return;
-      }
+  handlePanendOuter = ({ gesture }: GestureEvent) => {
+    if (!gesture.swipingHorizontal || gesture.touchMoveX === null) {
+      return;
+    }
 
-      const draggedWidth = Math.abs(gesture.touchMoveX);
-      this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
-    });
+    const draggedWidth = Math.abs(gesture.touchMoveX);
+    this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
   };
 
   handlePanmoveInner = ({ gesture }: GestureEvent) => {
@@ -135,51 +125,42 @@ export default class SidebarComponent extends Component {
     );
   };
 
-  gestures: { inner: Gesture[]; outer: Gesture[] } = {
-    inner: [
-      {
-        type: 'swipeleft',
-        onGesture: this.handleSwipeInner,
-      },
-      {
-        type: 'panstart',
-        onGesture: this.handlePanstartInner,
-      },
-      {
-        type: 'panmove',
-        onGesture: this.handlePanmoveInner,
-      },
-    ],
-    outer: [
-      {
-        type: 'swiperight',
-        onGesture: this.handleSwipeOuter,
-      },
-      {
-        type: 'swipeleft',
-        onGesture: this.handleSwipeOuter,
-      },
-      {
-        type: 'panstart',
-        onGesture: this.handlePanstartOuter,
-      },
-      {
-        type: 'panmove',
-        onGesture: this.handlePanmoveOuter,
-      },
-    ],
-  };
-
   get disableGestures() {
     return this.settings.getSetting('gestures') === Gestures.none;
   }
 
   get innerGestures() {
-    return this.gestures.inner;
+    return [
+      {
+        type: this.closeSwipeType,
+        onGesture: this.handleSwipeInner,
+      },
+      {
+        type: 'panmove' as const,
+        onGesture: this.handlePanmoveInner,
+      },
+      {
+        type: 'panend' as const,
+        onGesture: this.handlePanendInner,
+      },
+    ];
   }
 
   get outerGestures() {
-    return this.gestures.outer;
+    return [
+      {
+        type: this.openSwipeType,
+        onGesture: this.handleSwipeOuter,
+      },
+      {
+        type: 'panmove' as const,
+        onGesture: this.handlePanmoveOuter,
+      },
+      {
+        type: 'panend' as const,
+        onGesture: this.handlePanendOuter,
+      },
+    ];
   }
 
   <template>
