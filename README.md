@@ -143,7 +143,7 @@ The application can be deployed via [Docker](https://docker.com) using the repos
 
 #### PR Previews On Bunny.net
 
-The repository also includes a pull request preview workflow for [Bunny.net](https://bunny.net). Each same-repository PR can be deployed to its own preview hostname like `https://pr-123.potber.kristofdreier.de`.
+The repository also includes a pull request preview workflow for [Bunny.net](https://bunny.net). Each same-repository PR can be deployed to its own preview hostname like `https://pr-123.preview.potber.de`.
 
 Required repository secrets:
 
@@ -153,9 +153,9 @@ Required repository secrets:
 Required repository variables:
 
 - `BUNNY_PREVIEW_ROOT_DOMAIN`
-  Example: `potber.kristofdreier.de`
+  Example: `preview.potber.de`
 - `BUNNY_DNS_ZONE_DOMAIN`
-  Example: `kristofdreier.de`
+  Example: `preview.potber.de`
 - `PREVIEW_AUTH_CLIENT_ID`
   The dedicated preview OAuth client id from `potber-auth`
 
