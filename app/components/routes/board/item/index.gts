@@ -1,7 +1,6 @@
 import { service } from '@ember/service';
 import { htmlSafe } from '@ember/template';
 import Component from '@glimmer/component';
-import { hash } from '@ember/helper';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService from 'potber-client/services/settings';
@@ -55,6 +54,26 @@ export default class BoardItem extends Component<Signature> {
     );
   }
 
+  get threadQuery() {
+    if (this.bookmark) {
+      return {
+        TID: this.args.thread.id,
+        PID: this.bookmark.postId,
+        lastReadPost: this.bookmark.postId,
+        page: undefined,
+        scrollToBottom: undefined,
+      };
+    }
+
+    return {
+      TID: this.args.thread.id,
+      page: this.args.thread.pagesCount,
+      scrollToBottom: true,
+      PID: undefined,
+      lastReadPost: undefined,
+    };
+  }
+
   get icon() {
     return this.args.thread.firstPost?.icon || undefined;
   }
@@ -94,13 +113,7 @@ export default class BoardItem extends Component<Signature> {
           (if this.unread 'unread' '')
         }}
         @route='authenticated.thread'
-        @query={{hash
-          TID=@thread.id
-          page=@thread.pagesCount
-          scrollToBottom=true
-          PID=undefined
-          lastReadPost=undefined
-        }}
+        @query={{this.threadQuery}}
       >
         <div class={{classNames this 'header'}}>
           <div class='title'>
