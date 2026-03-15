@@ -2,10 +2,13 @@ export const changelog: ChangelogItem[] = [
   {
     version: '1.26.0',
     type: 'minor',
+    added: [
+      'Beim Öffnen eines gebookmarkten Threads in der Thread-Übersicht wird nun zum neusten Post gesprungen.',
+    ],
     fixed: [
       'Fokusieren eines Posts funktioniert nun zuverlässiger.',
       'Beim Blättern innerhalb eines Threads kommt es nicht länger zu vorzeitigen Scroll-Sprüngen.',
-      'Die mobile Gestensteuerung für Overscroll und Sidebar reagiert nun zuverlässiger.',
+      'Die mobile Gestensteuerung für Overscroll und Sidebar reagiert nun zuverlässiger. (Vielen Dank an poppxapank!)',
     ],
   },
   {

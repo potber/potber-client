@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## [1.26.0] - 2026-03-14
 
+### Added
+
+- Opening a bookmarked thread from the thread overview jumps to the newest post.
+
 ### Fixed
 
 - Focusing a post now works moore reliable.
