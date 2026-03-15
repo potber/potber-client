@@ -1,0 +1,412 @@
+name: pull-request-preview
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: bunny-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  BUNNY_API_URL: https://api.bunny.net
+  PREVIEW_ROOT_DOMAIN: ${{ vars.BUNNY_PREVIEW_ROOT_DOMAIN }}
+  DNS_ZONE_DOMAIN: ${{ vars.BUNNY_DNS_ZONE_DOMAIN }}
+  PREVIEW_API_URL: https://test-api.potber.de
+  PREVIEW_AUTH_URL: https://test-auth.potber.de
+  PREVIEW_MEME_HOST_URL: https://test.potber.de
+  PREVIEW_AUTH_CLIENT_ID: ${{ vars.PREVIEW_AUTH_CLIENT_ID }}
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: pr
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Derive preview metadata
+        id: meta
+        run: |
+          set -euo pipefail
+
+          for required in PREVIEW_ROOT_DOMAIN DNS_ZONE_DOMAIN PREVIEW_AUTH_CLIENT_ID; do
+            if [ -z "${!required:-}" ]; then
+              echo "Missing required workflow variable: ${required}" >&2
+              exit 1
+            fi
+          done
+
+          preview_host="pr-${{ github.event.pull_request.number }}.${PREVIEW_ROOT_DOMAIN}"
+          storage_zone_name="potberpreviewpr${{ github.event.pull_request.number }}"
+          pull_zone_name="potberpreviewpr${{ github.event.pull_request.number }}"
+
+          case "${preview_host}" in
+            *."${DNS_ZONE_DOMAIN}")
+              dns_record_name="${preview_host%.$DNS_ZONE_DOMAIN}"
+              ;;
+            *)
+              echo "PREVIEW_ROOT_DOMAIN must be within DNS_ZONE_DOMAIN." >&2
+              exit 1
+              ;;
+          esac
+
+          echo "host=${preview_host}" >> "${GITHUB_OUTPUT}"
+          echo "storage_zone_name=${storage_zone_name}" >> "${GITHUB_OUTPUT}"
+          echo "pull_zone_name=${pull_zone_name}" >> "${GITHUB_OUTPUT}"
+          echo "dns_record_name=${dns_record_name}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Write preview runtime config
+        run: |
+          cat > dist/injected-config.js <<EOF
+          window.APP = {
+            HOSTNAME: '${{ steps.meta.outputs.host }}',
+            API_URL: '${PREVIEW_API_URL}',
+            AUTH_ISSUER_URL: '${PREVIEW_AUTH_URL}',
+            AUTH_CLIENT_ID: '${PREVIEW_AUTH_CLIENT_ID}',
+            MEME_HOST_URL: '${PREVIEW_MEME_HOST_URL}'
+          };
+          EOF
+
+          cp dist/index.html dist/404.html
+
+      - name: Ensure Bunny storage zone
+        id: storage
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          storage_id="$(
+            curl -fsS \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/storagezone" |
+            jq -r --arg name "${{ steps.meta.outputs.storage_zone_name }}" \
+              'if type == "array" then .[] else .Items[]? end | select(.Name == $name) | .Id' |
+            head -n 1
+          )"
+
+          if [ -z "${storage_id}" ]; then
+            created="$(
+              curl -fsS -X POST \
+                -H "AccessKey: ${BUNNY_API_KEY}" \
+                -H "Content-Type: application/json" \
+                "${BUNNY_API_URL}/storagezone" \
+                --data "$(jq -nc \
+                  --arg name "${{ steps.meta.outputs.storage_zone_name }}" \
+                  '{Name: $name, ZoneTier: 0, StorageZoneType: 0}')"
+            )"
+            storage_id="$(echo "${created}" | jq -r '.Id')"
+          fi
+
+          storage="$(
+            curl -fsS \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/storagezone/${storage_id}"
+          )"
+
+          storage_password="$(echo "${storage}" | jq -r '.Password')"
+          storage_hostname="$(echo "${storage}" | jq -r '.StorageHostname')"
+
+          curl -fsS -X POST \
+            -H "AccessKey: ${BUNNY_API_KEY}" \
+            -H "Content-Type: application/json" \
+            "${BUNNY_API_URL}/storagezone/${storage_id}" \
+            --data '{"Rewrite404To200":true,"Custom404FilePath":"/index.html"}' \
+            >/dev/null
+
+          echo "id=${storage_id}" >> "${GITHUB_OUTPUT}"
+          echo "password=${storage_password}" >> "${GITHUB_OUTPUT}"
+          echo "hostname=${storage_hostname}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload build to Bunny storage
+        env:
+          STORAGE_PASSWORD: ${{ steps.storage.outputs.password }}
+          STORAGE_HOSTNAME: ${{ steps.storage.outputs.hostname }}
+          STORAGE_ZONE_NAME: ${{ steps.meta.outputs.storage_zone_name }}
+        run: |
+          set -euo pipefail
+
+          while IFS= read -r -d '' file; do
+            rel="${file#dist/}"
+            mime="$(file --mime-type -b "${file}")"
+
+            curl -fsS -X PUT \
+              -H "AccessKey: ${STORAGE_PASSWORD}" \
+              -H "Content-Type: ${mime}" \
+              "https://${STORAGE_HOSTNAME}/${STORAGE_ZONE_NAME}/${rel}" \
+              --data-binary "@${file}" \
+              >/dev/null
+          done < <(find dist -type f -print0)
+
+      - name: Ensure Bunny pull zone
+        id: pullzone
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          pull_id="$(
+            curl -fsS \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/pullzone" |
+            jq -r --arg name "${{ steps.meta.outputs.pull_zone_name }}" \
+              'if type == "array" then .[] else .Items[]? end | select(.Name == $name) | .Id' |
+            head -n 1
+          )"
+
+          if [ -z "${pull_id}" ]; then
+            created="$(
+              curl -fsS -X POST \
+                -H "AccessKey: ${BUNNY_API_KEY}" \
+                -H "Content-Type: application/json" \
+                "${BUNNY_API_URL}/pullzone" \
+                --data "$(jq -nc \
+                  --arg name "${{ steps.meta.outputs.pull_zone_name }}" \
+                  --argjson storageZoneId "${{ steps.storage.outputs.id }}" \
+                  '{Name: $name, OriginType: "StorageZone", StorageZoneId: $storageZoneId, EnableAutoSSL: true, EnableSmartCache: true}')"
+            )"
+            pull_id="$(echo "${created}" | jq -r '.Id')"
+          fi
+
+          pull="$(
+            curl -fsS \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/pullzone/${pull_id}"
+          )"
+
+          has_hostname="$(
+            echo "${pull}" | jq -r --arg host "${{ steps.meta.outputs.host }}" \
+              'any(.Hostnames[]?; ((.Value // .Hostname // "") == $host))'
+          )"
+
+          if [ "${has_hostname}" != "true" ]; then
+            curl -fsS -X POST \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              -H "Content-Type: application/json" \
+              "${BUNNY_API_URL}/pullzone/${pull_id}/addHostname" \
+              --data "$(jq -nc --arg host "${{ steps.meta.outputs.host }}" '{Hostname: $host}')" \
+              >/dev/null
+          fi
+
+          echo "id=${pull_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Ensure Bunny DNS record
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          BUNNY_DNS_ZONE_ID: ${{ secrets.BUNNY_DNS_ZONE_ID }}
+        run: |
+          set -euo pipefail
+
+          zone="$(
+            curl -fsS \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/dnszone/${BUNNY_DNS_ZONE_ID}"
+          )"
+
+          existing_record="$(
+            echo "${zone}" | jq -c --arg name "${{ steps.meta.outputs.dns_record_name }}" \
+              '[.Records[]? | select(.Name == $name)][0] // empty'
+          )"
+
+          record_id="$(echo "${existing_record}" | jq -r '.Id // empty')"
+          record_pull_zone_id="$(echo "${existing_record}" | jq -r '.PullZoneId // empty')"
+
+          if [ -n "${record_id}" ] && [ "${record_pull_zone_id}" != "${{ steps.pullzone.outputs.id }}" ]; then
+            curl -fsS -X DELETE \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/dnszone/${BUNNY_DNS_ZONE_ID}/records/${record_id}" \
+              >/dev/null
+            record_id=""
+          fi
+
+          if [ -z "${record_id}" ]; then
+            curl -fsS -X PUT \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              -H "Content-Type: application/json" \
+              "${BUNNY_API_URL}/dnszone/${BUNNY_DNS_ZONE_ID}/records" \
+              --data "$(jq -nc \
+                --arg name "${{ steps.meta.outputs.dns_record_name }}" \
+                --argjson pullZoneId "${{ steps.pullzone.outputs.id }}" \
+                '{Type: 7, Name: $name, Ttl: 60, PullZoneId: $pullZoneId, AutoSslIssuance: true}')"
+          fi
+
+      - name: Request certificate
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          for attempt in 1 2 3 4 5 6 7 8; do
+            code="$(
+              curl -sS -o /tmp/bunny-cert.json -w "%{http_code}" \
+                -H "AccessKey: ${BUNNY_API_KEY}" \
+                "${BUNNY_API_URL}/pullzone/loadFreeCertificate?hostname=${{ steps.meta.outputs.host }}&useOnlyHttp01=false"
+            )"
+
+            if [ "${code}" = "200" ] || [ "${code}" = "204" ]; then
+              exit 0
+            fi
+
+            sleep 15
+          done
+
+          cat /tmp/bunny-cert.json
+          exit 1
+
+      - name: Comment preview URL
+        uses: actions/github-script@v8
+        env:
+          PREVIEW_URL: https://${{ steps.meta.outputs.host }}
+        with:
+          script: |
+            const marker = '<!-- bunny-preview -->';
+            const body = `${marker}\nPreview deployed: ${process.env.PREVIEW_URL}`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  cleanup:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: pr
+
+    steps:
+      - name: Derive preview metadata
+        id: meta
+        run: |
+          set -euo pipefail
+
+          for required in PREVIEW_ROOT_DOMAIN DNS_ZONE_DOMAIN; do
+            if [ -z "${!required:-}" ]; then
+              echo "Missing required workflow variable: ${required}" >&2
+              exit 1
+            fi
+          done
+
+          preview_host="pr-${{ github.event.pull_request.number }}.${PREVIEW_ROOT_DOMAIN}"
+          storage_zone_name="potberpreviewpr${{ github.event.pull_request.number }}"
+
+          case "${preview_host}" in
+            *."${DNS_ZONE_DOMAIN}")
+              dns_record_name="${preview_host%.$DNS_ZONE_DOMAIN}"
+              ;;
+            *)
+              echo "PREVIEW_ROOT_DOMAIN must be within DNS_ZONE_DOMAIN." >&2
+              exit 1
+              ;;
+          esac
+
+          echo "host=${preview_host}" >> "${GITHUB_OUTPUT}"
+          echo "storage_zone_name=${storage_zone_name}" >> "${GITHUB_OUTPUT}"
+          echo "dns_record_name=${dns_record_name}" >> "${GITHUB_OUTPUT}"
+
+      - name: Remove Bunny DNS record
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          BUNNY_DNS_ZONE_ID: ${{ secrets.BUNNY_DNS_ZONE_ID }}
+        run: |
+          set -euo pipefail
+
+          zone="$(
+            curl -fsS \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/dnszone/${BUNNY_DNS_ZONE_ID}"
+          )"
+
+          record_id="$(
+            echo "${zone}" | jq -r --arg name "${{ steps.meta.outputs.dns_record_name }}" \
+              '[.Records[]? | select(.Name == $name)][0].Id // empty'
+          )"
+
+          if [ -n "${record_id}" ]; then
+            curl -fsS -X DELETE \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/dnszone/${BUNNY_DNS_ZONE_ID}/records/${record_id}" \
+              >/dev/null
+          fi
+
+      - name: Delete Bunny storage zone
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          storage_id="$(
+            curl -fsS \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/storagezone" |
+            jq -r --arg name "${{ steps.meta.outputs.storage_zone_name }}" \
+              'if type == "array" then .[] else .Items[]? end | select(.Name == $name) | .Id' |
+            head -n 1
+          )"
+
+          if [ -n "${storage_id}" ]; then
+            curl -fsS -X DELETE \
+              -H "AccessKey: ${BUNNY_API_KEY}" \
+              "${BUNNY_API_URL}/storagezone/${storage_id}?deleteLinkedPullZones=true" \
+              >/dev/null
+          fi
+
+      - name: Mark preview comment as removed
+        uses: actions/github-script@v8
+        env:
+          PREVIEW_URL: https://${{ steps.meta.outputs.host }}
+        with:
+          script: |
+            const marker = '<!-- bunny-preview -->';
+            const body = `${marker}\nPreview removed: ${process.env.PREVIEW_URL}`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            }

@@ -141,6 +141,28 @@ The application can be deployed via [Docker](https://docker.com) using the repos
 - Build the image with `docker build -t potber-client .`
 - Run it locally with `docker run --rm -p 8080:8080 potber-client`
 
+#### PR Previews On Bunny.net
+
+The repository also includes a pull request preview workflow for [Bunny.net](https://bunny.net). Each same-repository PR can be deployed to its own preview hostname like `https://pr-123.preview.potber.de`.
+
+Required repository secrets:
+
+- `BUNNY_API_KEY`
+- `BUNNY_DNS_ZONE_ID`
+
+Required repository variables:
+
+- `BUNNY_PREVIEW_ROOT_DOMAIN`
+  Example: `preview.potber.de`
+- `BUNNY_DNS_ZONE_DOMAIN`
+  Example: `preview.potber.de`
+- `PREVIEW_AUTH_CLIENT_ID`
+  The dedicated preview OAuth client id from `potber-auth`
+
+The workflow writes a preview-specific `injected-config.js`, uploads the static build to Bunny Storage, creates a Pull Zone and DNS record for the PR hostname, requests a certificate, and comments the resulting preview URL on the PR. On PR close it removes the DNS record and deletes the linked Bunny Storage Zone.
+
+Preview deployments are intentionally limited to pull requests from the same repository so Bunny credentials are never exposed to forked pull requests.
+
 In case you're curious about how `potber.de` is hosted: Both the [test](https://test.potber.de) and [production](https://potber.de) environments run on a [Flux](https://fluxcd.io)-controlled [MicroK8s](https://microk8s.io) cluster. The infrastructure is documented [here](https://github.com/spuxx-dev/flux/tree/main/clusters/constellation/apps/potber).
 
 ## Further Reading / Useful Links
