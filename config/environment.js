@@ -1,5 +1,7 @@
 'use strict';
 
+const { version } = require('../package.json');
+
 module.exports = function (environment) {
   const ENV = {
     modulePrefix: 'potber-client',
@@ -11,6 +13,7 @@ module.exports = function (environment) {
     },
 
     APP: {
+      version,
       HOSTNAME: 'potber.de',
       API_URL: 'https://api.potber.de',
       AUTH_ISSUER_URL: 'https://auth.potber.de',

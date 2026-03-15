@@ -97,6 +97,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          storage_created="false"
+
           storage_id="$(
             curl -fsS \
               -H "AccessKey: ${BUNNY_API_KEY}" \
@@ -117,6 +119,7 @@ jobs:
                   '{Name: $name, ZoneTier: 0, StorageZoneType: 0}')"
             )"
             storage_id="$(echo "${created}" | jq -r '.Id')"
+            storage_created="true"
           fi
 
           storage="$(
@@ -135,15 +138,43 @@ jobs:
             --data '{"Rewrite404To200":true,"Custom404FilePath":"/index.html"}' \
             >/dev/null
 
+          echo "::add-mask::${storage_password}"
           echo "id=${storage_id}" >> "${GITHUB_OUTPUT}"
-          echo "password=${storage_password}" >> "${GITHUB_OUTPUT}"
-          echo "hostname=${storage_hostname}" >> "${GITHUB_OUTPUT}"
+          echo "created=${storage_created}" >> "${GITHUB_OUTPUT}"
+          echo "STORAGE_PASSWORD=${storage_password}" >> "${GITHUB_ENV}"
+          echo "STORAGE_HOSTNAME=${storage_hostname}" >> "${GITHUB_ENV}"
+
+      - name: Wait for Bunny storage zone readiness
+        if: steps.storage.outputs.created == 'true'
+        run: |
+          set -euo pipefail
+
+          probe_file="$(mktemp)"
+          probe_path=".codex-storage-ready"
+          printf 'ready\n' > "${probe_file}"
+
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            status="$(
+              curl -sS -o /dev/null -w "%{http_code}" -X PUT \
+                -H "AccessKey: ${STORAGE_PASSWORD}" \
+                -H "Content-Type: text/plain" \
+                "https://${STORAGE_HOSTNAME}/${{ steps.meta.outputs.storage_zone_name }}/${probe_path}" \
+                --data-binary "@${probe_file}" || true
+            )"
+
+            if [ "${status}" = "200" ] || [ "${status}" = "201" ]; then
+              break
+            fi
+
+            if [ "${attempt}" -eq 12 ]; then
+              echo "Bunny storage zone was not ready after waiting. Last status: ${status}" >&2
+              exit 1
+            fi
+
+            sleep 5
+          done
 
       - name: Upload build to Bunny storage
-        env:
-          STORAGE_PASSWORD: ${{ steps.storage.outputs.password }}
-          STORAGE_HOSTNAME: ${{ steps.storage.outputs.hostname }}
-          STORAGE_ZONE_NAME: ${{ steps.meta.outputs.storage_zone_name }}
         run: |
           set -euo pipefail
 
@@ -154,7 +185,7 @@ jobs:
             curl -fsS -X PUT \
               -H "AccessKey: ${STORAGE_PASSWORD}" \
               -H "Content-Type: ${mime}" \
-              "https://${STORAGE_HOSTNAME}/${STORAGE_ZONE_NAME}/${rel}" \
+              "https://${STORAGE_HOSTNAME}/${{ steps.meta.outputs.storage_zone_name }}/${rel}" \
               --data-binary "@${file}" \
               >/dev/null
           done < <(find dist -type f -print0)
