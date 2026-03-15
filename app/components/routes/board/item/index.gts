@@ -55,11 +55,13 @@ export default class BoardItem extends Component<Signature> {
   }
 
   get threadQuery() {
-    if (this.bookmark) {
+    const unreadBookmark = this.unread;
+
+    if (unreadBookmark) {
       return {
         TID: this.args.thread.id,
-        PID: this.bookmark.postId,
-        lastReadPost: this.bookmark.postId,
+        PID: unreadBookmark.postId,
+        lastReadPost: unreadBookmark.postId,
         page: undefined,
         scrollToBottom: undefined,
       };
