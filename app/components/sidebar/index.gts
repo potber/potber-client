@@ -72,9 +72,13 @@ export default class SidebarComponent extends Component {
     this.renderer.toggleLeftSidebar(true);
   };
 
+  private isVerticalPan = (gesture: GestureEvent['gesture']) =>
+    gesture.swipingDirection === 'vertical' ||
+    gesture.swipingDirection === 'pre-vertical';
+
   handlePanendInner = ({ gesture }: GestureEvent) => {
     // Keep the sidebar state unchanged for vertical drags/scrolling.
-    if (!gesture.swipingHorizontal || gesture.touchMoveX === null) {
+    if (gesture.touchMoveX === null || this.isVerticalPan(gesture)) {
       return;
     }
 
@@ -83,7 +87,7 @@ export default class SidebarComponent extends Component {
   };
 
   handlePanendOuter = ({ gesture }: GestureEvent) => {
-    if (!gesture.swipingHorizontal || gesture.touchMoveX === null) {
+    if (gesture.touchMoveX === null || this.isVerticalPan(gesture)) {
       return;
     }
 
@@ -93,8 +97,8 @@ export default class SidebarComponent extends Component {
 
   handlePanmoveInner = ({ gesture }: GestureEvent) => {
     if (
-      !gesture.swipingHorizontal ||
-      !gesture.touchMoveX ||
+      gesture.touchMoveX === null ||
+      this.isVerticalPan(gesture) ||
       (this.settings.isRightSidebar() && gesture.touchMoveX < 0) ||
       (!this.settings.isRightSidebar() && gesture.touchMoveX > 0) ||
       (gesture.touchMoveX && Math.abs(gesture.touchMoveX) > this.maxWidth)
@@ -107,8 +111,8 @@ export default class SidebarComponent extends Component {
 
   handlePanmoveOuter = ({ gesture }: GestureEvent) => {
     if (
-      !gesture.swipingHorizontal ||
-      !gesture.touchMoveX ||
+      gesture.touchMoveX === null ||
+      this.isVerticalPan(gesture) ||
       (this.settings.isRightSidebar() && gesture.touchMoveX > 0) ||
       (!this.settings.isRightSidebar() && gesture.touchMoveX < 0) ||
       (gesture.touchMoveX && Math.abs(gesture.touchMoveX) > this.maxWidth)

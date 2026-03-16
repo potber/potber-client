@@ -8,6 +8,8 @@
   --sidebar-width: 0px;
   --sidebar-left: 0px;
   --sidebar-right: unset;
+  --sidebar-shell-offset: 0px;
+  --sidebar-inner-offset: 0px;
   --sidebar-backdrop-opacity: 0;
   --sidebar-backdrop-pointer-events: none;
   --sidebar-gesture-edge-inset-left: max(env(safe-area-inset-left), 20px);
@@ -28,6 +30,15 @@
   left: var(--sidebar-left);
   right: var(--sidebar-right);
   box-shadow: var(--global-box-shadow);
+  will-change: width;
+}
+
+#sidebar-gestures-container-inner {
+  width: var(--sidebar-expanded-width);
+  height: 100%;
+  transform: translate3d(var(--sidebar-inner-offset), 0, 0);
+  transition: transform var(--sidebar-transition-time) ease !important;
+  will-change: transform;
 }
 
 #sidebar-backdrop {
@@ -42,6 +53,18 @@
   cursor: default;
   pointer-events: var(--sidebar-backdrop-pointer-events);
   will-change: opacity;
+}
+
+#page-content {
+  transform: translate3d(var(--sidebar-shell-offset), 0, 0);
+  transition: transform var(--sidebar-transition-time) ease !important;
+  will-change: transform;
+}
+
+html[data-sidebar-dragging] #sidebar,
+html[data-sidebar-dragging] #page-content,
+html[data-sidebar-dragging] #sidebar-gestures-container-inner {
+  transition: none !important;
 }
 
 #sidebar * {
@@ -108,12 +131,6 @@
     var(--sidebar-width) + var(--sidebar-right) +
       var(--sidebar-gesture-edge-inset-right)
   );
-}
-
-html[data-debug-gestures='true'] #sidebar-gestures-container-outer {
-  background: rgba(255, 0, 0, 0.15);
-  outline: 2px dashed rgba(255, 0, 0, 0.7);
-  z-index: 9999;
 }
 
 #sidebar .control-variant-primary,

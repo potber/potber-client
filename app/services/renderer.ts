@@ -25,6 +25,29 @@ export default class RendererService extends Service {
 
   preventScrollReset = false;
 
+  private setSidebarShellOffset = (width: string) => {
+    if (this.isDesktop) {
+      this.setStyleVariable('--sidebar-shell-offset', '0px');
+      this.setStyleVariable('--sidebar-inner-offset', '0px');
+      return;
+    }
+
+    const value =
+      this.settings.isRightSidebar() && width !== '0px'
+        ? `calc(-1 * ${width})`
+        : width;
+    this.setStyleVariable('--sidebar-shell-offset', value);
+
+    const innerOffset = this.settings.isRightSidebar()
+      ? '0px'
+      : `calc(${width} - var(--sidebar-expanded-width))`;
+    this.setStyleVariable('--sidebar-inner-offset', innerOffset);
+  };
+
+  private setSidebarDragging = (dragging: boolean) => {
+    document.documentElement.toggleAttribute('data-sidebar-dragging', dragging);
+  };
+
   /**
    * Initializes the service.
    */
@@ -163,7 +186,9 @@ export default class RendererService extends Service {
    * @param touchMoveX Current touch move position on x axis.
    */
   dragLeftSidebar = (touchMoveX: number) => {
+    this.setSidebarDragging(true);
     this.setStyleVariable('--sidebar-width', `${touchMoveX}px`);
+    this.setSidebarShellOffset(`${touchMoveX}px`);
     this.setStyleVariable('--nav-controls-opacity', '0');
   };
 
@@ -171,14 +196,18 @@ export default class RendererService extends Service {
    * Updates the state of the left sidebar.
    */
   private updateLeftSidebar = () => {
+    this.setSidebarDragging(false);
+
     if (this.leftSidebarExpanded) {
       this.setStyleVariable('--sidebar-width', 'var(--sidebar-expanded-width)');
+      this.setSidebarShellOffset('var(--sidebar-expanded-width)');
       this.setStyleVariable('--sidebar-backdrop-opacity', '1');
       this.setStyleVariable('--sidebar-backdrop-pointer-events', 'all');
       this.setStyleVariable('--nav-controls-pointer-events', 'none');
       this.setStyleVariable('--nav-controls-opacity', '0');
     } else {
       this.setStyleVariable('--sidebar-width', '0px');
+      this.setSidebarShellOffset('0px');
       this.setStyleVariable('--sidebar-backdrop-opacity', '0');
       this.setStyleVariable('--sidebar-backdrop-pointer-events', 'none');
       this.setStyleVariable('--nav-controls-pointer-events', 'all');
