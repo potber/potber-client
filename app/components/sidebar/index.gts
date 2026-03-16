@@ -106,7 +106,8 @@ export default class SidebarComponent extends Component {
       return;
     }
 
-    this.renderer.dragLeftSidebar(this.maxWidth - Math.abs(gesture.touchMoveX));
+    const width = this.maxWidth - Math.abs(gesture.touchMoveX);
+    this.renderer.dragLeftSidebar(width, width / this.maxWidth);
   };
 
   handlePanmoveOuter = ({ gesture }: GestureEvent) => {
@@ -120,7 +121,8 @@ export default class SidebarComponent extends Component {
       return;
     }
 
-    this.renderer.dragLeftSidebar(Math.abs(gesture.touchMoveX));
+    const width = Math.abs(gesture.touchMoveX);
+    this.renderer.dragLeftSidebar(width, width / this.maxWidth);
   };
 
   get disableGestures() {
