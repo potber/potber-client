@@ -107,7 +107,7 @@ export default class SidebarComponent extends Component {
     }
 
     const width = this.maxWidth - Math.abs(gesture.touchMoveX);
-    this.renderer.dragLeftSidebar(width, width / this.maxWidth, false);
+    this.renderer.dragLeftSidebar(width, width / this.maxWidth);
   };
 
   handlePanmoveOuter = ({ gesture }: GestureEvent) => {
@@ -163,6 +163,23 @@ export default class SidebarComponent extends Component {
     ];
   }
 
+  get backdropGestures() {
+    return [
+      {
+        type: this.closeSwipeType,
+        onGesture: this.handleSwipeInner,
+      },
+      {
+        type: 'panmove' as const,
+        onGesture: this.handlePanmoveInner,
+      },
+      {
+        type: 'panend' as const,
+        onGesture: this.handlePanendInner,
+      },
+    ];
+  }
+
   <template>
     <div id='sidebar' role='navigation'>
       <GesturesContainer
@@ -187,10 +204,11 @@ export default class SidebarComponent extends Component {
         @gestures={{this.outerGestures}}
       />
     </div>
-    <button
+    <GesturesContainer
       id='sidebar-backdrop'
-      type='button'
       aria-hidden='true'
+      @disabled={{this.disableGestures}}
+      @gestures={{this.backdropGestures}}
       {{on 'click' this.handleSidebarBackdropClick}}
     />
   </template>
