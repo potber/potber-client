@@ -68,7 +68,9 @@ export default class ThreadRoute extends SlowRoute {
       const options = {
         postId,
         page,
-        keepPreviousThread: transition.from?.name === this.routeName,
+        keepPreviousThread:
+          transition.from?.name === this.routeName &&
+          this.threadStore.currentThread?.id === params.TID,
         timeoutWarning: true,
       };
       if (this.settings.getSetting('transitions') === 'static') {
