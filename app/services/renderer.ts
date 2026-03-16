@@ -185,11 +185,18 @@ export default class RendererService extends Service {
    * Drags the left sidebar according to the current touch move position.
    * @param touchMoveX Current touch move position on x axis.
    * @param visiblePortion The currently visible share of the sidebar between 0 and 1.
+   * @param moveShell Whether the page content should follow the drag.
    */
-  dragLeftSidebar = (touchMoveX: number, visiblePortion: number) => {
+  dragLeftSidebar = (
+    touchMoveX: number,
+    visiblePortion: number,
+    moveShell = true,
+  ) => {
     this.setSidebarDragging(true);
     this.setStyleVariable('--sidebar-width', `${touchMoveX}px`);
-    this.setSidebarShellOffset(`${touchMoveX}px`);
+    if (moveShell) {
+      this.setSidebarShellOffset(`${touchMoveX}px`);
+    }
     this.setStyleVariable(
       '--sidebar-backdrop-opacity',
       visiblePortion.toString(),
