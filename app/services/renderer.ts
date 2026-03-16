@@ -161,15 +161,9 @@ export default class RendererService extends Service {
   /**
    * Drags the left sidebar according to the current touch move position.
    * @param touchMoveX Current touch move position on x axis.
-   * @param visiblePortion: The portion of the sidebar that is currently visible.
-   * 1 means the sidebar is fully expanded, 0 means it is fully collapsed.
    */
-  dragLeftSidebar = (touchMoveX: number, visiblePortion: number) => {
+  dragLeftSidebar = (touchMoveX: number) => {
     this.setStyleVariable('--sidebar-width', `${touchMoveX}px`);
-    this.setStyleVariable(
-      '--sidebar-backdrop-opacity',
-      visiblePortion.toString(),
-    );
     this.setStyleVariable('--nav-controls-opacity', '0');
   };
 

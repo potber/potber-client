@@ -38,8 +38,10 @@
   width: 100vw;
   background-color: rgba(0, 0, 0, 0.9);
   opacity: var(--sidebar-backdrop-opacity);
+  transition: opacity var(--sidebar-transition-time) ease;
   cursor: default;
   pointer-events: var(--sidebar-backdrop-pointer-events);
+  will-change: opacity;
 }
 
 #sidebar * {
@@ -95,7 +97,7 @@
 
 #sidebar-gestures-container-outer {
   position: fixed;
-  width: 3rem;
+  width: 5rem;
   height: var(--sidebar-height);
   top: var(--top-nav-height);
   left: calc(
@@ -106,6 +108,12 @@
     var(--sidebar-width) + var(--sidebar-right) +
       var(--sidebar-gesture-edge-inset-right)
   );
+}
+
+html[data-debug-gestures='true'] #sidebar-gestures-container-outer {
+  background: rgba(255, 0, 0, 0.15);
+  outline: 2px dashed rgba(255, 0, 0, 0.7);
+  z-index: 9999;
 }
 
 #sidebar .control-variant-primary,
