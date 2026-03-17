@@ -58,7 +58,7 @@ export default class QuickstartNewsfeedComponent extends Component<Signature> {
 
   get busy() {
     if (this.inSidebar) {
-      return this.renderer.leftSidebarExpanded && this.newsfeed.isUpdating;
+      return this.renderer.sidebarExpanded && this.newsfeed.isUpdating;
     } else {
       return this.newsfeed.isUpdating;
     }

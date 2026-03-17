@@ -32,8 +32,8 @@ export default class NavComponent extends Component {
     return this.session.isAuthenticated;
   }
 
-  get leftSidebarExpanded() {
-    return this.renderer.leftSidebarExpanded;
+  get sidebarExpanded() {
+    return this.renderer.sidebarExpanded;
   }
 
   get isDesktop() {

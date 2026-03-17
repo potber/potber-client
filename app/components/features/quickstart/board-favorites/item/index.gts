@@ -29,7 +29,7 @@ export default class QuickstartBoardFavoriteComponent extends Component<Signatur
 
   @action handleLinkClick() {
     if (this.args.inSidebar && !this.renderer.isDesktop) {
-      this.renderer.toggleLeftSidebar(false);
+      this.renderer.closeSidebar();
     }
   }
 

@@ -59,17 +59,17 @@ export default class SidebarComponent extends Component {
   }
 
   handleSidebarBackdropClick = () => {
-    this.renderer.toggleLeftSidebar(false);
+    this.renderer.closeSidebar();
   };
 
   handleSwipeInner = ({ gesture }: GestureEvent) => {
     if (!gesture.velocityX) return;
-    this.renderer.toggleLeftSidebar(false);
+    this.renderer.closeSidebar();
   };
 
   handleSwipeOuter = ({ gesture }: GestureEvent) => {
     if (!gesture.velocityX) return;
-    this.renderer.toggleLeftSidebar(true);
+    this.renderer.openSidebar();
   };
 
   private isVerticalPan = (gesture: GestureEvent['gesture']) =>
@@ -83,7 +83,11 @@ export default class SidebarComponent extends Component {
     }
 
     const draggedWidth = this.maxWidth - Math.abs(gesture.touchMoveX);
-    this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
+    if (draggedWidth > this.maxWidth / 2) {
+      this.renderer.openSidebar();
+    } else {
+      this.renderer.closeSidebar();
+    }
   };
 
   handlePanendOuter = ({ gesture }: GestureEvent) => {
@@ -92,7 +96,11 @@ export default class SidebarComponent extends Component {
     }
 
     const draggedWidth = Math.abs(gesture.touchMoveX);
-    this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
+    if (draggedWidth > this.maxWidth / 2) {
+      this.renderer.openSidebar();
+    } else {
+      this.renderer.closeSidebar();
+    }
   };
 
   handlePanmoveInner = ({ gesture }: GestureEvent) => {
@@ -107,7 +115,7 @@ export default class SidebarComponent extends Component {
     }
 
     const width = this.maxWidth - Math.abs(gesture.touchMoveX);
-    this.renderer.dragLeftSidebar(width, width / this.maxWidth);
+    this.renderer.dragSidebar(width, width / this.maxWidth);
   };
 
   handlePanmoveOuter = ({ gesture }: GestureEvent) => {
@@ -122,7 +130,7 @@ export default class SidebarComponent extends Component {
     }
 
     const width = Math.abs(gesture.touchMoveX);
-    this.renderer.dragLeftSidebar(width, width / this.maxWidth);
+    this.renderer.dragSidebar(width, width / this.maxWidth);
   };
 
   get disableGestures() {

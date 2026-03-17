@@ -18,7 +18,7 @@ export default class RendererService extends Service {
   @service declare settings: SettingsService;
   @service declare messages: MessagesService;
   @service declare newsfeed: NewsfeedService;
-  @tracked leftSidebarExpanded = false;
+  @tracked sidebarExpanded = false;
   @tracked isDesktop = false;
   private rootStyle = document.documentElement.style;
   private computedStyle = getComputedStyle(document.documentElement);
@@ -164,29 +164,46 @@ export default class RendererService extends Service {
   };
 
   /**
-   * Toggles the left sidebar.
+   * Toggles the sidebar.
    * @param expanded (optional) Whether the sidebar should be expanded. Will choose the opposite of the current state
    * if not provided.
    */
-  toggleLeftSidebar = async (expanded?: boolean) => {
-    const stateHasChanged = expanded !== this.leftSidebarExpanded;
-    if (typeof expanded === 'boolean') this.leftSidebarExpanded = expanded;
-    else this.leftSidebarExpanded = !this.leftSidebarExpanded;
-    this.updateLeftSidebar();
-    if (
-      stateHasChanged &&
-      this.leftSidebarExpanded &&
-      this.settings.getSetting('autoRefreshSidebar')
-    )
-      await this.newsfeed.refresh();
+  toggleSidebar = async () => {
+    if (this.sidebarExpanded) {
+      this.closeSidebar();
+    } else {
+      await this.openSidebar();
+    }
   };
 
+  openSidebar = async () => {
+    if (this.sidebarExpanded) {
+      return;
+    }
+
+    this.sidebarExpanded = true;
+    this.updateSidebar();
+    if (this.settings.getSetting('autoRefreshSidebar')) {
+      await this.newsfeed.refresh();
+    }
+  };
+
+  closeSidebar = () => {
+    if (!this.sidebarExpanded) {
+      return;
+    }
+
+    this.sidebarExpanded = false;
+    this.updateSidebar();
+  }
+
+
   /**
-   * Drags the left sidebar according to the current touch move position.
+   * Drags the sidebar according to the current touch move position.
    * @param touchMoveX Current touch move position on x axis.
    * @param visiblePortion The currently visible share of the sidebar between 0 and 1.
    */
-  dragLeftSidebar = (touchMoveX: number, visiblePortion: number) => {
+  dragSidebar = (touchMoveX: number, visiblePortion: number) => {
     this.setSidebarDragging(true);
     this.setStyleVariable('--sidebar-width', `${touchMoveX}px`);
     this.setSidebarShellOffset(`${touchMoveX}px`);
@@ -198,12 +215,12 @@ export default class RendererService extends Service {
   };
 
   /*
-   * Updates the state of the left sidebar.
+   * Updates the state of the sidebar.
    */
-  private updateLeftSidebar = () => {
+  private updateSidebar = () => {
     this.setSidebarDragging(false);
 
-    if (this.leftSidebarExpanded) {
+    if (this.sidebarExpanded) {
       this.setStyleVariable('--sidebar-width', 'var(--sidebar-expanded-width)');
       this.setSidebarShellOffset('var(--sidebar-expanded-width)');
       this.setStyleVariable('--sidebar-backdrop-opacity', '1');
@@ -223,7 +240,7 @@ export default class RendererService extends Service {
   /**
    * Shows the loading indicator.
    */
-  showLoadingIndicator = async () => {
+  showLoadingIndicator = () => {
     this.setStyleVariable('--loading-indicator-opacity', '1');
   };
 
@@ -239,7 +256,7 @@ export default class RendererService extends Service {
    * Prevents the next reset of the scroll position that would otherwise be
    * triggered by calling RendererService.trySetScrollPosition().
    */
-  preventNextScrollReset = async () => {
+  preventNextScrollReset = () => {
     this.preventScrollReset = true;
   };
 

@@ -27,7 +27,7 @@ export default class NewsfeedIndicatorComponent extends Component {
   }
 
   get status() {
-    if (this.renderer.leftSidebarExpanded) {
+    if (this.renderer.sidebarExpanded) {
       return 'none';
     } else {
       return this.newsfeed.status;
