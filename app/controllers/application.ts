@@ -7,8 +7,8 @@ export default class ApplicationController extends Controller {
   @service declare renderer: RendererService;
   @service declare session: CustomSession;
 
-  get leftSidebarExpanded() {
-    return this.renderer.leftSidebarExpanded;
+  get sidebarExpanded() {
+    return this.renderer.sidebarExpanded;
   }
 
   get authenticated() {

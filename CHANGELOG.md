@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.27.0] - 2026-03-18
+
+### Fixed
+
+- Opening a user profile does not scroll the page to the top.
+- Mobile gestures for overscroll and the sidebar have been improved and are more reliable.
+
 ## [1.26.0] - 2026-03-14
 
 ### Added

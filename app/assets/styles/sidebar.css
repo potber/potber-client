@@ -8,6 +8,8 @@
   --sidebar-width: 0px;
   --sidebar-left: 0px;
   --sidebar-right: unset;
+  --sidebar-shell-offset: 0px;
+  --sidebar-inner-offset: 0px;
   --sidebar-backdrop-opacity: 0;
   --sidebar-backdrop-pointer-events: none;
   --sidebar-gesture-edge-inset-left: max(env(safe-area-inset-left), 20px);
@@ -19,6 +21,7 @@
   background-color: var(--color-sidebar);
   height: var(--sidebar-height);
   z-index: 15;
+  touch-action: pan-y;
   transition: width var(--sidebar-transition-time) ease !important;
   overflow: hidden;
   display: flex;
@@ -28,6 +31,15 @@
   left: var(--sidebar-left);
   right: var(--sidebar-right);
   box-shadow: var(--global-box-shadow);
+  will-change: width;
+}
+
+#sidebar-gestures-container-inner {
+  width: var(--sidebar-expanded-width);
+  height: 100%;
+  transform: translate3d(var(--sidebar-inner-offset), 0, 0);
+  transition: transform var(--sidebar-transition-time) ease !important;
+  will-change: transform;
 }
 
 #sidebar-backdrop {
@@ -38,8 +50,22 @@
   width: 100vw;
   background-color: rgba(0, 0, 0, 0.9);
   opacity: var(--sidebar-backdrop-opacity);
+  transition: opacity var(--sidebar-transition-time) ease;
   cursor: default;
   pointer-events: var(--sidebar-backdrop-pointer-events);
+  will-change: opacity;
+}
+
+#page-content {
+  transform: translate3d(var(--sidebar-shell-offset), 0, 0);
+  transition: transform var(--sidebar-transition-time) ease !important;
+  will-change: transform;
+}
+
+html[data-sidebar-dragging] #sidebar,
+html[data-sidebar-dragging] #page-content,
+html[data-sidebar-dragging] #sidebar-gestures-container-inner {
+  transition: none !important;
 }
 
 #sidebar * {
@@ -91,21 +117,6 @@
 
 #sidebar-content hr {
   max-width: calc(var(--sidebar-expanded-width) - 2rem);
-}
-
-#sidebar-gestures-container-outer {
-  position: fixed;
-  width: 3rem;
-  height: var(--sidebar-height);
-  top: var(--top-nav-height);
-  left: calc(
-    var(--sidebar-width) + var(--sidebar-left) +
-      var(--sidebar-gesture-edge-inset-left)
-  );
-  right: calc(
-    var(--sidebar-width) + var(--sidebar-right) +
-      var(--sidebar-gesture-edge-inset-right)
-  );
 }
 
 #sidebar .control-variant-primary,

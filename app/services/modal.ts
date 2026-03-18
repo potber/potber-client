@@ -141,7 +141,6 @@ export default class ModalService extends Service {
     // but it needs to happen asynchronously.
     await sleep(1);
     this.modal.classList.add('show');
-    this.body.classList.add('modal-open');
   }
 
   /**
@@ -150,7 +149,6 @@ export default class ModalService extends Service {
    */
   async close(afterClose?: () => void) {
     this.modal.classList.remove('show');
-    this.body.classList.remove('modal-open');
     await sleep(TIME_TO_DESTROY);
     this.modal.close();
     this.activeModal = {

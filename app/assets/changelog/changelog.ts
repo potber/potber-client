@@ -1,5 +1,13 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.27.0',
+    type: 'minor',
+    fixed: [
+      'Beim Öffnen eines Profils springt die Seite nicht mehr nach oben.',
+      'Die mobile Gestensteuerung für Overscroll und Sidebar reagiert nun zuverlässig.',
+    ],
+  },
+  {
     version: '1.26.0',
     type: 'minor',
     added: [

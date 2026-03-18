@@ -2,7 +2,12 @@ import eq from 'ember-truth-helpers/helpers/eq';
 import { on } from '@ember/modifier';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
-import GesturesContainer from 'potber-client/components/features/gestures/container';
+import didInsert from '@ember/render-modifiers/modifiers/did-insert';
+import { DragGesture } from '@use-gesture/vanilla';
+import type {
+  DragGesture as VanillaDragGesture,
+  DragState,
+} from '@use-gesture/vanilla';
 import Quickstart from 'potber-client/components/features/quickstart';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService, {
@@ -10,15 +15,17 @@ import SettingsService, {
   SidebarLayout,
 } from 'potber-client/services/settings';
 import SidebarNav from './nav';
-import type {
-  Gesture,
-  GestureEvent,
-} from 'potber-client/components/features/gestures/types';
 import { getSidebarSwipeType } from 'potber-client/utils/gestures';
 
 export default class SidebarComponent extends Component {
   @service declare settings: SettingsService;
   @service declare renderer: RendererService;
+
+  private edgeOpenRecognizer: VanillaDragGesture | undefined;
+  private sidebarRecognizer: VanillaDragGesture | undefined;
+  private backdropRecognizer: VanillaDragGesture | undefined;
+  private edgeOpenGestureStarted = false;
+  private edgeOpenDragActive = false;
 
   maxWidth = parseInt(
     getComputedStyle(document.documentElement)
@@ -37,139 +44,277 @@ export default class SidebarComponent extends Component {
     return 'top';
   }
 
-  get width(): number {
-    const width = parseInt(
-      this.renderer.getStyleVariable('--sidebar-width').replace(/\D/g, ''),
-    );
-    return width;
-  }
-
-  get closeSwipeType(): Gesture['type'] {
+  get closeSwipeType(): ReturnType<typeof getSidebarSwipeType> {
     return getSidebarSwipeType({
       isRightSidebar: this.settings.isRightSidebar(),
       action: 'close',
     });
   }
 
-  get openSwipeType(): Gesture['type'] {
-    return getSidebarSwipeType({
-      isRightSidebar: this.settings.isRightSidebar(),
-      action: 'open',
-    });
+  handleSidebarBackdropClick = () => {
+    if (this.renderer.isDesktop) {
+      return;
+    }
+
+    this.renderer.closeSidebar();
+  };
+
+  private isVerticalDrag = (state: DragState) => {
+    const [deltaX, deltaY] = state.movement;
+    return Math.abs(deltaY) > Math.abs(deltaX);
+  };
+
+  private isCloseSwipe = (state: DragState) => {
+    const [swipeX] = state.swipe;
+
+    if (this.closeSwipeType === 'swipeleft') {
+      return swipeX < 0;
+    }
+
+    return swipeX > 0;
+  };
+
+  private isInvalidCloseDrag = (state: DragState) => {
+    const [deltaX] = state.movement;
+
+    return (
+      this.isVerticalDrag(state) ||
+      (this.settings.isRightSidebar() && deltaX < 0) ||
+      (!this.settings.isRightSidebar() && deltaX > 0) ||
+      Math.abs(deltaX) > this.maxWidth
+    );
+  };
+
+  private isGestureFinished = (state: DragState) => {
+    return state.last || state.canceled || /(up|end|cancel)$/.test(state.type);
+  };
+
+  private get edgeZoneWidth() {
+    const rootFontSize = parseFloat(
+      getComputedStyle(document.documentElement).fontSize,
+    );
+    return rootFontSize * 5;
   }
 
-  handleSidebarBackdropClick = () => {
-    this.renderer.toggleLeftSidebar(false);
-  };
+  private get edgeInset() {
+    const variable = this.settings.isRightSidebar()
+      ? '--sidebar-gesture-edge-inset-right'
+      : '--sidebar-gesture-edge-inset-left';
+    return (parseFloat(this.renderer.getStyleVariable(variable)) || 0) + 24;
+  }
 
-  handleSwipeInner = ({ gesture }: GestureEvent) => {
-    if (!gesture.velocityX) return;
-    this.renderer.toggleLeftSidebar(false);
-  };
+  private isWithinEdgeZone = (x: number) => {
+    const zoneStart = this.edgeInset;
+    const zoneEnd = zoneStart + this.edgeZoneWidth;
 
-  handleSwipeOuter = ({ gesture }: GestureEvent) => {
-    if (!gesture.velocityX) return;
-    this.renderer.toggleLeftSidebar(true);
-  };
-
-  handlePanendInner = ({ gesture }: GestureEvent) => {
-    // Keep the sidebar state unchanged for vertical drags/scrolling.
-    if (!gesture.swipingHorizontal || gesture.touchMoveX === null) {
-      return;
+    if (this.settings.isRightSidebar()) {
+      const rightDistance = window.innerWidth - x;
+      return rightDistance >= zoneStart && rightDistance <= zoneEnd;
     }
 
-    const draggedWidth = this.maxWidth - Math.abs(gesture.touchMoveX);
-    this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
+    return x >= zoneStart && x <= zoneEnd;
   };
 
-  handlePanendOuter = ({ gesture }: GestureEvent) => {
-    if (!gesture.swipingHorizontal || gesture.touchMoveX === null) {
-      return;
-    }
-
-    const draggedWidth = Math.abs(gesture.touchMoveX);
-    this.renderer.toggleLeftSidebar(draggedWidth > this.maxWidth / 2);
+  private resetEdgeOpenGesture = () => {
+    this.edgeOpenGestureStarted = false;
+    this.edgeOpenDragActive = false;
   };
 
-  handlePanmoveInner = ({ gesture }: GestureEvent) => {
-    if (
-      !gesture.swipingHorizontal ||
-      !gesture.touchMoveX ||
-      (this.settings.isRightSidebar() && gesture.touchMoveX < 0) ||
-      (!this.settings.isRightSidebar() && gesture.touchMoveX > 0) ||
-      (gesture.touchMoveX && Math.abs(gesture.touchMoveX) > this.maxWidth)
-    ) {
-      return;
-    }
+  private teardownEdgeOpenGestures = () => {
+    this.edgeOpenRecognizer?.destroy();
+    this.edgeOpenRecognizer = undefined;
+    this.resetEdgeOpenGesture();
+  };
 
-    this.renderer.dragLeftSidebar(
-      this.maxWidth - Math.abs(gesture.touchMoveX),
-      this.width / this.maxWidth,
+  private teardownSidebarGestures = () => {
+    this.sidebarRecognizer?.destroy();
+    this.sidebarRecognizer = undefined;
+  };
+
+  private teardownBackdropGestures = () => {
+    this.backdropRecognizer?.destroy();
+    this.backdropRecognizer = undefined;
+  };
+
+  private get sidebarElement() {
+    return document.getElementById('sidebar') as HTMLElement | null;
+  }
+
+  private get backdropElement() {
+    return document.getElementById('sidebar-backdrop') as HTMLElement | null;
+  }
+
+  willDestroy() {
+    super.willDestroy();
+    this.teardownEdgeOpenGestures();
+    this.teardownSidebarGestures();
+    this.teardownBackdropGestures();
+  }
+
+  setupEdgeOpenGestures = () => {
+    this.teardownEdgeOpenGestures();
+    this.edgeOpenRecognizer = new DragGesture(
+      document,
+      this.handleEdgeOpenDrag,
+      {
+        eventOptions: { passive: false },
+        filterTaps: true,
+        triggerAllEvents: true,
+        pointer: {
+          capture: false,
+          touch: true,
+        },
+      },
     );
   };
 
-  handlePanmoveOuter = ({ gesture }: GestureEvent) => {
-    if (
-      !gesture.swipingHorizontal ||
-      !gesture.touchMoveX ||
-      (this.settings.isRightSidebar() && gesture.touchMoveX > 0) ||
-      (!this.settings.isRightSidebar() && gesture.touchMoveX < 0) ||
-      (gesture.touchMoveX && Math.abs(gesture.touchMoveX) > this.maxWidth)
-    ) {
+  setupSidebarGestures = () => {
+    this.teardownSidebarGestures();
+
+    if (!this.sidebarElement) {
       return;
     }
 
-    this.renderer.dragLeftSidebar(
-      Math.abs(gesture.touchMoveX),
-      this.width / this.maxWidth,
+    this.sidebarRecognizer = new DragGesture(
+      this.sidebarElement,
+      this.handleCloseDrag,
+      {
+        filterTaps: false,
+        triggerAllEvents: true,
+        preventScroll: 0,
+        preventScrollAxis: 'y',
+        pointer: {
+          touch: true,
+        },
+      },
     );
+  };
+
+  setupBackdropGestures = () => {
+    this.teardownBackdropGestures();
+
+    if (!this.backdropElement) {
+      return;
+    }
+
+    this.backdropRecognizer = new DragGesture(
+      this.backdropElement,
+      this.handleCloseDrag,
+      {
+        filterTaps: false,
+        triggerAllEvents: true,
+        preventScroll: 0,
+        preventScrollAxis: 'y',
+        pointer: {
+          touch: true,
+        },
+      },
+    );
+  };
+
+  setupSidebar = () => {
+    this.setupEdgeOpenGestures();
+    this.setupSidebarGestures();
+  };
+
+  handleEdgeOpenDrag = (state: DragState) => {
+    const event = state.event;
+
+    if (state.first) {
+      this.edgeOpenGestureStarted =
+        !this.disableGestures &&
+        !this.renderer.isDesktop &&
+        !this.renderer.sidebarExpanded &&
+        this.isWithinEdgeZone(state.initial[0]);
+      this.edgeOpenDragActive = false;
+    }
+
+    if (!this.edgeOpenGestureStarted) {
+      return;
+    }
+
+    const [deltaX, deltaY] = state.movement;
+    const horizontalDelta = this.settings.isRightSidebar() ? -deltaX : deltaX;
+
+    if (!this.edgeOpenDragActive) {
+      if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
+        this.resetEdgeOpenGesture();
+        return;
+      }
+
+      if (horizontalDelta <= 8 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+        if (this.isGestureFinished(state)) {
+          this.renderer.closeSidebar();
+          this.resetEdgeOpenGesture();
+        }
+        return;
+      }
+
+      this.edgeOpenDragActive = true;
+    }
+
+    if (this.isGestureFinished(state)) {
+      if (horizontalDelta > this.maxWidth / 2) {
+        this.renderer.openSidebar();
+      } else {
+        this.renderer.closeSidebar();
+      }
+      this.resetEdgeOpenGesture();
+      return;
+    }
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    const width = Math.min(this.maxWidth, Math.max(0, horizontalDelta));
+    this.renderer.dragSidebar(width, width / this.maxWidth);
+  };
+
+  handleCloseDrag = (state: DragState) => {
+    if (this.disableGestures || this.renderer.isDesktop) {
+      return;
+    }
+
+    if (!this.isGestureFinished(state)) {
+      if (this.isInvalidCloseDrag(state)) {
+        return;
+      }
+
+      const [deltaX] = state.movement;
+      const width = this.maxWidth - Math.abs(deltaX);
+      this.renderer.dragSidebar(width, width / this.maxWidth);
+      return;
+    }
+
+    if (this.isCloseSwipe(state)) {
+      this.renderer.closeSidebar();
+      return;
+    }
+
+    if (this.isInvalidCloseDrag(state)) {
+      this.renderer.openSidebar();
+      return;
+    }
+
+    const [deltaX] = state.movement;
+    const draggedWidth = this.maxWidth - Math.abs(deltaX);
+
+    if (draggedWidth > this.maxWidth / 2) {
+      this.renderer.openSidebar();
+      return;
+    }
+
+    this.renderer.closeSidebar();
   };
 
   get disableGestures() {
     return this.settings.getSetting('gestures') === Gestures.none;
   }
 
-  get innerGestures() {
-    return [
-      {
-        type: this.closeSwipeType,
-        onGesture: this.handleSwipeInner,
-      },
-      {
-        type: 'panmove' as const,
-        onGesture: this.handlePanmoveInner,
-      },
-      {
-        type: 'panend' as const,
-        onGesture: this.handlePanendInner,
-      },
-    ];
-  }
-
-  get outerGestures() {
-    return [
-      {
-        type: this.openSwipeType,
-        onGesture: this.handleSwipeOuter,
-      },
-      {
-        type: 'panmove' as const,
-        onGesture: this.handlePanmoveOuter,
-      },
-      {
-        type: 'panend' as const,
-        onGesture: this.handlePanendOuter,
-      },
-    ];
-  }
-
   <template>
-    <div id='sidebar' role='navigation'>
-      <GesturesContainer
-        @id='sidebar-gestures-container-inner'
-        @disabled={{this.disableGestures}}
-        @gestures={{this.innerGestures}}
-      >
+    <div id='sidebar' role='navigation' {{didInsert this.setupSidebar}}>
+      <div id='sidebar-gestures-container-inner'>
         {{#if (eq this.navVerticalPosition 'top')}}
           <SidebarNav />
         {{/if}}
@@ -181,16 +326,12 @@ export default class SidebarComponent extends Component {
         {{#if (eq this.navVerticalPosition 'bottom')}}
           <SidebarNav />
         {{/if}}
-      </GesturesContainer>
-      <GesturesContainer
-        @id='sidebar-gestures-container-outer'
-        @gestures={{this.outerGestures}}
-      />
+      </div>
     </div>
-    <button
+    <div
       id='sidebar-backdrop'
-      type='button'
       aria-hidden='true'
+      {{didInsert this.setupBackdropGestures}}
       {{on 'click' this.handleSidebarBackdropClick}}
     />
   </template>

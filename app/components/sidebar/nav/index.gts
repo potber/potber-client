@@ -14,7 +14,7 @@ export default class SidebarNavComponent extends Component {
 
   @action handleNavLinkClick() {
     if (this.renderer.isDesktop) return;
-    this.renderer.toggleLeftSidebar(false);
+    this.renderer.closeSidebar();
   }
 
   get showBoardOverviewButton() {

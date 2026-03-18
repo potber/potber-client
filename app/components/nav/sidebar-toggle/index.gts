@@ -22,23 +22,19 @@ export default class SidebarToggleComponent extends Component {
     return 'chevron-left';
   }
 
-  @action toggleLeftSidebar() {
-    this.renderer.toggleLeftSidebar();
+  @action toggleSidebar() {
+    this.renderer.toggleSidebar();
   }
 
   <template>
     <Button
       class='sidebar-toggle'
-      @icon={{if
-        this.renderer.leftSidebarExpanded
-        this.sidebarCollapseIcon
-        'bars'
-      }}
+      @icon={{if this.renderer.sidebarExpanded this.sidebarCollapseIcon 'bars'}}
       @text='Navigation'
       @size='square'
       @variant='primary-transparent'
       @iconSize='large'
-      @onClick={{this.toggleLeftSidebar}}
+      @onClick={{this.toggleSidebar}}
     >
       <NewsfeedIndicator />
     </Button>
