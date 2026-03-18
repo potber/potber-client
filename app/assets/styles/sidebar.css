@@ -118,21 +118,6 @@ html[data-sidebar-dragging] #sidebar-gestures-container-inner {
   max-width: calc(var(--sidebar-expanded-width) - 2rem);
 }
 
-#sidebar-gestures-container-outer {
-  position: fixed;
-  width: 5rem;
-  height: var(--sidebar-height);
-  top: var(--top-nav-height);
-  left: calc(
-    var(--sidebar-width) + var(--sidebar-left) +
-      var(--sidebar-gesture-edge-inset-left)
-  );
-  right: calc(
-    var(--sidebar-width) + var(--sidebar-right) +
-      var(--sidebar-gesture-edge-inset-right)
-  );
-}
-
 #sidebar .control-variant-primary,
 #sidebar .control-variant-secondary {
   background-color: transparent;
