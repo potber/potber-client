@@ -69,6 +69,7 @@ export default class SidebarComponent extends Component {
     if (!gesture.velocityX) return;
     this.renderer.closeSidebar();
   };
+  
   private isVerticalPan = (gesture: GestureEvent['gesture']) =>
     gesture.swipingDirection === 'vertical' ||
     gesture.swipingDirection === 'pre-vertical';
@@ -197,6 +198,7 @@ export default class SidebarComponent extends Component {
       this.renderer.closeSidebar();
     }
   };
+  
   handlePanmoveInner = ({ gesture }: GestureEvent) => {
     if (
       gesture.touchMoveX === null ||
@@ -211,6 +213,7 @@ export default class SidebarComponent extends Component {
     const width = this.maxWidth - Math.abs(gesture.touchMoveX);
     this.renderer.dragSidebar(width, width / this.maxWidth);
   };
+
   get disableGestures() {
     return this.settings.getSetting('gestures') === Gestures.none;
   }
