@@ -85,6 +85,10 @@ export default class SidebarComponent extends Component {
     );
   };
 
+  private isGestureFinished = (state: DragState) => {
+    return state.last || state.canceled || /(up|end|cancel)$/.test(state.type);
+  };
+
   private get edgeZoneWidth() {
     const rootFontSize = parseFloat(
       getComputedStyle(document.documentElement).fontSize,
@@ -155,9 +159,7 @@ export default class SidebarComponent extends Component {
       {
         eventOptions: { passive: false },
         filterTaps: true,
-        threshold: 8,
-        preventScroll: 0,
-        preventScrollAxis: 'y',
+        triggerAllEvents: true,
         pointer: {
           capture: false,
           touch: true,
@@ -241,7 +243,8 @@ export default class SidebarComponent extends Component {
       }
 
       if (horizontalDelta <= 8 || Math.abs(deltaX) <= Math.abs(deltaY)) {
-        if (state.last) {
+        if (this.isGestureFinished(state)) {
+          this.renderer.closeSidebar();
           this.resetEdgeOpenGesture();
         }
         return;
@@ -250,7 +253,7 @@ export default class SidebarComponent extends Component {
       this.edgeOpenDragActive = true;
     }
 
-    if (state.last) {
+    if (this.isGestureFinished(state)) {
       if (horizontalDelta > this.maxWidth / 2) {
         this.renderer.openSidebar();
       } else {
@@ -273,7 +276,7 @@ export default class SidebarComponent extends Component {
       return;
     }
 
-    if (!state.last) {
+    if (!this.isGestureFinished(state)) {
       if (this.isInvalidCloseDrag(state)) {
         return;
       }
@@ -290,6 +293,7 @@ export default class SidebarComponent extends Component {
     }
 
     if (this.isInvalidCloseDrag(state)) {
+      this.renderer.openSidebar();
       return;
     }
 

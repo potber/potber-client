@@ -137,6 +137,10 @@ export default class OverscrollContainer extends Component<Signature> {
     this.gestureRecognizer = new DragGesture(this.container, this.handleDrag, {
       filterTaps: false,
       triggerAllEvents: true,
+      pointer: {
+        touch: true,
+        capture: false,
+      },
     });
   };
 

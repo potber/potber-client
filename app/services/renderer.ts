@@ -200,10 +200,6 @@ export default class RendererService extends Service {
   };
 
   closeSidebar = () => {
-    if (!this.sidebarExpanded) {
-      return;
-    }
-
     this.sidebarExpanded = false;
     this.updateSidebar();
   };

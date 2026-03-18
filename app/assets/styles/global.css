@@ -50,11 +50,6 @@ body {
   overflow-x: clip;
 }
 
-.modal-open {
-  overflow: hidden;
-  position: fixed;
-}
-
 :root {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   color: var(--color-text-default);
