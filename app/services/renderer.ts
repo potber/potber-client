@@ -188,13 +188,10 @@ export default class RendererService extends Service {
   };
 
   openSidebar = async () => {
-    if (this.sidebarExpanded) {
-      return;
-    }
-
+    const wasExpanded = this.sidebarExpanded;
     this.sidebarExpanded = true;
     this.updateSidebar();
-    if (this.settings.getSetting('autoRefreshSidebar')) {
+    if (!wasExpanded && this.settings.getSetting('autoRefreshSidebar')) {
       await this.newsfeed.refresh();
     }
   };
