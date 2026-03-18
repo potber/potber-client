@@ -144,19 +144,23 @@ export default class OverscrollContainer extends Component<Signature> {
     });
   };
 
-  handlePanStart = () => {
-    const { scrollTop, clientHeight, scrollHeight } = this.scrollContainer;
+  handleDrag = (state: DragState) => {
+    if (state.first) {
+      const { scrollTop, clientHeight, scrollHeight } = this.scrollContainer;
 
-    this.gestureStartedAtOverscrollEdge = shouldTriggerOverscroll({
-      direction: this.args.direction,
-      scrollTop,
-      clientHeight,
-      scrollHeight,
-      tolerance: this.tolerance,
-    });
-  };
+      this.gestureStartedAtOverscrollEdge = shouldTriggerOverscroll({
+        direction: this.args.direction,
+        scrollTop,
+        clientHeight,
+        scrollHeight,
+        tolerance: this.tolerance,
+      });
+    }
 
-  handlePanEnd = (state: DragState) => {
+    if (!state.last) {
+      return;
+    }
+
     const [deltaX, deltaY] = state.movement;
 
     if (!this.gestureStartedAtOverscrollEdge) {
@@ -177,18 +181,6 @@ export default class OverscrollContainer extends Component<Signature> {
 
     this.showIndicator();
     this.args.onOverscroll();
-  };
-
-  handleDrag = (state: DragState) => {
-    if (state.first) {
-      this.handlePanStart();
-    }
-
-    if (!state.last) {
-      return;
-    }
-
-    this.handlePanEnd(state);
   };
 
   showIndicator = () => {

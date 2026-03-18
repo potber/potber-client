@@ -100,7 +100,7 @@ export default class SidebarComponent extends Component {
     const variable = this.settings.isRightSidebar()
       ? '--sidebar-gesture-edge-inset-right'
       : '--sidebar-gesture-edge-inset-left';
-    return parseFloat(this.renderer.getStyleVariable(variable)) || 0;
+    return (parseFloat(this.renderer.getStyleVariable(variable)) || 0) + 24;
   }
 
   private isWithinEdgeZone = (x: number) => {
