@@ -195,8 +195,7 @@ export default class RendererService extends Service {
 
     this.sidebarExpanded = false;
     this.updateSidebar();
-  }
-
+  };
 
   /**
    * Drags the sidebar according to the current touch move position.

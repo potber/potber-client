@@ -29,11 +29,7 @@ export default class SidebarToggleComponent extends Component {
   <template>
     <Button
       class='sidebar-toggle'
-      @icon={{if
-        this.renderer.sidebarExpanded
-        this.sidebarCollapseIcon
-        'bars'
-      }}
+      @icon={{if this.renderer.sidebarExpanded this.sidebarCollapseIcon 'bars'}}
       @text='Navigation'
       @size='square'
       @variant='primary-transparent'
