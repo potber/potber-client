@@ -21,6 +21,7 @@
   background-color: var(--color-sidebar);
   height: var(--sidebar-height);
   z-index: 15;
+  touch-action: pan-y;
   transition: width var(--sidebar-transition-time) ease !important;
   overflow: hidden;
   display: flex;

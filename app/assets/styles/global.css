@@ -38,12 +38,16 @@ html {
   background-color: var(--color-application-background);
   height: 100svh;
   width: 100svw;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
   height: inherit;
   width: inherit;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .modal-open {

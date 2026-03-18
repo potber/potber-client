@@ -8,7 +8,6 @@ import type {
   DragGesture as VanillaDragGesture,
   DragState,
 } from '@use-gesture/vanilla';
-import GesturesContainer from 'potber-client/components/features/gestures/container';
 import Quickstart from 'potber-client/components/features/quickstart';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService, {
@@ -16,10 +15,6 @@ import SettingsService, {
   SidebarLayout,
 } from 'potber-client/services/settings';
 import SidebarNav from './nav';
-import type {
-  Gesture,
-  GestureEvent,
-} from 'potber-client/components/features/gestures/types';
 import { getSidebarSwipeType } from 'potber-client/utils/gestures';
 
 export default class SidebarComponent extends Component {
@@ -27,6 +22,8 @@ export default class SidebarComponent extends Component {
   @service declare renderer: RendererService;
 
   private edgeOpenRecognizer: VanillaDragGesture | undefined;
+  private sidebarRecognizer: VanillaDragGesture | undefined;
+  private backdropRecognizer: VanillaDragGesture | undefined;
   private edgeOpenGestureStarted = false;
   private edgeOpenDragActive = false;
 
@@ -47,14 +44,7 @@ export default class SidebarComponent extends Component {
     return 'top';
   }
 
-  get width(): number {
-    const width = parseInt(
-      this.renderer.getStyleVariable('--sidebar-width').replace(/\D/g, ''),
-    );
-    return width;
-  }
-
-  get closeSwipeType(): Gesture['type'] {
+  get closeSwipeType(): ReturnType<typeof getSidebarSwipeType> {
     return getSidebarSwipeType({
       isRightSidebar: this.settings.isRightSidebar(),
       action: 'close',
@@ -65,14 +55,31 @@ export default class SidebarComponent extends Component {
     this.renderer.closeSidebar();
   };
 
-  handleSwipeInner = ({ gesture }: GestureEvent) => {
-    if (!gesture.velocityX) return;
-    this.renderer.closeSidebar();
+  private isVerticalDrag = (state: DragState) => {
+    const [deltaX, deltaY] = state.movement;
+    return Math.abs(deltaY) > Math.abs(deltaX);
   };
-  
-  private isVerticalPan = (gesture: GestureEvent['gesture']) =>
-    gesture.swipingDirection === 'vertical' ||
-    gesture.swipingDirection === 'pre-vertical';
+
+  private isCloseSwipe = (state: DragState) => {
+    const [swipeX] = state.swipe;
+
+    if (this.closeSwipeType === 'swipeleft') {
+      return swipeX < 0;
+    }
+
+    return swipeX > 0;
+  };
+
+  private isInvalidCloseDrag = (state: DragState) => {
+    const [deltaX] = state.movement;
+
+    return (
+      this.isVerticalDrag(state) ||
+      (this.settings.isRightSidebar() && deltaX < 0) ||
+      (!this.settings.isRightSidebar() && deltaX > 0) ||
+      Math.abs(deltaX) > this.maxWidth
+    );
+  };
 
   private get edgeZoneWidth() {
     const rootFontSize = parseFloat(
@@ -111,9 +118,29 @@ export default class SidebarComponent extends Component {
     this.resetEdgeOpenGesture();
   };
 
+  private teardownSidebarGestures = () => {
+    this.sidebarRecognizer?.destroy();
+    this.sidebarRecognizer = undefined;
+  };
+
+  private teardownBackdropGestures = () => {
+    this.backdropRecognizer?.destroy();
+    this.backdropRecognizer = undefined;
+  };
+
+  private get sidebarElement() {
+    return document.getElementById('sidebar') as HTMLElement | null;
+  }
+
+  private get backdropElement() {
+    return document.getElementById('sidebar-backdrop') as HTMLElement | null;
+  }
+
   willDestroy() {
     super.willDestroy();
     this.teardownEdgeOpenGestures();
+    this.teardownSidebarGestures();
+    this.teardownBackdropGestures();
   }
 
   setupEdgeOpenGestures = () => {
@@ -130,6 +157,45 @@ export default class SidebarComponent extends Component {
         },
       },
     );
+  };
+
+  setupSidebarGestures = () => {
+    this.teardownSidebarGestures();
+
+    if (!this.sidebarElement) {
+      return;
+    }
+
+    this.sidebarRecognizer = new DragGesture(
+      this.sidebarElement,
+      this.handleCloseDrag,
+      {
+        filterTaps: false,
+        triggerAllEvents: true,
+      },
+    );
+  };
+
+  setupBackdropGestures = () => {
+    this.teardownBackdropGestures();
+
+    if (!this.backdropElement) {
+      return;
+    }
+
+    this.backdropRecognizer = new DragGesture(
+      this.backdropElement,
+      this.handleCloseDrag,
+      {
+        filterTaps: false,
+        triggerAllEvents: true,
+      },
+    );
+  };
+
+  setupSidebar = () => {
+    this.setupEdgeOpenGestures();
+    this.setupSidebarGestures();
   };
 
   handleEdgeOpenDrag = (state: DragState) => {
@@ -185,84 +251,49 @@ export default class SidebarComponent extends Component {
     this.renderer.dragSidebar(width, width / this.maxWidth);
   };
 
-  handlePanendInner = ({ gesture }: GestureEvent) => {
-    // Keep the sidebar state unchanged for vertical drags/scrolling.
-    if (gesture.touchMoveX === null || this.isVerticalPan(gesture)) {
+  handleCloseDrag = (state: DragState) => {
+    if (this.disableGestures) {
       return;
     }
 
-    const draggedWidth = this.maxWidth - Math.abs(gesture.touchMoveX);
+    if (!state.last) {
+      if (this.isInvalidCloseDrag(state)) {
+        return;
+      }
+
+      const [deltaX] = state.movement;
+      const width = this.maxWidth - Math.abs(deltaX);
+      this.renderer.dragSidebar(width, width / this.maxWidth);
+      return;
+    }
+
+    if (this.isCloseSwipe(state)) {
+      this.renderer.closeSidebar();
+      return;
+    }
+
+    if (this.isInvalidCloseDrag(state)) {
+      return;
+    }
+
+    const [deltaX] = state.movement;
+    const draggedWidth = this.maxWidth - Math.abs(deltaX);
+
     if (draggedWidth > this.maxWidth / 2) {
       this.renderer.openSidebar();
-    } else {
-      this.renderer.closeSidebar();
-    }
-  };
-  
-  handlePanmoveInner = ({ gesture }: GestureEvent) => {
-    if (
-      gesture.touchMoveX === null ||
-      this.isVerticalPan(gesture) ||
-      (this.settings.isRightSidebar() && gesture.touchMoveX < 0) ||
-      (!this.settings.isRightSidebar() && gesture.touchMoveX > 0) ||
-      (gesture.touchMoveX && Math.abs(gesture.touchMoveX) > this.maxWidth)
-    ) {
       return;
     }
 
-    const width = this.maxWidth - Math.abs(gesture.touchMoveX);
-    this.renderer.dragSidebar(width, width / this.maxWidth);
+    this.renderer.closeSidebar();
   };
 
   get disableGestures() {
     return this.settings.getSetting('gestures') === Gestures.none;
   }
 
-  get innerGestures() {
-    return [
-      {
-        type: this.closeSwipeType,
-        onGesture: this.handleSwipeInner,
-      },
-      {
-        type: 'panmove' as const,
-        onGesture: this.handlePanmoveInner,
-      },
-      {
-        type: 'panend' as const,
-        onGesture: this.handlePanendInner,
-      },
-    ];
-  }
-
-  get backdropGestures() {
-    return [
-      {
-        type: this.closeSwipeType,
-        onGesture: this.handleSwipeInner,
-      },
-      {
-        type: 'panmove' as const,
-        onGesture: this.handlePanmoveInner,
-      },
-      {
-        type: 'panend' as const,
-        onGesture: this.handlePanendInner,
-      },
-    ];
-  }
-
   <template>
-    <div
-      id='sidebar'
-      role='navigation'
-      {{didInsert this.setupEdgeOpenGestures}}
-    >
-      <GesturesContainer
-        @id='sidebar-gestures-container-inner'
-        @disabled={{this.disableGestures}}
-        @gestures={{this.innerGestures}}
-      >
+    <div id='sidebar' role='navigation' {{didInsert this.setupSidebar}}>
+      <div id='sidebar-gestures-container-inner'>
         {{#if (eq this.navVerticalPosition 'top')}}
           <SidebarNav />
         {{/if}}
@@ -274,13 +305,12 @@ export default class SidebarComponent extends Component {
         {{#if (eq this.navVerticalPosition 'bottom')}}
           <SidebarNav />
         {{/if}}
-      </GesturesContainer>
+      </div>
     </div>
-    <GesturesContainer
-      @id='sidebar-backdrop'
+    <div
+      id='sidebar-backdrop'
       aria-hidden='true'
-      @disabled={{this.disableGestures}}
-      @gestures={{this.backdropGestures}}
+      {{didInsert this.setupBackdropGestures}}
       {{on 'click' this.handleSidebarBackdropClick}}
     />
   </template>
