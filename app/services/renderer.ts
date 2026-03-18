@@ -77,7 +77,18 @@ export default class RendererService extends Service {
    * Handles window resize events and updates renderer.isDesktop.
    */
   updateIsDesktop = () => {
-    this.isDesktop = window.innerWidth >= DESKTOP_MIN_WIDTH;
+    const wasDesktop = this.isDesktop;
+    const isDesktop = window.innerWidth >= DESKTOP_MIN_WIDTH;
+
+    this.isDesktop = isDesktop;
+
+    if (isDesktop && !wasDesktop && !this.sidebarExpanded) {
+      this.sidebarExpanded = true;
+    }
+
+    if (isDesktop !== wasDesktop) {
+      this.updateSidebar();
+    }
   };
 
   /**

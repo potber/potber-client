@@ -52,6 +52,10 @@ export default class SidebarComponent extends Component {
   }
 
   handleSidebarBackdropClick = () => {
+    if (this.renderer.isDesktop) {
+      return;
+    }
+
     this.renderer.closeSidebar();
   };
 
@@ -152,8 +156,11 @@ export default class SidebarComponent extends Component {
         eventOptions: { passive: false },
         filterTaps: true,
         threshold: 8,
+        preventScroll: 0,
+        preventScrollAxis: 'y',
         pointer: {
           capture: false,
+          touch: true,
         },
       },
     );
@@ -172,6 +179,11 @@ export default class SidebarComponent extends Component {
       {
         filterTaps: false,
         triggerAllEvents: true,
+        preventScroll: 0,
+        preventScrollAxis: 'y',
+        pointer: {
+          touch: true,
+        },
       },
     );
   };
@@ -189,6 +201,11 @@ export default class SidebarComponent extends Component {
       {
         filterTaps: false,
         triggerAllEvents: true,
+        preventScroll: 0,
+        preventScrollAxis: 'y',
+        pointer: {
+          touch: true,
+        },
       },
     );
   };
@@ -252,7 +269,7 @@ export default class SidebarComponent extends Component {
   };
 
   handleCloseDrag = (state: DragState) => {
-    if (this.disableGestures) {
+    if (this.disableGestures || this.renderer.isDesktop) {
       return;
     }
 
