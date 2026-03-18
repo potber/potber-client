@@ -1,13 +1,14 @@
 import Component from '@glimmer/component';
 import { service } from '@ember/service';
+import didInsert from '@ember/render-modifiers/modifiers/did-insert';
+import didUpdate from '@ember/render-modifiers/modifiers/did-update';
 import { guidFor } from '@ember/object/internals';
-import RendererService from 'potber-client/services/renderer';
+import { DragGesture } from '@use-gesture/vanilla';
 import type {
-  Gesture,
-  GestureEvent,
-  GestureOptions,
-} from 'potber-client/components/features/gestures/types';
-import GesturesContainer from '../container';
+  DragGesture as VanillaDragGesture,
+  DragState,
+} from '@use-gesture/vanilla';
+import RendererService from 'potber-client/services/renderer';
 import OverscrollIndicator from './indicator';
 import {
   normalizeOverscrollTolerance,
@@ -46,10 +47,6 @@ interface Signature {
      * The tolerance in pixels. Defaults to `5`.
      */
     tolerance?: number;
-    /**
-     * Optional `GestureOptions`.
-     */
-    options?: GestureOptions;
   };
   Blocks: {
     default: [];
@@ -58,11 +55,14 @@ interface Signature {
 
 export default class OverscrollContainer extends Component<Signature> {
   @service declare renderer: RendererService;
+
+  private gestureRecognizer: VanillaDragGesture | undefined;
   private debouncedHideIndicator?: () => Promise<void>;
   private gestureStartedAtOverscrollEdge = false;
 
   willDestroy() {
     super.willDestroy();
+    this.teardownGestures();
     this.debouncedHideIndicator = undefined;
     this.gestureStartedAtOverscrollEdge = false;
   }
@@ -108,6 +108,12 @@ export default class OverscrollContainer extends Component<Signature> {
     return document.getElementById(this.indicatorId) as HTMLElement | null;
   }
 
+  get container() {
+    return document.getElementById(
+      this.gesturesContainerId,
+    ) as HTMLElement | null;
+  }
+
   getHideIndicatorDebounced = () => {
     if (!this.debouncedHideIndicator) {
       this.debouncedHideIndicator = debounce(this.hideIndicator, this.delay);
@@ -116,18 +122,23 @@ export default class OverscrollContainer extends Component<Signature> {
     return this.debouncedHideIndicator;
   };
 
-  get gestures(): Gesture[] {
-    return [
-      {
-        type: 'panstart',
-        onGesture: this.handlePanStart,
-      },
-      {
-        type: 'panend',
-        onGesture: this.handlePanEnd,
-      },
-    ];
-  }
+  private teardownGestures = () => {
+    this.gestureRecognizer?.destroy();
+    this.gestureRecognizer = undefined;
+  };
+
+  syncGestures = () => {
+    this.teardownGestures();
+
+    if (this.args.disabled || !this.container) {
+      return;
+    }
+
+    this.gestureRecognizer = new DragGesture(this.container, this.handleDrag, {
+      filterTaps: false,
+      triggerAllEvents: true,
+    });
+  };
 
   handlePanStart = () => {
     const { scrollTop, clientHeight, scrollHeight } = this.scrollContainer;
@@ -141,9 +152,8 @@ export default class OverscrollContainer extends Component<Signature> {
     });
   };
 
-  handlePanEnd = ({ gesture }: GestureEvent) => {
-    const deltaY = gesture.touchMoveY ?? 0;
-    const deltaX = gesture.touchMoveX ?? 0;
+  handlePanEnd = (state: DragState) => {
+    const [deltaX, deltaY] = state.movement;
 
     if (!this.gestureStartedAtOverscrollEdge) {
       return;
@@ -163,6 +173,18 @@ export default class OverscrollContainer extends Component<Signature> {
 
     this.showIndicator();
     this.args.onOverscroll();
+  };
+
+  handleDrag = (state: DragState) => {
+    if (state.first) {
+      this.handlePanStart();
+    }
+
+    if (!state.last) {
+      return;
+    }
+
+    this.handlePanEnd(state);
   };
 
   showIndicator = () => {
@@ -185,13 +207,15 @@ export default class OverscrollContainer extends Component<Signature> {
   };
 
   <template>
-    <GesturesContainer
-      @id={{this.gesturesContainerId}}
-      @disabled={{@disabled}}
-      @gestures={{this.gestures}}
+    <div
+      ...attributes
+      class='overscroll-container'
+      id={{this.gesturesContainerId}}
+      {{didInsert this.syncGestures}}
+      {{didUpdate this.syncGestures @disabled}}
     >
       <OverscrollIndicator id={{this.indicatorId}} @direction={{@direction}} />
       {{yield}}
-    </GesturesContainer>
+    </div>
   </template>
 }
