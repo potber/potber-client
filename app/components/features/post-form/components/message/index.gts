@@ -1,4 +1,5 @@
 import Component from '@glimmer/component';
+import type Owner from '@ember/owner';
 import { Posts, Threads } from 'potber-client/services/api/types';
 import Textarea from 'potber-client/components/common/control/textarea';
 import { on } from '@ember/modifier';
@@ -15,6 +16,14 @@ interface Signature {
 
 export default class PostFormMessage extends Component<Signature> {
   styles = styles;
+
+  constructor(owner: Owner, args: Signature['Args']) {
+    super(owner, args);
+    this.args.post.message = (this.args.post.message || '').replace(
+      /\r\n/g,
+      '\n',
+    );
+  }
 
   handleChange = (event: Event) => {
     const target = event.target as HTMLTextAreaElement;
