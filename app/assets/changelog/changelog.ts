@@ -1,5 +1,10 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.27.2',
+    type: 'patch',
+    fixed: ['Optimiertes nginx caching.'],
+  },
+  {
     version: '1.27.1',
     type: 'patch',
     fixed: [
