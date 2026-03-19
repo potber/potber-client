@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.27.1] - 2026-03-19
+
+### Fixed
+
+- Re-enabled scrolling in the bookmark list
+- BB Code is inserted at the correct position
+
 ## [1.27.0] - 2026-03-18
 
 ### Fixed
