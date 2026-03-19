@@ -1,5 +1,13 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.27.1',
+    type: 'patch',
+    fixed: [
+      'Bookmark-Leiste lässt sich wieder scrollen.',
+      'BB-Code wird wieder an der richtigen Position eingefügt.',
+    ],
+  },
+  {
     version: '1.27.0',
     type: 'minor',
     fixed: [
