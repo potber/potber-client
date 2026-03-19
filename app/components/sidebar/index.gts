@@ -181,8 +181,6 @@ export default class SidebarComponent extends Component {
       {
         filterTaps: false,
         triggerAllEvents: true,
-        preventScroll: 0,
-        preventScrollAxis: 'y',
         pointer: {
           touch: true,
         },
