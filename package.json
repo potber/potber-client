@@ -124,7 +124,7 @@
     "edition": "octane"
   },
   "dependencies": {
-    "katex": "^0.16.38"
+    "katex": "^0.16.40"
   },
   "exports": {
     "./tests/*": "./tests/*",
