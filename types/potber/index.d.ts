@@ -34,6 +34,7 @@ declare global {
   interface AppEnvironmentOptions {
     HOSTNAME: string;
     API_URL: string;
+    IMGPOT_URL?: string;
     AUTH_ISSUER_URL: string;
     AUTH_CLIENT_ID?: string;
     MEME_HOST_URL: string;
