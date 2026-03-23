@@ -227,7 +227,7 @@ feature:
             src: URL
             thumbnail: Thumbnail (optional)
             file: Datei
-            upload: Über imgpot hochladen
+            upload: Hochladen
             upload-help: JPEG, PNG, GIF oder WebP (max. 20 MB)
         video:
           title: Video
