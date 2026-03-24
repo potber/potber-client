@@ -4,12 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.28.0] - 2026-03-24
+
+### Added
+
+- Images can now be uploaded directly from potber to https://imgpot.de.
+
+
 ## [1.27.1] - 2026-03-19
 
 ### Fixed
 
-- Re-enabled scrolling in the bookmark list
-- BB Code is inserted at the correct position
+- Re-enabled scrolling in the bookmark list.
+- BB Code is inserted at the correct position.
 
 ## [1.27.0] - 2026-03-18
 
