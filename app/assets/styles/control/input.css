@@ -2,6 +2,14 @@
   position: relative;
 }
 
+.input-container:has(.input-trailing-action > :nth-child(1)) input {
+  padding-right: calc(var(--control-default-height) + 1rem);
+}
+
+.input-container:has(.input-trailing-action > :nth-child(2)) input {
+  padding-right: calc(2 * var(--control-default-height) + 1.5rem);
+}
+
 .input-container input,
 .input-container textarea {
   width: 100%;
@@ -32,6 +40,16 @@
   user-select: none;
   pointer-events: none;
   color: var(--color-text-subtle);
+}
+
+.input-container .input-trailing-action {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 input:focus,

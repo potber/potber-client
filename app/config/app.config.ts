@@ -31,6 +31,14 @@ export const appConfig = {
       'https://api.potber.de',
   ),
   /**
+   * The URL for imgpot uploads.
+   */
+  imgpotUrl: String(
+    window.APP?.IMGPOT_URL ??
+      environment.APP['IMGPOT_URL'] ??
+      'https://imgpot.de',
+  ),
+  /**
    * The URL for the meme host.
    */
   memeHostUrl: String(

@@ -18,6 +18,9 @@ interface Signature {
     suggestions?: Suggestion[];
     onChange?: (value: string, event: Event) => void;
   };
+  Blocks: {
+    default: [];
+  };
 }
 
 export default class Input extends Component<Signature> {
@@ -67,6 +70,9 @@ export default class Input extends Component<Signature> {
         ...attributes
       />
       <label for='{{this.componentId}}-input'>{{this.label}}</label>
+      <div class='input-trailing-action'>
+        {{yield}}
+      </div>
       {{#if this.args.suggestions}}
         <datalist id='{{this.componentId}}-list'>
           {{#each this.args.suggestions as |suggestion|}}

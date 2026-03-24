@@ -226,6 +226,10 @@ feature:
             title: Bild
             src: URL
             thumbnail: Thumbnail (optional)
+            file: Datei
+            upload: Hochladen
+            uploading: Bild wird hochgeladen...
+            upload-help: JPEG, PNG, GIF oder WebP (max. 20 MB)
         video:
           title: Video
           label: URL

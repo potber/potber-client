@@ -92,6 +92,7 @@ import {
   faFolderBlank,
   faHomeLgAlt,
   faImage,
+  faImages,
   faInfo,
   faInfoCircle,
   faItalic,
@@ -125,6 +126,7 @@ import {
   faTimes,
   faTrash,
   faUnderline,
+  faCloudArrowUp,
   faUser,
   faWarning,
 } from '@fortawesome/free-solid-svg-icons';
@@ -223,6 +225,7 @@ library.add(
   faFolderBlank,
   faHomeLgAlt,
   faImage,
+  faImages,
   faInfo,
   faInfoCircle,
   faItalic,
@@ -256,6 +259,7 @@ library.add(
   faTimes,
   faTrash,
   faUnderline,
+  faCloudArrowUp,
   faUser,
   faWarning,
 );

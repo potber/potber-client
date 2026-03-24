@@ -16,6 +16,7 @@ module.exports = function (environment) {
       version,
       HOSTNAME: 'potber.de',
       API_URL: 'https://api.potber.de',
+      IMGPOT_URL: 'https://imgpot.de',
       AUTH_ISSUER_URL: 'https://auth.potber.de',
       MEME_HOST_URL: `https://potber.de`,
       DEBUG: false,
@@ -28,6 +29,7 @@ module.exports = function (environment) {
     ENV.APP.AUTH_ISSUER_URL = 'http://localhost:5173';
     ENV.APP.DEBUG = true;
     ENV.APP.MEME_HOST_URL = 'https://test.potber.de';
+    ENV.APP.IMGPOT_URL = 'http://localhost:3001';
     // ENV.APP.LOG_RESOLVER = true;
     // ENV.APP.LOG_ACTIVE_GENERATION = true;
     // ENV.APP.LOG_TRANSITIONS = true;
