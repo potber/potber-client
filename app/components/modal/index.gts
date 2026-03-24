@@ -13,6 +13,9 @@ import IconSelectModal, {
 import ImageInsertModal, {
   type ImageInsertModalOptions,
 } from 'potber-client/components/modal/types/image-insert';
+import ImgpotSelectModal, {
+  type ImgpotSelectModalOptions,
+} from 'potber-client/components/modal/types/imgpot-select';
 import InputModal, {
   type InputModalOptions,
 } from 'potber-client/components/modal/types/input';
@@ -87,6 +90,11 @@ export default class ModalComponent extends Component {
     return this.activeModal.options as ImageInsertModalOptions;
   }
 
+  get imgpotSelectOptions() {
+    if (this.activeModal.type !== ModalType.imgpotSelect) return undefined;
+    return this.activeModal.options as ImgpotSelectModalOptions;
+  }
+
   get postPreviewOptions() {
     if (this.activeModal.type !== ModalType.postPreview) return undefined;
     return this.activeModal.options as PostPreviewModalOptions;
@@ -98,6 +106,10 @@ export default class ModalComponent extends Component {
   }
 
   @action handleModalCancel(event: Event) {
+    if (event.currentTarget !== event.target) {
+      return;
+    }
+
     event.preventDefault();
     this.modal.close();
   }
@@ -124,6 +136,8 @@ export default class ModalComponent extends Component {
         <ListModal @options={{this.listOptions}} />
       {{else if this.imageInsertOptions}}
         <ImageInsertModal @options={{this.imageInsertOptions}} />
+      {{else if this.imgpotSelectOptions}}
+        <ImgpotSelectModal @options={{this.imgpotSelectOptions}} />
       {{else if this.postPreviewOptions}}
         <PostPreviewModal @options={{this.postPreviewOptions}} />
       {{else if this.userProfileOptions}}

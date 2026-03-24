@@ -1,5 +1,6 @@
 import { action } from '@ember/object';
 import { on } from '@ember/modifier';
+import type Owner from '@ember/owner';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
@@ -10,17 +11,14 @@ import ModalContent from 'potber-client/components/modal/component/content';
 import ModalFooter from 'potber-client/components/modal/component/footer';
 import ModalHeader from 'potber-client/components/modal/component/header';
 import ImgpotService, {
-  type ImgpotImageUploadResponse,
+  getImgpotInsertValues,
+  type ImgpotInsertValues,
 } from 'potber-client/services/imgpot';
 import ModalService from 'potber-client/services/modal';
 
-interface Values {
-  src: string;
-  thumbnail: string;
-}
-
 export interface ImageInsertModalOptions {
-  onSubmit: (values: Values) => void;
+  onSubmit: (values: ImgpotInsertValues) => void;
+  initialValues?: ImgpotInsertValues;
 }
 
 interface Signature {
@@ -35,61 +33,70 @@ export default class ImageInsertModalComponent extends Component<Signature> {
   @service declare imgpot: ImgpotService;
 
   formId = 'image-insert-modal-form';
+  fileInputId = 'image-insert-modal-file-input';
 
-  @tracked selectedFile: File | null = null;
   @tracked uploadError = '';
   @tracked uploading = false;
-
-  values: Values = {
+  @tracked values: ImgpotInsertValues = {
     src: '',
     thumbnail: '',
   };
 
-  get hasSelectedFile() {
-    return Boolean(this.selectedFile);
-  }
-
-  get uploadDisabled() {
-    return !this.hasSelectedFile;
-  }
-
-  @action handleSrcChange(value: string) {
-    this.values.src = value;
-  }
-
-  @action handleThumbnailChange(value: string) {
-    this.values.thumbnail = value;
-  }
-
-  @action handleFileChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    this.selectedFile = input.files?.[0] ?? null;
-    this.uploadError = '';
-  }
-
-  private getUploadValues(image: ImgpotImageUploadResponse): Values {
-    const large = image.variations.find(
-      (variation) => variation.variationType === 'large',
-    );
-    const medium = image.variations.find(
-      (variation) => variation.variationType === 'medium',
-    );
-    const fallback = image.variations[0];
-    const inline = medium ?? large ?? fallback;
-    const full = large ?? inline;
-
-    if (!inline || !full) {
-      throw new Error('Imgpot hat keine verwendbaren Varianten zurückgegeben.');
-    }
-
-    return {
-      src: full.cdnUrl,
-      thumbnail: full.cdnUrl === inline.cdnUrl ? '' : inline.cdnUrl,
+  constructor(owner: Owner, args: Signature['Args']) {
+    super(owner, args);
+    this.values = args.options.initialValues ?? {
+      src: '',
+      thumbnail: '',
     };
   }
 
-  @action async handleUpload() {
-    if (!this.selectedFile || this.uploading) {
+  @action handleSrcChange(value: string) {
+    this.values = {
+      ...this.values,
+      src: value,
+    };
+  }
+
+  @action handleThumbnailChange(value: string) {
+    this.values = {
+      ...this.values,
+      thumbnail: value,
+    };
+  }
+
+  @action openFilePicker() {
+    const input = document.getElementById(
+      this.fileInputId,
+    ) as HTMLInputElement | null;
+
+    input?.click();
+  }
+
+  @action openImgpotBrowser() {
+    const onSubmit = this.args.options.onSubmit;
+    const initialValues = { ...this.values };
+
+    this.modal.imgpotSelect({
+      onSelect: (values) => {
+        this.modal.imageInsert({
+          onSubmit,
+          initialValues: values,
+        });
+      },
+      onCancel: () => {
+        this.modal.imageInsert({
+          onSubmit,
+          initialValues,
+        });
+      },
+    });
+  }
+
+  @action async handleFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const selectedFile = input.files?.[0];
+
+    if (!selectedFile || this.uploading) {
       return;
     }
 
@@ -97,8 +104,8 @@ export default class ImageInsertModalComponent extends Component<Signature> {
     this.uploadError = '';
 
     try {
-      const image = await this.imgpot.uploadImage(this.selectedFile);
-      this.args.options.onSubmit(this.getUploadValues(image));
+      const image = await this.imgpot.uploadImage(selectedFile);
+      this.values = getImgpotInsertValues(image);
     } catch (error) {
       this.uploadError =
         error instanceof Error
@@ -106,6 +113,7 @@ export default class ImageInsertModalComponent extends Component<Signature> {
           : 'Bild konnte nicht hochgeladen werden.';
     } finally {
       this.uploading = false;
+      input.value = '';
     }
   }
 
@@ -135,7 +143,24 @@ export default class ImageInsertModalComponent extends Component<Signature> {
           @required={{true}}
           @value={{this.values.src}}
           type='url'
-        />
+        >
+          <Button
+            @text={{t 'feature.post-form.message.toolbar.image.modal.upload'}}
+            @icon='upload'
+            @variant='secondary-transparent'
+            @size='square'
+            @busy={{this.uploading}}
+            @onClick={{this.openFilePicker}}
+          />
+          <Button
+            @text={{t 'feature.post-form.message.toolbar.image.modal.browse'}}
+            @icon='folder-blank'
+            @variant='secondary-transparent'
+            @size='square'
+            @disabled={{this.uploading}}
+            @onClick={{this.openImgpotBrowser}}
+          />
+        </Input>
         <Input
           @label={{t 'feature.post-form.message.toolbar.image.modal.thumbnail'}}
           @size='max'
@@ -144,34 +169,28 @@ export default class ImageInsertModalComponent extends Component<Signature> {
           type='url'
         />
 
+        <input
+          id={{this.fileInputId}}
+          type='file'
+          accept='image/jpeg,image/png,image/gif,image/webp'
+          hidden
+          disabled={{this.uploading}}
+          {{on 'change' this.handleFileChange}}
+        />
+
         <hr />
 
-        <label class='input-container control-size-max'>
-          <span>{{t
-              'feature.post-form.message.toolbar.image.modal.file'
-            }}</span>
-          <input
-            type='file'
-            accept='image/jpeg,image/png,image/gif,image/webp'
-            {{on 'change' this.handleFileChange}}
-          />
-        </label>
-
-        <p>{{t 'feature.post-form.message.toolbar.image.modal.upload-help'}}</p>
+        <p>
+          {{if
+            this.uploading
+            (t 'feature.post-form.message.toolbar.image.modal.uploading')
+            (t 'feature.post-form.message.toolbar.image.modal.upload-help')
+          }}
+        </p>
 
         {{#if this.uploadError}}
           <p>{{this.uploadError}}</p>
         {{/if}}
-
-        <Button
-          @text={{t 'feature.post-form.message.toolbar.image.modal.upload'}}
-          @icon='upload'
-          @variant='secondary-transparent'
-          @size='small'
-          @busy={{this.uploading}}
-          @disabled={{this.uploadDisabled}}
-          @onClick={{this.handleUpload}}
-        />
       </form>
     </ModalContent>
     <ModalFooter>

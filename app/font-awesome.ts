@@ -125,6 +125,7 @@ import {
   faTimes,
   faTrash,
   faUnderline,
+  faUpload,
   faUser,
   faWarning,
 } from '@fortawesome/free-solid-svg-icons';
@@ -256,6 +257,7 @@ library.add(
   faTimes,
   faTrash,
   faUnderline,
+  faUpload,
   faUser,
   faWarning,
 );

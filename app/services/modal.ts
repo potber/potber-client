@@ -3,6 +3,7 @@ import { tracked } from '@glimmer/tracking';
 import type { ConfirmModalOptions } from 'potber-client/components/modal/types/confirm';
 import type { IconSelectModalOptions } from 'potber-client/components/modal/types/icon-select';
 import type { ImageInsertModalOptions } from 'potber-client/components/modal/types/image-insert';
+import type { ImgpotSelectModalOptions } from 'potber-client/components/modal/types/imgpot-select';
 import type { InfoModalOptions } from 'potber-client/components/modal/types/info/types';
 import type { InputModalOptions } from 'potber-client/components/modal/types/input';
 import type { LinkInsertModalOptions } from 'potber-client/components/modal/types/link-insert';
@@ -28,6 +29,7 @@ export enum ModalType {
   linkInsert = 'link-insert',
   list = 'list',
   imageInsert = 'image-insert',
+  imgpotSelect = 'imgpot-select',
   postPreview = 'post-preview',
   userProfile = 'user-profile',
 }
@@ -113,6 +115,10 @@ export default class ModalService extends Service {
     this.show(ModalType.imageInsert, options);
   }
 
+  imgpotSelect(options: ImgpotSelectModalOptions) {
+    this.show(ModalType.imgpotSelect, options);
+  }
+
   /**
    * Calls a post-preview modal.
    * @param options The post-preview modal options.
@@ -136,6 +142,10 @@ export default class ModalService extends Service {
    */
   async show(type: ModalType, options?: object) {
     this.activeModal = { type, options };
+    if (this.modal.open) {
+      return;
+    }
+
     this.modal.show();
     // Wait for the DOM to have updated the 'display' CSS property. The amount of time doesn't matter,
     // but it needs to happen asynchronously.

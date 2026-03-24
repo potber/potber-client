@@ -1,0 +1,36 @@
+.modal-select-imgpot-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.modal-select-imgpot-image {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  height: auto;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.modal-select-imgpot-image img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: calc(var(--global-border-radius) / 2);
+}
+
+.modal-select-imgpot-image span {
+  display: block;
+  margin-top: 0.5rem;
+  text-align: left;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-select-imgpot-load-more {
+  margin-top: 0.75rem;
+}
