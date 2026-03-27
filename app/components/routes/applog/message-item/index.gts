@@ -1,6 +1,7 @@
 import Component from '@glimmer/component';
 import type { Message } from 'potber-client/services/messages';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
+import { formatDateTime } from 'potber-client/utils/date';
 
 interface Signature {
   Args: {
@@ -24,7 +25,7 @@ export default class MessageItemComponent extends Component<Signature> {
   }
 
   get date() {
-    return new Date(this.args.message.date).toLocaleString();
+    return formatDateTime(this.args.message.date);
   }
 
   <template>

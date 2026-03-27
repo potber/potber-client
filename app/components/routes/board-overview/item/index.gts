@@ -1,9 +1,9 @@
-import formatDate from 'ember-intl/helpers/format-date';
 import Component from '@glimmer/component';
 import { hash } from '@ember/helper';
 import ButtonLink from 'potber-client/components/common/button-link';
 import styles from './styles.module.css';
 import classNames from 'potber-client/helpers/class-names';
+import date from 'potber-client/helpers/date';
 import { Boards } from 'potber-client/services/api/types';
 
 export interface Signature {
@@ -26,7 +26,7 @@ export default class BoardOverviewItem extends Component<Signature> {
       {{#if @board.lastPost}}
         <p class='subtitle'>Letzter Post von
           <b>{{@board.lastPost.author.name}}</b>
-          ({{formatDate @board.lastPost.date}})</p>
+          ({{date @board.lastPost.date}})</p>
       {{/if}}
     </ButtonLink>
   </template>

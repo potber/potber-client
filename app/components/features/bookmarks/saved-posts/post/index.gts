@@ -8,6 +8,7 @@ import MenuButton from 'potber-client/components/common/control/menu/button';
 import type Post from 'potber-client/models/post';
 import LocalStorageService from 'potber-client/services/local-storage';
 import MessagesService from 'potber-client/services/messages';
+import { formatDateTime } from 'potber-client/utils/date';
 
 export interface PersistedSavedPost {
   id: string;
@@ -35,9 +36,9 @@ export default class BookmarksSavedPostComponent extends Component<Signature> {
   }
 
   get subtitle() {
-    return `von ${this.args.post.author.name} am ${new Date(
+    return `von ${this.args.post.author.name} am ${formatDateTime(
       this.args.post.date,
-    ).toLocaleString()}`;
+    )}`;
   }
 
   get savedPosts() {

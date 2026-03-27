@@ -10,6 +10,7 @@ import BoardIcon from 'potber-client/components/board/icon';
 import classNames from 'potber-client/helpers/class-names';
 import styles from './styles.module.css';
 import { Posts, Threads } from 'potber-client/services/api/types';
+import { formatDateTime } from 'potber-client/utils/date';
 
 export interface Signature {
   Args: {
@@ -101,7 +102,7 @@ export default class BoardItem extends Component<Signature> {
       post = firstPost;
     } else return undefined;
     return htmlSafe(
-      `<b>${post.author.name}</b> am ${new Date(post.date).toLocaleString()}`,
+      `<b>${post.author.name}</b> am ${formatDateTime(post.date)}`,
     );
   }
 

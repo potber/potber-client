@@ -29,6 +29,7 @@ import type IntlService from 'ember-intl/services/intl';
 import BookmarkStore from 'potber-client/services/stores/bookmark';
 import { getAnchorId, getLegacyReplyAnchorId } from 'potber-client/utils/misc';
 import SocialsService from 'potber-client/services/socials';
+import { formatDateTime } from 'potber-client/utils/date';
 import { renderTexPlaceholders } from 'potber-client/services/content-parser/tex';
 
 interface Signature {
@@ -83,8 +84,8 @@ export default class PostComponent extends Component<Signature> {
 
   get date() {
     return this.post.date
-      ? new Date(this.post.date).toLocaleString()
-      : new Date().toLocaleString();
+      ? formatDateTime(this.post.date)
+      : formatDateTime(new Date());
   }
 
   get url() {
@@ -196,7 +197,7 @@ export default class PostComponent extends Component<Signature> {
     if (this.post.editedCount && this.post.lastEdit) {
       return `${this.post.editedCount}x bearbeitet, zuletzt von ${
         this.post.lastEdit.user.name
-      } am ${new Date(this.post.lastEdit.date).toLocaleString()}`;
+      } am ${formatDateTime(this.post.lastEdit.date)}`;
     }
 
     return undefined;
