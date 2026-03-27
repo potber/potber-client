@@ -1,5 +1,12 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.28.0',
+    type: 'minor',
+    added: [
+      'Bilder lassen sich nun direkt aus potber auf https://imgpot.de hochladen.',
+    ],
+  },
+  {
     version: '1.27.2',
     type: 'patch',
     fixed: ['Optimiertes nginx caching.'],
