@@ -49,8 +49,9 @@ export default class AppService extends Service {
   }
 
   async checkForNewVersion() {
+    const unencountedVersion = this.localStorage.getUnencountedVersion();
+
     try {
-      const unencountedVersion = this.localStorage.getUnencountedVersion();
       if (unencountedVersion) {
         await sleep(1000);
         this.modal.confirm({
@@ -68,10 +69,11 @@ export default class AppService extends Service {
           },
         });
       }
-      this.localStorage.setEncounteredVersion();
     } catch (error) {
       // Occasionally this check might fail on cold starts of the PWA.
       // If it does, we simply move on.
+    } finally {
+      this.localStorage.setEncounteredVersion();
     }
   }
 }
