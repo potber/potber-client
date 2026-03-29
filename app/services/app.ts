@@ -56,7 +56,7 @@ export default class AppService extends Service {
         this.modal.confirm({
           title: 'Es gibt Neuigkeiten!',
           text: `Potber wurde auf Version ${unencountedVersion} aktualisiert.
-          Tippe auf 'OK', um mehr über die Änderungen zu erfahren.`,
+          Tippe auf 'Details', um mehr über die Änderungen zu erfahren.`,
           icon: 'star',
           cancelLabel: 'Details',
           onSubmit: () => {
