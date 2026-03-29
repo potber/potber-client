@@ -1,5 +1,17 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.28.1',
+    type: 'patch',
+    fixed: [
+      'Das Version-Modal sollte jetzt nicht mehr grundlos angezeigt werden.',
+    ],
+    changed: [
+      'Im Version-Modal wurde das Verhalten der Buttons angepasst.',
+      'Zeitstempel werden nun im Format dd.mm.yyyy hh:mm:ss angezeigt.',
+    ],
+    chores: ['Diverse Dependencies wurden aktualisiert.'],
+  },
+  {
     version: '1.28.0',
     type: 'minor',
     added: [

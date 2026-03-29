@@ -4,12 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.28.1] - 2026-03-29
+
+### Fixed
+
+- Version modal should not be shown to users who are already on the latest version.
+
+### Changed
+
+- Clicking OK in the Version modal button now closes the modal without redirect.
+- Timestamps are now displayed as dd.mm.yyyy hh:mm:ss.
+
+### Chores
+
+- Updated development dependencies..
+
+
 ## [1.28.0] - 2026-03-24
 
 ### Added
 
 - Images can now be uploaded directly from potber to https://imgpot.de.
-
 
 ## [1.27.1] - 2026-03-19
 
