@@ -58,8 +58,11 @@ export default class AppService extends Service {
           text: `Potber wurde auf Version ${unencountedVersion} aktualisiert.
           Tippe auf 'OK', um mehr über die Änderungen zu erfahren.`,
           icon: 'star',
-          cancelLabel: 'Geh weg!',
+          cancelLabel: 'Details',
           onSubmit: () => {
+            this.modal.close();
+          },
+          onCancel: () => {
             this.modal.close();
             this.router.transitionTo('changelog');
           },
