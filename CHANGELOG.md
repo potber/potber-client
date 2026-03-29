@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 
 - Clicking OK in the Version modal button now closes the modal without redirect.
+- Timestamps are now displayed as dd.mm.yyyy hh:mm:ss.
 
 ### Chores
 

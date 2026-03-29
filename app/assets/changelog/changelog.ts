@@ -5,7 +5,10 @@ export const changelog: ChangelogItem[] = [
     fixed: [
       'Das Version-Modal sollte jetzt nicht mehr grundlos angezeigt werden.',
     ],
-    changed: ['Im Version-Modal wurde das Verhalten der Buttons angepasst.'],
+    changed: [
+      'Im Version-Modal wurde das Verhalten der Buttons angepasst.',
+      'Zeitstempel werden nun im Format dd.mm.yyyy hh:mm:ss angezeigt.',
+    ],
     chores: ['Diverse Dependencies wurden aktualisiert.'],
   },
   {

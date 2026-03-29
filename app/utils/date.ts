@@ -1,6 +1,6 @@
 const SHORT_DATE_TIME_FORMATTER = new Intl.DateTimeFormat('de-DE', {
-  dateStyle: 'short',
-  timeStyle: 'short',
+  dateStyle: 'medium',
+  timeStyle: 'medium',
 });
 
 export type DateInput = string | number | Date | null | undefined;
