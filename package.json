@@ -75,7 +75,7 @@
     "@types/qunit": "^2.19.10",
     "@types/rsvp": "^4.0.9",
     "@types/semver": "^7.5.8",
-    "@types/uuid": "^10.0.0",
+    "@types/uuid": "^11.0.0",
     "@typescript-eslint/eslint-plugin": "^8.57.2",
     "@typescript-eslint/parser": "^8.56.1",
     "@use-gesture/vanilla": "^10.3.1",
