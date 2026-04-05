@@ -109,6 +109,9 @@ route:
     debug:
       label: Debug-Modus
       info: Wechsle in den Debug-Modus. Üblicherweise solltest Du diese Einstellung nicht aktivieren.
+    appsignal-error-reporting:
+      label: Fehlerberichte senden
+      info: Standardmäßig darf potber unerwartete Frontend-Fehler an AppSignal senden, damit Probleme besser nachvollziehbar werden und behoben werden können. Wenn Du das nicht möchtest, kannst Du diese Option deaktivieren. Änderungen werden erst nach einem Neuladen der App wirksam.
     session:
       title: Sitzung
       user-id: User ID

@@ -43,6 +43,7 @@ export default class SettingsService extends Service {
     transitions: Transitions.static,
     gestures: Gestures.none,
     debug: false,
+    appsignalErrorReporting: true,
   };
 
   initialize() {
@@ -99,6 +100,10 @@ export default class SettingsService extends Service {
       }
       if (typeof storedSettings.debug === 'boolean') {
         settings.debug = storedSettings.debug;
+      }
+      if (typeof storedSettings.appsignalErrorReporting === 'boolean') {
+        settings.appsignalErrorReporting =
+          storedSettings.appsignalErrorReporting;
       }
     }
     return settings;

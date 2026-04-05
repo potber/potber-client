@@ -18,6 +18,8 @@ module.exports = function (environment) {
       API_URL: 'https://api.potber.de',
       IMGPOT_URL: 'https://imgpot.de',
       AUTH_ISSUER_URL: 'https://auth.potber.de',
+      APPSIGNAL_FRONTEND_KEY: '',
+      APPSIGNAL_REVISION: version,
       MEME_HOST_URL: `https://potber.de`,
       DEBUG: false,
     },

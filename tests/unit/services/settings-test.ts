@@ -26,6 +26,7 @@ const mockedSettings: Settings = {
   transitions: Transitions.static,
   gestures: Gestures.none,
   debug: false,
+  appsignalErrorReporting: false,
 };
 
 module('Unit | Service | Settings', function (hooks) {

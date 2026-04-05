@@ -72,6 +72,11 @@ export default class SettingsController extends Controller {
     this.settings.toggleDebugMode(option.data);
   };
 
+  handleAppsignalErrorReportingSelect = (option: DropdownOption) => {
+    this.settings.setSetting('appsignalErrorReporting', option.data);
+    window.location.reload();
+  };
+
   handleSignOut = () => {
     this.session.invalidate();
   };

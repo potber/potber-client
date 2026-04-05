@@ -195,4 +195,15 @@ export const settingsConfig: Record<
       data: false,
     },
   ],
+
+  appsignalErrorReportingOptions: [
+    {
+      label: 'An',
+      data: true,
+    },
+    {
+      label: 'Aus',
+      data: false,
+    },
+  ],
 };

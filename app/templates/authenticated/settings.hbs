@@ -113,6 +113,21 @@
     </:info>
   </Common::Control::Dropdown>
 
+  <Common::Control::Dropdown
+    @options={{this.config.appsignalErrorReportingOptions}}
+    @default={{@model.currentAppsignalErrorReportingOption}}
+    @onSelect={{this.handleAppsignalErrorReportingSelect}}
+    @size='max'
+    @label={{t 'route.settings.appsignal-error-reporting.label'}}
+  >
+    <:info>
+      <Common::Control::InfoButton
+        @title={{t 'route.settings.appsignal-error-reporting.label'}}
+        @text={{t 'route.settings.appsignal-error-reporting.info'}}
+      />
+    </:info>
+  </Common::Control::Dropdown>
+
   <h3>{{t 'route.settings.category.behavior'}}</h3>
 
   <Common::Control::Dropdown
