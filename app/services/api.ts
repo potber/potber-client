@@ -1,4 +1,5 @@
 import Service, { service } from '@ember/service';
+import { appsignal, appsignalEnabled } from 'potber-client/appsignal';
 import { appConfig } from 'potber-client/config/app.config';
 import MessagesService from './messages';
 import type { MessageType } from './messages';
@@ -13,6 +14,7 @@ import { ApiError } from './api/error';
 import CustomSession from './custom-session';
 import * as Bookmarks from './api/endpoints/bookmarks.endpoints';
 import * as PrivateMessages from './api/endpoints/private-messages.endpoints';
+import SettingsService from './settings';
 
 export interface FetchStatusNotification {
   /**
@@ -60,6 +62,7 @@ export default class ApiService extends Service {
   @service declare messages: MessagesService;
   @service declare intl: IntlService;
   @service declare session: CustomSession;
+  @service declare settings: SettingsService;
 
   // --- Endpoints are being defined in this section --- //
   getSession = Session._get;
@@ -163,12 +166,22 @@ export default class ApiService extends Service {
       return data;
     } catch (error: unknown) {
       window.clearTimeout(timeoutId);
-      await this.handleErrors(error, options);
+      await this.handleErrors(error, options, {
+        method: request?.method ?? 'GET',
+        url: url.toString(),
+      });
       throw error;
     }
   };
 
-  private async handleErrors(error: unknown, options?: ProtectedFetchOptions) {
+  private async handleErrors(
+    error: unknown,
+    options?: ProtectedFetchOptions,
+    requestContext?: {
+      method: string;
+      url: string;
+    },
+  ) {
     const { statusNotifications, silent } = {
       statusNotifications: [
         {
@@ -180,6 +193,9 @@ export default class ApiService extends Service {
       silent: false,
       ...options,
     };
+
+    this.reportError(error, requestContext);
+
     this.messages.log(JSON.stringify(error), {
       context: this.constructor.name,
       type: 'error',
@@ -225,6 +241,49 @@ export default class ApiService extends Service {
         fallbackNotification.message,
         fallbackNotification.type ?? 'error',
       );
+    }
+  }
+
+  private reportError(
+    error: unknown,
+    requestContext?: {
+      method: string;
+      url: string;
+    },
+  ) {
+    if (!appsignalEnabled) {
+      return;
+    }
+
+    if (!this.settings.getSetting('appsignalErrorReporting')) {
+      return;
+    }
+
+    if (error instanceof ApiError) {
+      if (error.statusCode < 500) {
+        return;
+      }
+
+      appsignal.sendError(error, (span) => {
+        span.setAction('api.fetch');
+        span.setTags({
+          method: requestContext?.method ?? 'GET',
+          statusCode: String(error.statusCode),
+          url: requestContext?.url ?? appConfig.apiUrl,
+        });
+      });
+
+      return;
+    }
+
+    if (error instanceof Error || error instanceof ErrorEvent) {
+      appsignal.sendError(error, (span) => {
+        span.setAction('api.fetch');
+        span.setTags({
+          method: requestContext?.method ?? 'GET',
+          url: requestContext?.url ?? appConfig.apiUrl,
+        });
+      });
     }
   }
 }

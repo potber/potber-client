@@ -37,6 +37,8 @@ declare global {
     IMGPOT_URL?: string;
     AUTH_ISSUER_URL: string;
     AUTH_CLIENT_ID?: string;
+    APPSIGNAL_FRONTEND_KEY?: string;
+    APPSIGNAL_REVISION?: string;
     MEME_HOST_URL: string;
     DEBUG?: boolean;
     version?: string;

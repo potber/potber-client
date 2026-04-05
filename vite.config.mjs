@@ -78,7 +78,7 @@ function manualChunks(id) {
 export default defineConfig(({ mode }) => ({
   build: {
     chunkSizeWarningLimit: mode === 'production' ? 500 : 1700,
-    sourcemap: mode !== 'production',
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks,

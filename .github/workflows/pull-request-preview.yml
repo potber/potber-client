@@ -23,6 +23,7 @@ env:
   PREVIEW_API_URL: https://test-api.potber.de
   PREVIEW_AUTH_URL: https://test-auth.potber.de
   PREVIEW_AUTH_CLIENT_ID: ${{ vars.PREVIEW_AUTH_CLIENT_ID }}
+  PREVIEW_APPSIGNAL_FRONTEND_KEY: ${{ vars.PREVIEW_APPSIGNAL_FRONTEND_KEY }}
 
 jobs:
   prepare:
