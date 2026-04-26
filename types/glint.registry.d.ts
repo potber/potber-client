@@ -5,6 +5,7 @@ import AccordionComponent from 'potber-client/components/common/control/accordio
 import PrivateMessageListComponent from 'potber-client/components/features/private-messages/list';
 import ModalComponent from 'potber-client/components/modal';
 import NavComponent from 'potber-client/components/nav';
+import UnreadPostsSeparatorComponent from 'potber-client/components/routes/thread/unread-posts-separator';
 
 declare module '@glint/environment-ember-loose/registry' {
   export default interface Registry {
@@ -12,5 +13,6 @@ declare module '@glint/environment-ember-loose/registry' {
     'Features::PrivateMessages::List': typeof PrivateMessageListComponent;
     Modal: typeof ModalComponent;
     Nav: typeof NavComponent;
+    'Routes::Thread::UnreadPostsSeparator': typeof UnreadPostsSeparatorComponent;
   }
 }
