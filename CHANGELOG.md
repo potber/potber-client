@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.29.0] - 2026-04-26
+
+### Changed
+
+- Clicking on the "new posts on new page" indicator now links to the next page
+ 
 ## [1.28.1] - 2026-03-29
 
 ### Fixed

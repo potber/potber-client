@@ -1,5 +1,12 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.29.0',
+    type: 'minor',
+    changed: [
+      'Die "Neue Posts auf neuer Seite"-Anzeige ist nun klickbar und navigiert direkt zur nächsten Seite.',
+    ],
+  },
+  {
     version: '1.28.1',
     type: 'patch',
     fixed: [
