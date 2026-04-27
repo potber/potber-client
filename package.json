@@ -126,7 +126,7 @@
   "dependencies": {
     "@appsignal/ember": "^1.0.18",
     "@appsignal/javascript": "^1.6.1",
-    "katex": "^0.16.40"
+    "katex": "^0.16.44"
   },
   "exports": {
     "./tests/*": "./tests/*",
