@@ -17,3 +17,9 @@
     position: absolute;
   }
 }
+
+.text-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+}

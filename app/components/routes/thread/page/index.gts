@@ -82,7 +82,11 @@ export default class ThreadPage extends Component<Signature> {
                 @subtle={{this.isPostSubtle post}}
               />
               {{#if (eq @lastReadPost post.id)}}
-                <UnreadPostsSeparator @post={{post}} @posts={{this.posts}} />
+                <UnreadPostsSeparator
+                  @post={{post}}
+                  @posts={{this.posts}}
+                  @thread={{this.thread}}
+                />
               {{/if}}
               {{#if (isFinalElement post this.posts)}}
                 <UpdateScrollPosition />
