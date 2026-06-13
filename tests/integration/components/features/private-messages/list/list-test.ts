@@ -17,7 +17,7 @@ module(
     setupRenderingTest(hooks);
 
     test('should render all inbound messages as expected', async function (this: Context, assert) {
-      this.set('messages', privateMessageMocks.inbound);
+      this.messages = privateMessageMocks.inbound as PrivateMessage[];
 
       await render<Context>(
         hbs`<Features::PrivateMessages::List @messages={{this.messages}}/>`,

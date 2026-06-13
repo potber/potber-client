@@ -1,20 +1,9 @@
 import Component from '@glimmer/component';
 import { service } from '@ember/service';
-import didInsert from '@ember/render-modifiers/modifiers/did-insert';
-import didUpdate from '@ember/render-modifiers/modifiers/did-update';
 import { guidFor } from '@ember/object/internals';
-import { DragGesture } from '@use-gesture/vanilla';
-import type {
-  DragGesture as VanillaDragGesture,
-  DragState,
-} from '@use-gesture/vanilla';
 import RendererService from 'potber-client/services/renderer';
 import OverscrollIndicator from './indicator';
-import {
-  normalizeOverscrollTolerance,
-  shouldTriggerOverscroll,
-} from 'potber-client/utils/gestures';
-import { debounce } from 'potber-client/utils/misc';
+import overscrollGesture from 'potber-client/modifiers/overscroll-gesture';
 
 interface Signature {
   Element: HTMLDivElement;
@@ -56,161 +45,39 @@ interface Signature {
 export default class OverscrollContainer extends Component<Signature> {
   @service declare renderer: RendererService;
 
-  private gestureRecognizer: VanillaDragGesture | undefined;
-  private debouncedHideIndicator?: () => Promise<void>;
-  private gestureStartedAtOverscrollEdge = false;
-
-  willDestroy() {
-    super.willDestroy();
-    this.teardownGestures();
-    this.debouncedHideIndicator = undefined;
-    this.gestureStartedAtOverscrollEdge = false;
-  }
-
   get id() {
     return this.args.id ?? `${guidFor(this)}`;
   }
 
-  get scrollContainer() {
-    if (!this.args.scrollContainer) {
-      return (document.scrollingElement ??
-        document.documentElement) as HTMLElement;
-    } else if (typeof this.args.scrollContainer === 'string')
-      return document.getElementById(this.args.scrollContainer) as HTMLElement;
-    else return this.args.scrollContainer;
-  }
-
-  get gesturesContainerId() {
-    return this.args.id ?? `${this.id}-overscroll-container`;
-  }
-
-  get indicatorId() {
-    return `${this.id}-overscroll-indicator`;
-  }
-
-  get delay(): number {
-    return this.args.delay ?? 1000;
-  }
-
-  get tolerance() {
-    return normalizeOverscrollTolerance(this.args.tolerance);
-  }
-
   get minimumPullDistance() {
-    return parseInt(
+    return Number.parseInt(
       this.renderer
         .getStyleVariable('--control-default-height')
         .replaceAll(/\D/g, ''),
+      10,
     );
   }
-
-  get indicator() {
-    return document.getElementById(this.indicatorId) as HTMLElement | null;
-  }
-
-  get container() {
-    return document.getElementById(
-      this.gesturesContainerId,
-    ) as HTMLElement | null;
-  }
-
-  getHideIndicatorDebounced = () => {
-    if (!this.debouncedHideIndicator) {
-      this.debouncedHideIndicator = debounce(this.hideIndicator, this.delay);
-    }
-
-    return this.debouncedHideIndicator;
-  };
-
-  private teardownGestures = () => {
-    this.gestureRecognizer?.destroy();
-    this.gestureRecognizer = undefined;
-  };
-
-  syncGestures = () => {
-    this.teardownGestures();
-
-    if (this.args.disabled || !this.container) {
-      return;
-    }
-
-    this.gestureRecognizer = new DragGesture(this.container, this.handleDrag, {
-      filterTaps: false,
-      triggerAllEvents: true,
-      pointer: {
-        touch: true,
-        capture: false,
-      },
-    });
-  };
-
-  handleDrag = (state: DragState) => {
-    if (state.first) {
-      const { scrollTop, clientHeight, scrollHeight } = this.scrollContainer;
-
-      this.gestureStartedAtOverscrollEdge = shouldTriggerOverscroll({
-        direction: this.args.direction,
-        scrollTop,
-        clientHeight,
-        scrollHeight,
-        tolerance: this.tolerance,
-      });
-    }
-
-    if (!state.last) {
-      return;
-    }
-
-    const [deltaX, deltaY] = state.movement;
-
-    if (!this.gestureStartedAtOverscrollEdge) {
-      return;
-    }
-
-    if (
-      Math.abs(deltaY) < this.minimumPullDistance ||
-      Math.abs(deltaY) <= Math.abs(deltaX)
-    ) {
-      return;
-    }
-
-    const direction = deltaY > 0 ? 'down' : 'up';
-    if (direction !== this.args.direction) {
-      return;
-    }
-
-    this.showIndicator();
-    this.args.onOverscroll();
-  };
-
-  showIndicator = () => {
-    const indicator = this.indicator;
-    if (!indicator) {
-      return;
-    }
-
-    indicator.style.height = 'var(--control-default-height)';
-    void this.getHideIndicatorDebounced()();
-  };
-
-  hideIndicator = () => {
-    const indicator = this.indicator;
-    if (!indicator) {
-      return;
-    }
-
-    indicator.style.height = '0px';
-  };
 
   <template>
     <div
       ...attributes
       class='overscroll-container'
-      id={{this.gesturesContainerId}}
-      {{didInsert this.syncGestures}}
-      {{didUpdate this.syncGestures @disabled}}
+      id={{this.id}}
+      {{overscrollGesture
+        direction=@direction
+        onOverscroll=@onOverscroll
+        scrollContainer=@scrollContainer
+        disabled=@disabled
+        delay=@delay
+        tolerance=@tolerance
+        minimumPullDistance=this.minimumPullDistance
+      }}
     >
-      <OverscrollIndicator id={{this.indicatorId}} @direction={{@direction}} />
+      <OverscrollIndicator
+        data-overscroll-indicator
+        @direction={{@direction}}
+      />
+
       {{yield}}
     </div>
   </template>
