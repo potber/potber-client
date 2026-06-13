@@ -1,7 +1,5 @@
 import { hash } from '@ember/helper';
 import { on } from '@ember/modifier';
-import didInsert from '@ember/render-modifiers/modifiers/did-insert';
-import didUpdate from '@ember/render-modifiers/modifiers/did-update';
 import Component from '@glimmer/component';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import { service } from '@ember/service';
@@ -18,7 +16,6 @@ import MessagesService from 'potber-client/services/messages';
 import type Post from 'potber-client/models/post';
 import type Thread from 'potber-client/models/thread';
 import SettingsService, { AvatarStyle } from 'potber-client/services/settings';
-import RendererService from 'potber-client/services/renderer';
 import LocalStorageService from 'potber-client/services/local-storage';
 import ModalService from 'potber-client/services/modal';
 import CustomSession from 'potber-client/services/custom-session';
@@ -30,7 +27,8 @@ import BookmarkStore from 'potber-client/services/stores/bookmark';
 import { getAnchorId, getLegacyReplyAnchorId } from 'potber-client/utils/misc';
 import SocialsService from 'potber-client/services/socials';
 import { formatDateTime } from 'potber-client/utils/date';
-import { renderTexPlaceholders } from 'potber-client/services/content-parser/tex';
+import maskBlockedQuotes from 'potber-client/modifiers/mask-blocked-quotes';
+import renderTex from 'potber-client/modifiers/render-tex';
 
 interface Signature {
   Args: {
@@ -48,7 +46,6 @@ export default class PostComponent extends Component<Signature> {
   @service declare messages: MessagesService;
   @service declare session: CustomSession;
   @service declare settings: SettingsService;
-  @service declare renderer: RendererService;
   @service declare localStorage: LocalStorageService;
   @service declare modal: ModalService;
   @service declare api: ApiService;
@@ -112,6 +109,10 @@ export default class PostComponent extends Component<Signature> {
 
   get hasTitleOrIcon() {
     return Boolean(this.post.title || this.post.icon);
+  }
+
+  get blockedMaskClassName() {
+    return this.styles['blocked-mask'] ?? '';
   }
 
   showAuthorProfile = async () => {
@@ -232,28 +233,6 @@ export default class PostComponent extends Component<Signature> {
     (event.target as HTMLButtonElement).remove();
   };
 
-  checkForQuotesByBlockedUsers = (element: HTMLDivElement) => {
-    const quotes = element.querySelectorAll(`span.quote`);
-    for (const quote of quotes) {
-      const body = quote.querySelector('blockquote');
-      const authorName = quote.getAttribute('data-author-name');
-      if (!authorName || !body) continue;
-      const block = this.socials.isUserBlocked(authorName);
-      if (block) {
-        const mask = document.createElement('button');
-        mask.className = this.styles['blocked-mask'] ?? '';
-        mask.addEventListener('click', () => {
-          mask.remove();
-        });
-        body.appendChild(mask);
-      }
-    }
-  };
-
-  renderTex = (element: HTMLParagraphElement) => {
-    void renderTexPlaceholders(element);
-  };
-
   <template>
     <span id={{this.legacyElementId}} aria-hidden='true'></span>
     <div id={{this.elementId}} class='post'>
@@ -342,7 +321,7 @@ export default class PostComponent extends Component<Signature> {
       </div>
       <div
         class={{classNames this 'body'}}
-        {{didInsert this.checkForQuotesByBlockedUsers}}
+        {{maskBlockedQuotes className=this.blockedMaskClassName}}
       >
         {{#if this.post.contentHidden}}
           <p class='subtitle no-margin'>⚠ Inhalt versteckt</p>
@@ -357,8 +336,7 @@ export default class PostComponent extends Component<Signature> {
           {{/if}}
           <p
             class={{classNames this 'message'}}
-            {{didInsert this.renderTex}}
-            {{didUpdate this.renderTex this.post.message}}
+            {{renderTex this.post.message}}
           >
             {{this.message}}
           </p>

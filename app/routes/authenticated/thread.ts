@@ -47,10 +47,10 @@ export default class ThreadRoute extends SlowRoute {
 
   resetController(controller: ThreadController) {
     // Query parameters are sticky by default, so we need to reset them
-    controller.set('TID', '');
-    controller.set('page', '');
-    controller.set('PID', '');
-    controller.set('scrollToBottom', '');
+    controller.TID = '';
+    controller.page = '';
+    controller.PID = '';
+    controller.scrollToBottom = '';
   }
 
   async model(params: Params, transition: Transition) {
