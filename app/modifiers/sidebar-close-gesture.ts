@@ -1,8 +1,5 @@
 import { service } from '@ember/service';
-import Modifier, {
-  type NamedArgs,
-  type PositionalArgs,
-} from 'ember-modifier';
+import Modifier, { type NamedArgs, type PositionalArgs } from 'ember-modifier';
 import { DragGesture } from '@use-gesture/vanilla';
 import type { DragState } from '@use-gesture/vanilla';
 import RendererService from 'potber-client/services/renderer';
@@ -31,7 +28,7 @@ export default class SidebarCloseGestureModifier extends Modifier<SidebarCloseGe
     if (this.gesturesDisabled() || this.renderer.isDesktop) {
       return;
     }
-    
+
     const recognizer = new DragGesture(element, this.handleDrag, {
       filterTaps: false,
       triggerAllEvents: true,

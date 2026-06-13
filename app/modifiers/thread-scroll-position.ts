@@ -129,7 +129,9 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
     return posts.item(posts.length - 1) ?? null;
   }
 
-  private updateScrollPosition(element: ThreadScrollPositionSignature['Element']) {
+  private updateScrollPosition(
+    element: ThreadScrollPositionSignature['Element'],
+  ) {
     const threadPageContainer = (element.closest('.thread-page') ??
       document.body) as HTMLElement;
 

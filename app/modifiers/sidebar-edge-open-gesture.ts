@@ -175,10 +175,7 @@ export default class SidebarEdgeOpenGestureModifier extends Modifier<SidebarEdge
       state.event.preventDefault();
     }
 
-    const width = Math.min(
-      this.gestureMaxWidth,
-      Math.max(0, horizontalDelta),
-    );
+    const width = Math.min(this.gestureMaxWidth, Math.max(0, horizontalDelta));
 
     this.renderer.dragSidebar(width, width / this.gestureMaxWidth);
   };
