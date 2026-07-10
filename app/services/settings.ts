@@ -36,6 +36,7 @@ export default class SettingsService extends Service {
     autoRefreshSidebar: true,
     sidebarLayout: SidebarLayout.leftTop,
     fontSize: FontSize.medium,
+    collapseQuotes: false,
     replaceForumUrls: true,
     darkenReadPosts: false,
     hideGlobalAndAnnouncementThreads: false,
@@ -85,6 +86,9 @@ export default class SettingsService extends Service {
       }
       if (typeof storedSettings.darkenReadPosts === 'boolean') {
         settings.darkenReadPosts = storedSettings.darkenReadPosts;
+      }
+      if (typeof storedSettings.collapseQuotes === 'boolean') {
+        settings.collapseQuotes = storedSettings.collapseQuotes;
       }
       if (typeof storedSettings.goToBottomOfThreadPage === 'boolean') {
         settings.goToBottomOfThreadPage = storedSettings.goToBottomOfThreadPage;

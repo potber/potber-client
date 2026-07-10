@@ -175,7 +175,75 @@
 }
 
 .message :global(.quote) {
+  position: relative;
   margin: 0.5rem 0 0.5rem 0.5rem;
+}
+
+.message :global(.quote-has-header) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'header toggle'
+    'body body';
+}
+
+.message :global(.quote-has-header .quote-header) {
+  grid-area: header;
+  min-width: 0;
+}
+
+.message :global(.quote-has-header blockquote) {
+  grid-area: body;
+}
+
+.message :global(.quote-collapsed blockquote) {
+  display: none;
+}
+
+.message :global(.quote-collapse-toggle) {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  overflow: hidden;
+}
+
+.message :global(.quote-collapse-toggle)::before {
+  content: '';
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 0.14rem solid currentColor;
+  border-bottom: 0.14rem solid currentColor;
+  transform: rotate(45deg) translateY(-0.08rem);
+  transform-origin: center;
+  transition: transform 180ms ease;
+}
+
+.message :global(.quote-collapse-toggle[aria-expanded='true'])::before {
+  transform: rotate(225deg) translateY(-0.08rem);
+}
+
+.message :global(.quote-has-header .quote-collapse-toggle) {
+  grid-area: toggle;
+  width: 2.5rem;
+  height: auto;
+  min-height: 100%;
+  border-radius: 0;
+  background-color: var(--color-block-header);
+  color: var(--color-text-default);
 }
 
 .message :global(.video-container) {

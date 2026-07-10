@@ -27,6 +27,7 @@ import BookmarkStore from 'potber-client/services/stores/bookmark';
 import { getAnchorId, getLegacyReplyAnchorId } from 'potber-client/utils/misc';
 import SocialsService from 'potber-client/services/socials';
 import { formatDateTime } from 'potber-client/utils/date';
+import collapseQuotes from 'potber-client/modifiers/collapse-quotes';
 import maskBlockedQuotes from 'potber-client/modifiers/mask-blocked-quotes';
 import renderTex from 'potber-client/modifiers/render-tex';
 
@@ -229,6 +230,10 @@ export default class PostComponent extends Component<Signature> {
     return this.socials.isUserBlocked(this.post.author.id);
   }
 
+  get collapseQuotesEnabled() {
+    return this.settings.getSetting('collapseQuotes');
+  }
+
   unblockPost = (event: MouseEvent) => {
     (event.target as HTMLButtonElement).remove();
   };
@@ -321,6 +326,7 @@ export default class PostComponent extends Component<Signature> {
       </div>
       <div
         class={{classNames this 'body'}}
+        {{collapseQuotes enabled=this.collapseQuotesEnabled}}
         {{maskBlockedQuotes className=this.blockedMaskClassName}}
       >
         {{#if this.post.contentHidden}}
