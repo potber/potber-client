@@ -71,6 +71,18 @@ export const urlTagMocks: UrlTagMocks = {
       input: `[url]foo.com[/url]`,
       expected: `<a href="foo.com" target="_blank">foo.com</a>`,
     },
+    {
+      input: `[url]https://google.de/search?q=hantech site:reddit.com/r/mideaportasplit[/url]`,
+      expected: `<a href="https&#58;//google.de/search?q=hantech%20site&#58;reddit.com/r/mideaportasplit" target="_blank">https://google.de/search?q=hantech site:reddit.com/r/mideaportasplit</a>`,
+    },
+    {
+      input: `[url]https://google.de/search?q=hantech%20site:reddit.com/r/mideaportasplit[/url]`,
+      expected: `<a href="https&#58;//google.de/search?q=hantech%20site&#58;reddit.com/r/mideaportasplit" target="_blank">https://google.de/search?q=hantech%20site:reddit.com/r/mideaportasplit</a>`,
+    },
+    {
+      input: `[url=https://google.de/search?q=hantech site:reddit.com/r/mideaportasplit]Google[/url]`,
+      expected: `<a href="https&#58;//google.de/search?q=hantech%20site&#58;reddit.com/r/mideaportasplit" target="_blank">Google</a>`,
+    },
   ],
   withReplacingForumUrls: [
     {
