@@ -1,6 +1,5 @@
 import { installErrorHandler } from '@appsignal/ember';
 import Appsignal from '@appsignal/javascript';
-import Ember from 'ember';
 import { appConfig } from 'potber-client/config/app.config';
 
 export const appsignal = new Appsignal({
@@ -31,6 +30,6 @@ export function enableAppsignal() {
     return;
   }
 
-  installErrorHandler(appsignal, Ember);
+  installErrorHandler(appsignal);
   emberErrorHandlerInstalled = true;
 }
