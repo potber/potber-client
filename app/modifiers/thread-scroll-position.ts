@@ -6,6 +6,9 @@ import SettingsService from 'potber-client/services/settings';
 import { getAnchorId, getThreadScrollTarget } from 'potber-client/utils/misc';
 
 const ANCHOR_RESET_EVENTS = ['keydown', 'pointerdown', 'touchstart', 'wheel'];
+const MAX_SCROLL_CORRECTION_ATTEMPTS = 4;
+const MEDIA_READY_EVENTS = ['load', 'loadedmetadata', 'loadeddata'];
+const SCROLL_POSITION_TOLERANCE = 1;
 
 interface ThreadScrollPositionSignature {
   Element: HTMLSpanElement;
@@ -21,10 +24,11 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
   @service declare settings: SettingsService;
 
   private resizeObserver?: ResizeObserver;
+  private mutationObserver?: MutationObserver;
   private resizeFrame?: number;
   private setupFrame?: number;
+  private mediaContainer?: HTMLElement;
   private scrollAnchorElement: HTMLElement | null = null;
-  private scrollAnchorTop: number | null = null;
   private removeResetListeners: Array<() => void> = [];
 
   modify(element: ThreadScrollPositionSignature['Element']) {
@@ -54,21 +58,71 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
     }
   }
 
-  private stabilizeScrollAnchor() {
-    if (!this.scrollAnchorElement || this.scrollAnchorTop === null) {
+  private getScrollAnchorTop() {
+    return document.getElementById('top-nav')?.clientHeight ?? 0;
+  }
+
+  private handleMediaReady = (event: Event) => {
+    const target = event.target;
+    if (
+      target instanceof HTMLImageElement ||
+      target instanceof HTMLVideoElement ||
+      target instanceof HTMLIFrameElement
+    ) {
+      this.scheduleScrollStabilization();
+    }
+  };
+
+  private addMediaReadyListeners(container: HTMLElement) {
+    this.mediaContainer = container;
+    for (const eventName of MEDIA_READY_EVENTS) {
+      container.addEventListener(eventName, this.handleMediaReady, true);
+    }
+  }
+
+  private removeMediaReadyListeners() {
+    if (!this.mediaContainer) {
+      return;
+    }
+
+    for (const eventName of MEDIA_READY_EVENTS) {
+      this.mediaContainer.removeEventListener(
+        eventName,
+        this.handleMediaReady,
+        true,
+      );
+    }
+    this.mediaContainer = undefined;
+  }
+
+  private scheduleScrollStabilization(attempt = 0) {
+    if (!this.scrollAnchorElement || typeof this.resizeFrame === 'number') {
+      return;
+    }
+
+    this.resizeFrame = requestAnimationFrame(() => {
+      this.resizeFrame = undefined;
+      this.stabilizeScrollAnchor(attempt);
+    });
+  }
+
+  private stabilizeScrollAnchor(attempt: number) {
+    if (!this.scrollAnchorElement) {
       return;
     }
 
     const currentTop = this.scrollAnchorElement.getBoundingClientRect().top;
-    const delta = currentTop - this.scrollAnchorTop;
+    const delta = currentTop - this.getScrollAnchorTop();
 
-    if (Math.abs(delta) < 1) {
+    if (Math.abs(delta) < SCROLL_POSITION_TOLERANCE) {
       return;
     }
 
     window.scrollBy({ top: delta, behavior: 'auto' });
 
-    this.scrollAnchorTop = this.scrollAnchorElement.getBoundingClientRect().top;
+    if (attempt < MAX_SCROLL_CORRECTION_ATTEMPTS) {
+      this.scheduleScrollStabilization(attempt + 1);
+    }
   }
 
   private setupScrollStabilization(
@@ -77,31 +131,68 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
   ) {
     this.cleanup();
 
-    if (typeof ResizeObserver === 'undefined') {
+    this.scrollAnchorElement = anchorElement;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.scheduleScrollStabilization();
+      });
+
+      this.resizeObserver.observe(container);
+      const topNav = document.getElementById('top-nav');
+      if (topNav) {
+        this.resizeObserver.observe(topNav);
+      }
+    }
+
+    this.addScrollStabilizationResetListeners();
+    this.addMediaReadyListeners(container);
+    this.scheduleScrollStabilization();
+  }
+
+  private focusPostWhenReady(container: HTMLElement, postId: string) {
+    const focusPost = () => {
+      const anchorElement = document.getElementById(getAnchorId(postId));
+      if (!anchorElement) {
+        return false;
+      }
+
+      this.mutationObserver?.disconnect();
+      this.mutationObserver = undefined;
+
+      const didScroll = this.renderer.scrollToElement(anchorElement, {
+        behavior: 'auto',
+      });
+
+      if (didScroll) {
+        this.setupScrollStabilization(container, anchorElement);
+      }
+
+      return true;
+    };
+
+    if (focusPost() || typeof MutationObserver === 'undefined') {
       return;
     }
 
-    this.scrollAnchorElement = anchorElement;
-    this.scrollAnchorTop = anchorElement.getBoundingClientRect().top;
-
-    this.resizeObserver = new ResizeObserver(() => {
-      if (typeof this.resizeFrame === 'number') {
-        return;
-      }
-
-      this.resizeFrame = requestAnimationFrame(() => {
-        this.resizeFrame = undefined;
-        this.stabilizeScrollAnchor();
-      });
+    this.mutationObserver = new MutationObserver(() => {
+      focusPost();
     });
-
-    this.resizeObserver.observe(container);
+    this.mutationObserver.observe(container, {
+      childList: true,
+      subtree: true,
+    });
     this.addScrollStabilizationResetListeners();
   }
 
   private cleanup() {
+    this.removeMediaReadyListeners();
+
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
+
+    this.mutationObserver?.disconnect();
+    this.mutationObserver = undefined;
 
     if (typeof this.resizeFrame === 'number') {
       cancelAnimationFrame(this.resizeFrame);
@@ -114,7 +205,6 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
     }
 
     this.scrollAnchorElement = null;
-    this.scrollAnchorTop = null;
 
     for (const removeListener of this.removeResetListeners) {
       removeListener();
@@ -144,36 +234,29 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
       ),
     });
 
-    const threadAnchorElement =
-      target.type === 'post'
-        ? document.getElementById(getAnchorId(target.postId))
-        : null;
-
     const lastThreadPostElement =
       target.type === 'bottom'
         ? this.getLastThreadPost(threadPageContainer)
         : null;
 
-    if (threadAnchorElement) {
-      this.renderer.scrollToElement(threadAnchorElement, {
-        behavior: 'auto',
-      });
-
-      this.setupScrollStabilization(threadPageContainer, threadAnchorElement);
+    if (target.type === 'post') {
+      this.focusPostWhenReady(threadPageContainer, target.postId);
       return;
     }
 
     if (target.type === 'bottom') {
       if (lastThreadPostElement) {
-        this.renderer.scrollToElement(lastThreadPostElement, {
+        const didScroll = this.renderer.scrollToElement(lastThreadPostElement, {
           behavior: 'auto',
         });
-      }
 
-      this.setupScrollStabilization(
-        threadPageContainer,
-        lastThreadPostElement ?? element,
-      );
+        if (didScroll) {
+          this.setupScrollStabilization(
+            threadPageContainer,
+            lastThreadPostElement,
+          );
+        }
+      }
 
       return;
     }

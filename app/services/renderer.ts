@@ -267,13 +267,15 @@ export default class RendererService extends Service {
    * Attempts to set the window's scroll position. Will not do anything if
    * RendererService.preventScrollReset has been set earlier. However, setting this
    * property will only prevent a scroll reset one single time.
+   * @returns Whether the scroll was requested.
    */
   trySetScrollPosition = (options?: Partial<ScrollToOptions>) => {
     if (this.preventScrollReset) {
       this.preventScrollReset = false;
-      return;
+      return false;
     }
     window.scrollTo({ top: 0, behavior: 'auto', ...options });
+    return true;
   };
 
   /**
@@ -290,11 +292,12 @@ export default class RendererService extends Service {
    * Attempts to scroll to the given element.
    * @param element The element's id or the element itself.
    * @param options.highlight (optional) Whether the element should be highlighted.
+   * @returns Whether the scroll was requested.
    */
   scrollToElement(
     element: string | HTMLElement | null,
     options?: ScrollToElementOptions,
-  ) {
+  ): boolean {
     const { highlight, behavior } = {
       highlight: false,
       behavior: 'smooth' as ScrollBehavior,
@@ -304,20 +307,19 @@ export default class RendererService extends Service {
     if (typeof element === 'string') {
       element = document.getElementById(element);
     }
-    if (!element) return;
+    if (!element) return false;
     const rect = element.getBoundingClientRect();
-    const currentScrollTop =
-      document.documentElement.scrollTop || document.body.scrollTop;
-    const topNavHeight = (document.getElementById('top-nav') as HTMLElement)
-      .clientHeight;
-    this.trySetScrollPosition({
-      top: currentScrollTop + rect.top - topNavHeight,
+    const topNavHeight = document.getElementById('top-nav')?.clientHeight ?? 0;
+    const didScroll = this.trySetScrollPosition({
+      top: window.scrollY + rect.top - topNavHeight,
       behavior,
     });
     if (highlight) {
       element.removeAttribute('data-highlighted');
       next(() => element.setAttribute('data-highlighted', ''));
     }
+
+    return didScroll;
   }
 
   /**
