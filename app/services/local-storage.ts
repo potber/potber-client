@@ -2,7 +2,7 @@ import { action } from '@ember/object';
 import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import MessagesService from './messages';
-import { clean, valid, gt } from 'semver';
+import { gt, valid } from 'semver';
 import type Post from 'potber-client/models/post';
 import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
 import { appConfig } from 'potber-client/config/app.config';
@@ -161,28 +161,32 @@ export default class LocalStorageService extends Service {
   }
 
   /**
-   * Reads the last encounted app version and returns the current unencounted version
-   * if it is higher than the last encounted version.
+   * Reads the last encountered valid app version from localStorage.
    */
-  getUnencountedVersion() {
+  getEncounteredVersion(): string | undefined {
     const encounteredVersion = localStorage.getItem(
       `${PREFIX}lastEncountedVersion`,
     );
-    if (!valid(encounteredVersion)) return undefined;
-    if (gt(appConfig.version, clean(encounteredVersion as string) as string)) {
-      return appConfig.version;
-    }
-    return undefined;
+    return valid(encounteredVersion) ?? undefined;
   }
 
   /**
-   * Sets the last encounted app version to the current app version and stores it.
+   * Stores a valid encountered app version without ever lowering the existing
+   * version marker.
    */
-  setEncounteredVersion() {
-    const version = appConfig.version;
-    localStorage.setItem(`${PREFIX}lastEncountedVersion`, version);
-    this.messages.log(`${PREFIX}lastEncountedVersion set to: '${version}'.`, {
-      context: this.constructor.name,
-    });
+  setEncounteredVersion(version = appConfig.version) {
+    const normalizedVersion = valid(version);
+    if (!normalizedVersion) return;
+
+    const encounteredVersion = this.getEncounteredVersion();
+    if (encounteredVersion && !gt(normalizedVersion, encounteredVersion)) {
+      return;
+    }
+
+    localStorage.setItem(`${PREFIX}lastEncountedVersion`, normalizedVersion);
+    this.messages.log(
+      `${PREFIX}lastEncountedVersion set to: '${normalizedVersion}'.`,
+      { context: this.constructor.name },
+    );
   }
 }

@@ -1,7 +1,7 @@
 import environment from 'potber-client/config/environment';
 import { clean } from 'semver';
 
-const version = clean(environment.APP.version ?? '0.0.0') ?? '0.0.0';
+const version = clean(environment.APP.version ?? '') ?? '';
 const appsignalFrontendKey = String(
   window.APP?.APPSIGNAL_FRONTEND_KEY ??
     environment.APP['APPSIGNAL_FRONTEND_KEY'] ??

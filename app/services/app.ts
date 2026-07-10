@@ -10,6 +10,8 @@ import CustomSession from './custom-session';
 import SettingsService from './settings';
 import ExceptionHandler from './exception-handler';
 import SocialsService from './socials';
+import { gt, valid } from 'semver';
+import { appConfig } from 'potber-client/config/app.config';
 
 export default class AppService extends Service {
   @service declare settings: SettingsService;
@@ -23,6 +25,7 @@ export default class AppService extends Service {
   @service declare exceptionHandler: ExceptionHandler;
   @service declare socials: SocialsService;
   initialized = false;
+  versionModalDelayMs = 1000;
   deferredInstallPrompt: any = undefined;
 
   async initialize() {
@@ -49,31 +52,36 @@ export default class AppService extends Service {
   }
 
   async checkForNewVersion() {
-    const unencountedVersion = this.localStorage.getUnencountedVersion();
-
     try {
-      if (unencountedVersion) {
-        await sleep(1000);
-        this.modal.confirm({
-          title: 'Es gibt Neuigkeiten!',
-          text: `Potber wurde auf Version ${unencountedVersion} aktualisiert.
+      const currentVersion = valid(appConfig.version);
+      if (!currentVersion) return;
+
+      const encounteredVersion = this.localStorage.getEncounteredVersion();
+      if (encounteredVersion && !gt(currentVersion, encounteredVersion)) return;
+
+      this.localStorage.setEncounteredVersion(currentVersion);
+
+      // Establish a baseline on first use without presenting an update modal.
+      if (!encounteredVersion) return;
+
+      await sleep(this.versionModalDelayMs);
+      this.modal.confirm({
+        title: 'Es gibt Neuigkeiten!',
+        text: `Potber wurde auf Version ${currentVersion} aktualisiert.
           Tippe auf 'Details', um mehr über die Änderungen zu erfahren.`,
-          icon: 'star',
-          cancelLabel: 'Details',
-          onSubmit: () => {
-            this.modal.close();
-          },
-          onCancel: () => {
-            this.modal.close();
-            this.router.transitionTo('changelog');
-          },
-        });
-      }
-    } catch (error) {
+        icon: 'star',
+        cancelLabel: 'Details',
+        onSubmit: () => {
+          this.modal.close();
+        },
+        onCancel: () => {
+          this.modal.close();
+          this.router.transitionTo('changelog');
+        },
+      });
+    } catch {
       // Occasionally this check might fail on cold starts of the PWA.
       // If it does, we simply move on.
-    } finally {
-      this.localStorage.setEncounteredVersion();
     }
   }
 }
