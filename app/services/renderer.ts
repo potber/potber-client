@@ -23,7 +23,7 @@ export default class RendererService extends Service {
   private rootStyle = document.documentElement.style;
   private computedStyle = getComputedStyle(document.documentElement);
 
-  preventScrollReset = false;
+  private preventScrollResetForUrl?: string;
 
   private setSidebarShellOffset = (width: string) => {
     if (this.isDesktop) {
@@ -256,23 +256,27 @@ export default class RendererService extends Service {
   };
 
   /**
-   * Prevents the next reset of the scroll position that would otherwise be
-   * triggered by calling RendererService.trySetScrollPosition().
+   * Prevents the next reset of the scroll position on the current URL that
+   * would otherwise be triggered by calling
+   * RendererService.trySetScrollPosition().
    */
   preventNextScrollReset = () => {
-    this.preventScrollReset = true;
+    this.preventScrollResetForUrl = window.location.href;
   };
 
   /**
-   * Attempts to set the window's scroll position. Will not do anything if
-   * RendererService.preventScrollReset has been set earlier. However, setting this
-   * property will only prevent a scroll reset one single time.
+   * Attempts to set the window's scroll position. A reset is skipped once when
+   * RendererService.preventNextScrollReset() was called on the same URL. A route
+   * change invalidates that guard so a stale refresh cannot suppress the reset.
    */
   trySetScrollPosition = (options?: Partial<ScrollToOptions>) => {
-    if (this.preventScrollReset) {
-      this.preventScrollReset = false;
+    const preventScrollResetForUrl = this.preventScrollResetForUrl;
+    this.preventScrollResetForUrl = undefined;
+
+    if (preventScrollResetForUrl === window.location.href) {
       return;
     }
+
     window.scrollTo({ top: 0, behavior: 'auto', ...options });
   };
 
