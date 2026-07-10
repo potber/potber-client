@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   lint:
-    uses: potber/.github/.github/workflows/npm_lint.yml@v1
+    uses: potber/.github/.github/workflows/npm_lint.yml@v2
 
   test:
-    uses: potber/.github/.github/workflows/npm_test-coverage.yml@v1
+    uses: potber/.github/.github/workflows/npm_test-coverage.yml@v2
 
   release_image:
     needs:

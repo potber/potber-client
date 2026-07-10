@@ -191,6 +191,21 @@
   </Common::Control::Dropdown>
 
   <Common::Control::Dropdown
+    @options={{this.config.collapseQuotesOptions}}
+    @default={{@model.currentCollapseQuotesOption}}
+    @onSelect={{fn this.handleSettingSelect 'collapseQuotes'}}
+    @size='max'
+    @label={{t 'route.settings.collapse-quotes.label'}}
+  >
+    <:info>
+      <Common::Control::InfoButton
+        @title={{t 'route.settings.collapse-quotes.label'}}
+        @text={{t 'route.settings.collapse-quotes.info'}}
+      />
+    </:info>
+  </Common::Control::Dropdown>
+
+  <Common::Control::Dropdown
     @options={{this.config.gesturesOptions}}
     @default={{@model.currentGesturesOption}}
     @onSelect={{this.handleGesturesSelect}}
