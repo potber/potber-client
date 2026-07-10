@@ -17,9 +17,8 @@ module.exports = function (defaults) {
     },
     'ember-cli-babel': { enableTypeScriptTransform: true },
     'ember-cli-htmlbars': {
-      templateCompilerPath: require.resolve(
-        'ember-source/ember-template-compiler/index.js',
-      ),
+      templateCompilerPath:
+        require.resolve('ember-source/ember-template-compiler/index.js'),
     },
   });
 

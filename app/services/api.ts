@@ -123,9 +123,8 @@ export default class ApiService extends Service {
       'Content-Type': 'application/json',
     };
     if (this.session.isAuthenticated) {
-      headers[
-        'Authorization'
-      ] = `Bearer ${this.session.data.authenticated.access_token}`;
+      headers['Authorization'] =
+        `Bearer ${this.session.data.authenticated.access_token}`;
     }
     this.messages.log(
       `Outgoing request: ${request?.method ?? 'GET'} ${url.toString()}`,

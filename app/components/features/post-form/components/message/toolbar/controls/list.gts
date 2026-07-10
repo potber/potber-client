@@ -29,8 +29,8 @@ export default class PostFormMessageList extends Component<Signature> {
       type === ListType.Numerical
         ? '=1'
         : type === ListType.Alphabetical
-        ? '=a'
-        : '';
+          ? '=a'
+          : '';
     const insertion = `[list${typeModifier}]\n${entries
       .map((item) => `[*]${item}`)
       .join('\n')}[/list]`;

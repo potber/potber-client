@@ -22,13 +22,13 @@ export enum AvatarStyle {
 }
 
 export enum Theme {
-  'default',
-  'mods',
-  'snowman',
-  'discord',
+  default,
+  mods,
+  snowman,
+  discord,
   'purple-haze',
   'tokyo-night',
-  'poppx',
+  poppx,
 }
 
 export enum LandingPage {

@@ -104,7 +104,7 @@ export default class PostComponent extends Component<Signature> {
   get showAvatar() {
     return Boolean(
       this.post.avatarUrl &&
-        this.settings.getSetting('avatarStyle') === AvatarStyle.small,
+      this.settings.getSetting('avatarStyle') === AvatarStyle.small,
     );
   }
 

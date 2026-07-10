@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import Service, { service } from '@ember/service';
 import SettingsService from './settings';
 import type NotificationsService from './notifications';
