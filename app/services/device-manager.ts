@@ -4,12 +4,7 @@ import SettingsService, { Gestures } from './settings';
 import RendererService from './renderer';
 
 type OperatingSystem =
-  | 'Android'
-  | 'iOS'
-  | 'Windows'
-  | 'Linux'
-  | 'Mac OS'
-  | 'unknown';
+  'Android' | 'iOS' | 'Windows' | 'Linux' | 'Mac OS' | 'unknown';
 
 type Browser = 'Firefox' | 'Chrome' | 'WebKit' | 'unknown';
 

@@ -19,6 +19,7 @@ const mockedSettings: Settings = {
   autoRefreshSidebar: false,
   sidebarLayout: SidebarLayout.leftTop,
   fontSize: FontSize.medium,
+  collapseQuotes: true,
   replaceForumUrls: true,
   darkenReadPosts: false,
   hideGlobalAndAnnouncementThreads: false,

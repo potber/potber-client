@@ -48,9 +48,9 @@ module(
 
     test('renders plain text when unread posts continue on the current page', async function (this: Context, assert) {
       const posts = createPosts(30);
-      this.set('posts', posts);
-      this.set('post', posts[10] as Post);
-      this.set('thread', createThread(posts));
+      this.posts = posts;
+      this.post = posts[10] as Post;
+      this.thread = createThread(posts);
 
       await render<Context>(hbs`
         <Routes::Thread::UnreadPostsSeparator
@@ -66,9 +66,9 @@ module(
 
     test('links to the next page when unread posts start there', async function (this: Context, assert) {
       const posts = createPosts(30);
-      this.set('posts', posts);
-      this.set('post', posts[29] as Post);
-      this.set('thread', createThread(posts));
+      this.posts = posts;
+      this.post = posts[29] as Post;
+      this.thread = createThread(posts);
 
       await render<Context>(hbs`
         <Routes::Thread::UnreadPostsSeparator

@@ -11,32 +11,16 @@
     // The combination of `baseUrl` with `paths` allows Ember's classic package
     // layout, which is not resolvable with the Node resolution algorithm, to
     // work with TypeScript.
+    "baseUrl": ".",
     "paths": {
-      "potber-client/tests/*": [
-        "./tests/*"
-      ],
-      "potber-client/*": [
-        "./app/*"
-      ],
-      "*": [
-        "./types/*"
-      ]
+      "potber-client/tests/*": ["tests/*"],
+      "potber-client/*": ["app/*"],
+      "*": ["types/*"]
     },
-    "types": [
-      "@embroider/core/virtual",
-      "vite/client",
-      "@ember-intl/vite/virtual"
-    ]
+    "types": ["@embroider/core/virtual", "vite/client", "@ember-intl/vite/virtual"]
   },
-  "include": [
-    "app/**/*",
-    "tests/**/*",
-    "types/**/*"
-  ],
+  "include": ["app/**/*", "tests/**/*", "types/**/*"],
   "glint": {
-    "environment": [
-      "ember-loose",
-      "ember-template-imports"
-    ]
+    "environment": ["ember-loose", "ember-template-imports"]
   }
 }

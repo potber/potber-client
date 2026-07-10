@@ -6,12 +6,7 @@ import type NotificationsService from 'potber-client/services/notifications';
 import './styles.css';
 
 type NotificationPosition =
-  | 'top'
-  | 'top-left'
-  | 'top-right'
-  | 'bottom'
-  | 'bottom-left'
-  | 'bottom-right';
+  'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right';
 
 interface Signature {
   Args: {

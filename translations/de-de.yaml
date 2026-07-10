@@ -85,6 +85,9 @@ route:
     hide-global-and-announcement-threads:
       label: Globale Threads & Ankündigungen
       info: Stelle ein, ob globale Threads und Ankündigungen in der Board-Ansicht angezeigt oder ausgeblendet werden sollen.
+    collapse-quotes:
+      label: Zitate einklappen
+      info: Ist diese Option aktiviert, werden Zitate in Posts zunächst eingeklappt und können bei Bedarf per Tippen oder Klick aufgeklappt werden.
     go-to-bottom-of-thread-page:
       label: Nach Öffnen eines Threads
       info: Stelle ein, ob beim Navigieren zu einem Thread aus einem Board der Seitenanfang oder das Seitenende der letzten Threadseite gezeigt werden soll.
@@ -173,6 +176,12 @@ route:
   create-thread:
     title: Thread erstellen
 component:
+  board:
+    post:
+      quote-collapse:
+        with-author:
+          expand: Zitat von {authorName} anzeigen
+          collapse: Zitat von {authorName} ausblenden
   misc:
     error:
       not-found:

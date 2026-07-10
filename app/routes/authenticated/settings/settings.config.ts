@@ -114,6 +114,17 @@ export const settingsConfig: Record<
     { label: 'Ausblenden', data: true },
   ],
 
+  collapseQuotesOptions: [
+    {
+      label: 'An',
+      data: true,
+    },
+    {
+      label: 'Aus',
+      data: false,
+    },
+  ],
+
   goToBottomOfThreadPageOptions: [
     {
       label: 'Zum Seitenende springen',

@@ -7,6 +7,7 @@ export interface Settings {
   fontSize: FontSize;
   darkenReadPosts: boolean;
   hideGlobalAndAnnouncementThreads: boolean;
+  collapseQuotes: boolean;
   replaceForumUrls: boolean;
   goToBottomOfThreadPage: boolean;
   transitions: Transitions;
@@ -21,13 +22,13 @@ export enum AvatarStyle {
 }
 
 export enum Theme {
-  'default',
-  'mods',
-  'snowman',
-  'discord',
+  default,
+  mods,
+  snowman,
+  discord,
   'purple-haze',
   'tokyo-night',
-  'poppx',
+  poppx,
 }
 
 export enum LandingPage {

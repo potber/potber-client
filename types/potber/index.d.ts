@@ -10,18 +10,9 @@ declare global {
   // // interface Function extends Ember.FunctionPrototypeExtensions {}
 
   type ControlSize =
-    | 'square'
-    | 'small'
-    | 'medium'
-    | 'large'
-    | 'x-large'
-    | 'auto'
-    | 'max';
+    'square' | 'small' | 'medium' | 'large' | 'x-large' | 'auto' | 'max';
   type ControlVariant =
-    | 'primary'
-    | 'primary-transparent'
-    | 'secondary'
-    | 'secondary-transparent';
+    'primary' | 'primary-transparent' | 'secondary' | 'secondary-transparent';
   type ModalVariant = 'default' | 'success' | 'warning' | 'error';
 
   interface ContentParserMock {

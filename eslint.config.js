@@ -5,10 +5,10 @@ const globals = require('globals');
 const tsParser = require('@typescript-eslint/parser');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
 const emberPlugin = require('eslint-plugin-ember');
-const emberParser = require('ember-eslint-parser');
+const emberBaseConfig = require('eslint-plugin-ember/configs/base');
 const prettierPlugin = require('eslint-plugin-prettier');
 const prettierConfig = require('eslint-config-prettier');
-const nodePlugin = require('eslint-plugin-n').default;
+const nodePlugin = require('eslint-plugin-n');
 const qunitPlugin = require('eslint-plugin-qunit');
 
 const sourceFiles = [
@@ -70,6 +70,7 @@ module.exports = [
     ],
   },
   js.configs.recommended,
+  ...emberBaseConfig,
   {
     name: 'potber/source',
     files: sourceFiles,
@@ -85,9 +86,6 @@ module.exports = [
         ...globals.browser,
         ...globals.es2022,
       },
-    },
-    plugins: {
-      ember: emberPlugin,
     },
     rules: {
       ...emberPlugin.configs.recommended.rules,
@@ -122,7 +120,6 @@ module.exports = [
     name: 'potber/gjs',
     files: gjsFiles,
     languageOptions: {
-      parser: emberParser,
       ecmaVersion: 2022,
       sourceType: 'module',
       parserOptions: {
@@ -131,10 +128,6 @@ module.exports = [
         },
       },
     },
-    plugins: {
-      ember: emberPlugin,
-    },
-    processor: 'ember/noop',
     rules: {
       ...emberPlugin.configs['recommended-gjs'].rules,
       'ember/no-at-ember-render-modifiers': 'off',
@@ -144,7 +137,6 @@ module.exports = [
     name: 'potber/gts',
     files: gtsFiles,
     languageOptions: {
-      parser: emberParser,
       ecmaVersion: 2022,
       sourceType: 'module',
       parserOptions: {
@@ -154,10 +146,8 @@ module.exports = [
       },
     },
     plugins: {
-      ember: emberPlugin,
       '@typescript-eslint': tsPlugin,
     },
-    processor: 'ember/noop',
     rules: {
       ...emberPlugin.configs['recommended-gts'].rules,
       ...tsCompatibilityRules,
