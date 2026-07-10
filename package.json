@@ -78,7 +78,7 @@
     "@typescript-eslint/eslint-plugin": "^8.61.0",
     "@typescript-eslint/parser": "^8.56.1",
     "@use-gesture/vanilla": "^10.3.1",
-    "autoprefixer": "^10.4.16",
+    "autoprefixer": "^10.5.0",
     "babel-plugin-ember-template-compilation": "^4.0.0",
     "concurrently": "^10.0.3",
     "decorator-transforms": "^2.3.1",
