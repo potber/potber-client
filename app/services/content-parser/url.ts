@@ -12,7 +12,7 @@ export function parseUrl(
 ) {
   const URL_TAG_REGEX =
     /\[url(?:=(?:"|')?([^\]]+)(?:"|')?)?\]([\s\S]*?)\[\/url\]/gi;
-  const URL_REGEX = /\b([a-zA-Z]+:\/\/[^\s]+|www\.[^\s]+)\b/gi;
+  const URL_REGEX = /\b(?:[a-zA-Z]+:\/\/|www\.)/i;
 
   const FORUM_URL_REPLACEMENTS = [
     {
@@ -63,11 +63,16 @@ export function parseUrl(
 
       // We might need to extract the URL from the content
       if (!url) {
-        const urlMatch = content.replace('&#58;', ':').match(URL_REGEX);
+        const normalizedContent = content.replaceAll('&#58;', ':').trim();
+        const urlMatch = normalizedContent.match(URL_REGEX);
 
         // We found a valid URL in the content
-        if (urlMatch) {
-          url = urlMatch[0];
+        if (urlMatch?.index !== undefined) {
+          const urlContent = normalizedContent.slice(urlMatch.index);
+          url =
+            urlMatch.index === 0
+              ? urlContent
+              : urlContent.match(/^[^\s"'<>]+/)?.[0];
         } else {
           // The content is the URL
           url = content;
@@ -75,6 +80,10 @@ export function parseUrl(
       }
 
       if (!url) continue;
+
+      // The forum may decode encoded spaces before returning post content. Keep
+      // the complete URL intact by encoding whitespace again for the href.
+      url = url.trim().replaceAll(/\s/g, '%20');
 
       if (replaceForumUrls && url.includes(appConfig.forumUrl)) {
         for (const replacement of FORUM_URL_REPLACEMENTS) {
