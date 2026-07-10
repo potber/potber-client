@@ -1,6 +1,24 @@
 import { installErrorHandler } from '@appsignal/ember';
 import Appsignal from '@appsignal/javascript';
+import { getOnerror, setOnerror } from '@ember/-internals/error-handling';
+import { RSVP } from '@ember/-internals/runtime';
+import { isTesting } from '@ember/debug';
 import { appConfig } from 'potber-client/config/app.config';
+
+type EmberErrorHandler = (error: unknown) => void;
+
+const emberErrorHandling = {
+  get onerror(): EmberErrorHandler | undefined {
+    return getOnerror() as EmberErrorHandler | undefined;
+  },
+  set onerror(handler: EmberErrorHandler | undefined) {
+    setOnerror(handler);
+  },
+  RSVP,
+  get testing() {
+    return isTesting();
+  },
+};
 
 export const appsignal = new Appsignal({
   key: appConfig.appsignal.frontendKey,
@@ -30,6 +48,6 @@ export function enableAppsignal() {
     return;
   }
 
-  installErrorHandler(appsignal);
+  installErrorHandler(appsignal, emberErrorHandling);
   emberErrorHandlerInstalled = true;
 }
