@@ -3,6 +3,35 @@ import { extensions, classicEmberSupport, ember } from '@embroider/vite';
 import { loadTranslations } from '@ember-intl/vite';
 import { babel } from '@rollup/plugin-babel';
 import autoprefixer from 'autoprefixer';
+import { readFileSync } from 'node:fs';
+
+const { version } = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+);
+
+const deploymentVersionPlugin = {
+  name: 'potber-deployment-version',
+  configureServer(server) {
+    server.middlewares.use((request, response, next) => {
+      const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
+      if (pathname !== '/version.json') {
+        next();
+        return;
+      }
+
+      response.setHeader('Cache-Control', 'no-store');
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ version }));
+    });
+  },
+  generateBundle() {
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: `${JSON.stringify({ version })}\n`,
+    });
+  },
+};
 
 const chunkGroups = [
   {
@@ -94,6 +123,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
+    deploymentVersionPlugin,
     classicEmberSupport(),
     ember(),
     loadTranslations(),

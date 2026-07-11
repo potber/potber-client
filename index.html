@@ -11,6 +11,18 @@
     <meta name="theme-color" content="#0c1c2c" />
     <meta name="apple-mobile-web-app-status-bar-style" content="#0c1c2c" />
 
+    <script>
+      const reloadUrl = new URL(window.location.href);
+      const hasReloadParameters =
+        reloadUrl.searchParams.has('_potber_version') ||
+        reloadUrl.searchParams.has('_potber_reload');
+      reloadUrl.searchParams.delete('_potber_version');
+      reloadUrl.searchParams.delete('_potber_reload');
+      if (hasReloadParameters) {
+        window.history.replaceState(window.history.state, '', reloadUrl);
+      }
+    </script>
+
     {{content-for "head"}}
 
     <link rel="manifest" href="/manifest.webmanifest" />

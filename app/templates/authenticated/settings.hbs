@@ -252,6 +252,16 @@
     </:info>
   </Common::Control::Dropdown>
 
+  <Common::Control::Button
+    @text={{t 'route.settings.refresh-app'}}
+    @icon='arrows-rotate'
+    @variant='primary'
+    @size='large'
+    @onClick={{this.handleRefreshApp}}
+    class='margin-auto margin-vertical-x-small'
+    data-test-refresh-app
+  />
+
   <hr />
 
   <Common::Control::Link

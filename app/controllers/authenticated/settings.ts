@@ -77,6 +77,10 @@ export default class SettingsController extends Controller {
     window.location.reload();
   };
 
+  handleRefreshApp = () => {
+    this.app.refreshApp();
+  };
+
   handleSignOut = () => {
     this.session.invalidate();
   };

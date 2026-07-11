@@ -4,12 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [1.29.0] - 2026-04-26
+## [1.29.0] - 2026-07-11
+
+### Added
+
+- Quotes can now be collapsed automatically using a new setting.
+- Potber can now be reloaded from Settings.
 
 ### Changed
 
-- Clicking on the "new posts on new page" indicator now links to the next page
- 
+- The “New posts on the next page” notice now links directly to the next page.
+
+### Fixed
+
+- Threads now open at the correct position more reliably, even while images are loading.
+- Links containing spaces work again.
+- The update notice no longer appears multiple times.
+
 ## [1.28.1] - 2026-03-29
 
 ### Fixed

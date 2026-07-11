@@ -2,8 +2,17 @@ export const changelog: ChangelogItem[] = [
   {
     version: '1.29.0',
     type: 'minor',
+    added: [
+      'Zitate lassen sich über eine neue Einstellung automatisch einklappen.',
+      'Potber lässt sich jetzt über die Einstellungen neu laden.',
+    ],
     changed: [
-      'Die "Neue Posts auf neuer Seite"-Anzeige ist nun klickbar und navigiert direkt zur nächsten Seite.',
+      'Der Hinweis „Neue Posts auf der nächsten Seite“ führt jetzt direkt zur nächsten Seite.',
+    ],
+    fixed: [
+      'Beim Öffnen von Threads landet man zuverlässiger an der richtigen Stelle auch wenn Bilder nachladen.',
+      'Links mit Leerzeichen funktionieren wieder.',
+      'Der Hinweis auf eine neue Version erscheint nicht mehr mehrfach.',
     ],
   },
   {
