@@ -1,5 +1,5 @@
 import { module, test } from 'qunit';
-import { visit, currentURL } from '@ember/test-helpers';
+import { click, currentURL, visit } from '@ember/test-helpers';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import Service from '@ember/service';
 import SettingsController from 'potber-client/controllers/authenticated/settings';
@@ -12,8 +12,14 @@ module('Acceptance | Authenticated | Settings', function (hooks) {
 
   hooks.beforeEach(function () {
     class AppStub extends Service {
+      refreshCalls = 0;
+
       initialize = async () => {
         return;
+      };
+
+      refreshApp = () => {
+        this.refreshCalls += 1;
       };
     }
 
@@ -73,5 +79,17 @@ module('Acceptance | Authenticated | Settings', function (hooks) {
 
     assert.strictEqual(settings.sidebarLayout, SidebarLayout.rightBottom);
     assert.strictEqual(updateSidebarLayoutCalls, 1);
+  });
+
+  test('refreshing the app', async function (assert) {
+    await visit('/settings');
+    const app = this.owner.lookup('service:app') as Service & {
+      refreshCalls: number;
+    };
+
+    assert.dom('[data-test-refresh-app]').hasText('App neu laden');
+    await click('[data-test-refresh-app]');
+
+    assert.strictEqual(app.refreshCalls, 1);
   });
 });

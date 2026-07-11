@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Added
 
 - Quotes can now be collapsed automatically using a new setting.
+- Potber can now be reloaded from Settings.
 
 ### Changed
 

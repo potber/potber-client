@@ -4,6 +4,7 @@ export const changelog: ChangelogItem[] = [
     type: 'minor',
     added: [
       'Zitate lassen sich über eine neue Einstellung automatisch einklappen.',
+      'Potber lässt sich jetzt über die Einstellungen neu laden.',
     ],
     changed: [
       'Der Hinweis „Neue Posts auf der nächsten Seite“ führt jetzt direkt zur nächsten Seite.',

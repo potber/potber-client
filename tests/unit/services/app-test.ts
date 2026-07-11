@@ -130,6 +130,18 @@ module('Unit | Service | App | Deployment version check', function (hooks) {
     assert.strictEqual(reloadUrl.searchParams.get('_potber_reload'), '12345');
   });
 
+  test('manually refreshes the currently running version', function (assert) {
+    const app = this.owner.lookup('service:app') as AppService;
+    let navigatedVersion: string | undefined;
+    app.navigateToDeployedVersion = (version: string) => {
+      navigatedVersion = version;
+    };
+
+    app.refreshApp();
+
+    assert.strictEqual(navigatedVersion, '1.29.0');
+  });
+
   test('immediately navigates to a different deployment', async function (assert) {
     let requestedUrl: URL | undefined;
     let requestedOptions: RequestInit | undefined;

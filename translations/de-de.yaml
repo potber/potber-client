@@ -112,6 +112,7 @@ route:
     debug:
       label: Debug-Modus
       info: Wechsle in den Debug-Modus. Üblicherweise solltest Du diese Einstellung nicht aktivieren.
+    refresh-app: App neu laden
     appsignal-error-reporting:
       label: Fehlerberichte senden
       info: Standardmäßig darf potber unerwartete Frontend-Fehler an AppSignal senden, damit Probleme besser nachvollziehbar werden und behoben werden können. Wenn Du das nicht möchtest, kannst Du diese Option deaktivieren. Änderungen werden erst nach einem Neuladen der App wirksam.

@@ -148,6 +148,10 @@ export default class AppService extends Service {
     window.location.replace(this.getDeployedVersionUrl(version));
   }
 
+  refreshApp() {
+    this.navigateToDeployedVersion(valid(appConfig.version) ?? 'refresh');
+  }
+
   async setupSession() {
     await this.session.setup();
     if (this.session.isAuthenticated) {
