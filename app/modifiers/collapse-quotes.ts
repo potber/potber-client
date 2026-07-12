@@ -13,6 +13,7 @@ interface CollapseQuotesSignature {
   Args: {
     Named: {
       enabled: boolean;
+      source?: unknown;
     };
     Positional: [];
   };
@@ -27,6 +28,8 @@ export default class CollapseQuotesModifier extends Modifier<CollapseQuotesSigna
     _positional: PositionalArgs<CollapseQuotesSignature>,
     named: NamedArgs<CollapseQuotesSignature>,
   ) {
+    // Re-run when refreshed content replaces the quote elements in the DOM.
+    void named.source;
     this.resetQuotes(element);
 
     if (!named.enabled) {

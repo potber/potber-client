@@ -1,4 +1,5 @@
-import { click, render, type TestContext } from '@ember/test-helpers';
+import { click, render, settled, type TestContext } from '@ember/test-helpers';
+import { set } from '@ember/object';
 import { htmlSafe } from '@ember/template';
 import { hbs } from 'ember-cli-htmlbars';
 import collapseQuotes from 'potber-client/modifiers/collapse-quotes';
@@ -9,6 +10,7 @@ interface Context extends TestContext {
   collapseQuotes: typeof collapseQuotes;
   content: ReturnType<typeof htmlSafe>;
   enabled: boolean;
+  source?: object;
 }
 
 module('Integration | Modifier | collapse-quotes', function (hooks) {
@@ -73,5 +75,40 @@ module('Integration | Modifier | collapse-quotes', function (hooks) {
     assert.dom('.quote').doesNotHaveClass('quote-has-header');
     assert.dom('.quote-collapse-toggle').doesNotExist();
     assert.dom('.quote blockquote').hasText('Ein langes Zitat');
+  });
+
+  test('it restores collapsible quotes when the rendered content is replaced', async function (this: Context, assert) {
+    this.collapseQuotes = collapseQuotes;
+    this.enabled = true;
+    this.source = {};
+    this.content = htmlSafe(
+      '<span class="quote" data-author-name="Alice"><a class="quote-header" href="/thread?TID=1&amp;PID=2"><p>Alice</p></a><blockquote>Altes Zitat</blockquote></span>',
+    );
+
+    await render<Context>(hbs`
+      <div
+        {{this.collapseQuotes enabled=this.enabled source=this.source}}
+      >{{this.content}}</div>
+    `);
+
+    assert.dom('.quote').hasClass('quote-collapsed');
+    assert.dom('.quote-collapse-toggle').exists();
+
+    set(
+      this,
+      'content',
+      htmlSafe(
+        '<span class="quote" data-author-name="Bob"><a class="quote-header" href="/thread?TID=1&amp;PID=3"><p>Bob</p></a><blockquote>Aktualisiertes Zitat</blockquote></span>',
+      ),
+    );
+    set(this, 'source', {});
+    await settled();
+
+    assert.dom('.quote blockquote').hasText('Aktualisiertes Zitat');
+    assert.dom('.quote').hasClass('quote-collapsed');
+    assert.dom('.quote-collapse-toggle').exists();
+    assert
+      .dom('.quote-collapse-toggle')
+      .hasAttribute('aria-label', 'Zitat von Bob anzeigen');
   });
 });
