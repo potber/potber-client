@@ -29,6 +29,7 @@ import SocialsService from 'potber-client/services/socials';
 import { formatDateTime } from 'potber-client/utils/date';
 import collapseQuotes from 'potber-client/modifiers/collapse-quotes';
 import maskBlockedQuotes from 'potber-client/modifiers/mask-blocked-quotes';
+import quoteNavigation from 'potber-client/modifiers/quote-navigation';
 import renderTex from 'potber-client/modifiers/render-tex';
 
 interface Signature {
@@ -328,6 +329,7 @@ export default class PostComponent extends Component<Signature> {
         class={{classNames this 'body'}}
         {{collapseQuotes enabled=this.collapseQuotesEnabled source=this.post}}
         {{maskBlockedQuotes className=this.blockedMaskClassName}}
+        {{quoteNavigation}}
       >
         {{#if this.post.contentHidden}}
           <p class='subtitle no-margin'>⚠ Inhalt versteckt</p>
