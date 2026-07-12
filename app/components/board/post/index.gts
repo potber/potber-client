@@ -326,7 +326,7 @@ export default class PostComponent extends Component<Signature> {
       </div>
       <div
         class={{classNames this 'body'}}
-        {{collapseQuotes enabled=this.collapseQuotesEnabled}}
+        {{collapseQuotes enabled=this.collapseQuotesEnabled source=this.post}}
         {{maskBlockedQuotes className=this.blockedMaskClassName}}
       >
         {{#if this.post.contentHidden}}
