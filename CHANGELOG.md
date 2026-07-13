@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.29.1] - 2026-07-12
+
+### Fixed
+
+- Backdror filters are now applied in Chrome.
+
 ## [1.29.0] - 2026-07-11
 
 ### Added
