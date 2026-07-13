@@ -1,5 +1,10 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.29.1',
+    type: 'patch',
+    fixed: ['Gelesene Posts sind in Chrome wieder abgedunkelt.'],
+  },
+  {
     version: '1.29.0',
     type: 'minor',
     added: [
