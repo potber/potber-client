@@ -78,8 +78,8 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  backdrop-filter: var(--filter-loading-indicator);
   -webkit-backdrop-filter: var(--filter-loading-indicator);
+  backdrop-filter: var(--filter-loading-indicator);
   width: 64px;
   height: 64px;
   opacity: var(--loading-indicator-opacity);
