@@ -2,7 +2,7 @@
 <img src="./.logo/440x196_round.png" alt="potber logo" height="200" />
 </p>
 <p align="center">
-A mobile-first web client for the german internet forum <a href="https://forum.mods.de" target="_blank">forum.mods.de</a> built with <a href="https://emberjs.com/" target="_blank">ember.js</a>. If you're looking for potber-api, you can find it <a href="https://github.com/spuxx-dev/potber-api" target="_blank">here</a>.
+A mobile-first web client for the german internet forum <a href="https://forum.mods.de" target="_blank">forum.mods.de</a> built with <a href="https://emberjs.com/" target="_blank">ember.js</a>. If you're looking for potber-api, you can find it <a href="https://github.com/potber/potber-api" target="_blank">here</a>.
 </p>
 
 ![Production Builds](https://github.com/potber/potber-client/actions/workflows/production.yml/badge.svg)
@@ -96,7 +96,7 @@ You will need the following things properly installed on your computer.
 - [Git](https://git-scm.com/)
 - [Node.js 20](https://nodejs.org/) (with npm)
 - [Ember CLI](https://cli.emberjs.com/release/)
-- [potber-api](https://github.com/spuxx-dev/potber-api) - Without this web server, potber-client does not function.
+- [potber-api](https://github.com/potber/potber-api) - Without this web server, potber-client does not function.
 
 ### Installation
 
@@ -114,7 +114,7 @@ You need to have Docker installed on your system and have the [Dev Containers ex
 
 #### Without Dev Container
 
-- Clone [potber-api](https://github.com/spuxx-dev/potber-api) and start up a local instance.
+- Clone [potber-api](https://github.com/potber/potber-api) and start up a local instance.
 - Start up the development server with `npm start` (assuming you also have cloned `potber-api` and `potber-auth`). You can also run the client using the remote staging instances of `potber-api` and `potber-auth` via `npm run start:remote`.
 - Visit the app at [http://localhost:4200](http://localhost:4200).
 
@@ -164,7 +164,7 @@ The cluster-side preview setup lives in the infrastructure repository under [`ku
 ## Further Reading / Useful Links
 
 - [ember.js](https://emberjs.com/) - The framework.
-- [potber-api](https://github.com/spuxx-dev/potber-api) - The web server that potber-client utilizes.
+- [potber-api](https://github.com/potber/potber-api) - The web server that potber-client utilizes.
 - [GitHub Container Registry](https://github.com/potber/potber-client/pkgs/container/potber-client) - The published container image.
 
 ## Credit
