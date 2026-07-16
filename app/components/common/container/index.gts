@@ -4,7 +4,7 @@ interface Signature {
   Element: HTMLDivElement;
   Args: {
     title?: string;
-    size?: 'small' | 'medium' | 'large' | 'max';
+    size?: 'small' | 'medium' | 'large' | 'huge' | 'max';
   };
   Blocks: {
     default: [];

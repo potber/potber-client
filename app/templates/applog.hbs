@@ -1,9 +1,0 @@
-{{! @glint-nocheck }}{{page-title 'Applog'}}
-
-<Nav::Routes::Generic @title='Applog' @enableBackNavigation={{true}} />
-
-<Common::Container @size='medium'>
-  {{#each @model as |message|}}
-    <Routes::Applog::MessageItem @message={{message}} />
-  {{/each}}
-</Common::Container>

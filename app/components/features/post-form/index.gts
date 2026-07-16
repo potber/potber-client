@@ -14,20 +14,22 @@ import Menu from 'potber-client/components/common/control/menu';
 import MenuCheckbox from 'potber-client/components/common/control/menu/checkbox';
 import { t } from 'ember-intl';
 
-interface Signature {
+interface Signature<Payload extends WritablePost | WritableThread> {
   Element: HTMLFormElement;
   Blocks: { default: [] };
   Args: {
     id: string;
-    threadOrPost: WritablePost | WritableThread;
+    threadOrPost: Payload;
     navTitle: string;
     navSubtitle?: string;
     navLoading?: boolean;
-    onSubmit: (payload: WritablePost | WritableThread) => void;
+    onSubmit: (payload: Payload) => void;
   };
 }
 
-export default class PostForm extends Component<Signature> {
+export default class PostForm<
+  Payload extends WritablePost | WritableThread,
+> extends Component<Signature<Payload>> {
   @service declare deviceManager: DeviceManagerService;
   @service declare modal: ModalService;
 
