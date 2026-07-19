@@ -11,6 +11,7 @@ interface Signature {
   Args: {
     post: Posts.Write | Threads.OpeningPost;
     textarea: HTMLTextAreaElement;
+    menuItem?: boolean;
   };
 }
 
@@ -51,9 +52,10 @@ export default class PostFormMessageEmojiSelect extends Component<Signature> {
       @icon={{this.randomEmojiIcon}}
       @prefix='far'
       @text={{t 'feature.post-form.message.toolbar.emojis'}}
-      @variant='primary-transparent'
-      @size='square'
+      @variant={{if @menuItem 'secondary-transparent' 'primary-transparent'}}
+      @size={{if @menuItem 'medium' 'square'}}
       @type='button'
+      class={{if @menuItem 'menu-item'}}
       {{on 'click' this.handleClick}}
     />
   </template>

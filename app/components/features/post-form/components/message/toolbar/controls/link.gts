@@ -9,6 +9,7 @@ interface Signature {
   Args: {
     post: Posts.Write | Threads.OpeningPost;
     textarea: HTMLTextAreaElement;
+    menuItem?: boolean;
   };
 }
 
@@ -44,10 +45,11 @@ export default class PostFormMessageLink extends Component<Signature> {
     <Button
       @icon='link'
       @text={{t 'feature.post-form.message.toolbar.link.title'}}
-      @variant='primary-transparent'
-      @size='square'
+      @variant={{if @menuItem 'secondary-transparent' 'primary-transparent'}}
+      @size={{if @menuItem 'medium' 'square'}}
       @type='button'
       @onClick={{this.handleClick}}
+      class={{if @menuItem 'menu-item'}}
     />
   </template>
 }

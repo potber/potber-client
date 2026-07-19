@@ -9,6 +9,7 @@ interface Signature {
   Args: {
     post: Posts.Write | Threads.OpeningPost;
     textarea: HTMLTextAreaElement;
+    menuItem?: boolean;
   };
 }
 
@@ -50,10 +51,11 @@ export default class PostFormMessageImage extends Component<Signature> {
     <Button
       @icon='image'
       @text={{t 'feature.post-form.message.toolbar.image.title'}}
-      @variant='primary-transparent'
-      @size='square'
+      @variant={{if @menuItem 'secondary-transparent' 'primary-transparent'}}
+      @size={{if @menuItem 'medium' 'square'}}
       @type='button'
       @onClick={{this.handleClick}}
+      class={{if @menuItem 'menu-item'}}
     />
   </template>
 }
