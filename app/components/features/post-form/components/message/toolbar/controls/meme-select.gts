@@ -10,6 +10,7 @@ interface Signature {
   Args: {
     post: Posts.Write | Threads.OpeningPost;
     textarea: HTMLTextAreaElement;
+    menuItem?: boolean;
   };
 }
 
@@ -45,9 +46,10 @@ export default class PostFormMessageMemeSelect extends Component<Signature> {
     <Button
       @icon='fire'
       @text={{t 'feature.post-form.message.toolbar.memes'}}
-      @variant='primary-transparent'
-      @size='square'
+      @variant={{if @menuItem 'secondary-transparent' 'primary-transparent'}}
+      @size={{if @menuItem 'medium' 'square'}}
       @type='button'
+      class={{if @menuItem 'menu-item'}}
       {{on 'click' this.handleClick}}
     />
   </template>
