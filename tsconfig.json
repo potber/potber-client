@@ -8,14 +8,12 @@
     // Required for ember-cli-code-coverage
     "inlineSourceMap": true,
     "inlineSources": true,
-    // The combination of `baseUrl` with `paths` allows Ember's classic package
-    // layout, which is not resolvable with the Node resolution algorithm, to
-    // work with TypeScript.
-    "baseUrl": ".",
+    // `paths` allows Ember's classic package layout, which is not resolvable
+    // with the Node resolution algorithm, to work with TypeScript.
     "paths": {
-      "potber-client/tests/*": ["tests/*"],
-      "potber-client/*": ["app/*"],
-      "*": ["types/*"]
+      "potber-client/tests/*": ["./tests/*"],
+      "potber-client/*": ["./app/*"],
+      "*": ["./types/*"]
     },
     "types": ["@embroider/core/virtual", "vite/client", "@ember-intl/vite/virtual"]
   },
