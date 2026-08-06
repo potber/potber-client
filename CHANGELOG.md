@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.29.2] - 2026-08-06
+
+### Fixed
+
+- Adjacent `[video]` tags now render every video instead of only the final one.
+
 ## [1.29.1] - 2026-07-12
 
 ### Fixed

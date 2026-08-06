@@ -1,5 +1,12 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.29.2',
+    type: 'patch',
+    fixed: [
+      'Direkt aufeinanderfolgende [video]-Tags werden nun vollständig dargestellt.',
+    ],
+  },
+  {
     version: '1.29.1',
     type: 'patch',
     fixed: ['Gelesene Posts sind in Chrome wieder abgedunkelt.'],
