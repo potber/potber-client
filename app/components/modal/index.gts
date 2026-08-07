@@ -118,6 +118,7 @@ export default class ModalComponent extends Component {
     <dialog
       id='modal'
       {{on 'cancel' this.handleModalCancel}}
+      {{on 'click' this.handleModalCancel}}
       data-modal={{this.activeModalType}}
     >
       {{#if this.confirmOptions}}
@@ -144,11 +145,5 @@ export default class ModalComponent extends Component {
         <UserProfileModal @options={{this.userProfileOptions}} />
       {{/if}}
     </dialog>
-    <button
-      id='modal-backdrop'
-      type='button'
-      {{on 'click' this.handleModalCancel}}
-      aria-hidden='true'
-    />
   </template>
 }

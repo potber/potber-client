@@ -146,7 +146,7 @@ export default class ModalService extends Service {
       return;
     }
 
-    this.modal.show();
+    this.modal.showModal();
     // Wait for the DOM to have updated the 'display' CSS property. The amount of time doesn't matter,
     // but it needs to happen asynchronously.
     await sleep(1);

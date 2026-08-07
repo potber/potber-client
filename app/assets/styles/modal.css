@@ -29,27 +29,8 @@
   opacity: 1;
 }
 
-#modal-backdrop {
-  display: none;
-  z-index: 78;
-  position: fixed;
-  top: 0;
-  width: 100vw;
-  height: 100svh;
-  opacity: 0;
+#modal::backdrop {
   background-color: rgba(0, 0, 0, 0.9);
-  filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  cursor: default;
-}
-
-#modal[open] + #modal-backdrop {
-  display: block;
-}
-
-#modal.show + #modal-backdrop {
-  opacity: 1;
 }
 
 .modal-header {
