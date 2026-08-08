@@ -26,7 +26,9 @@ export default class ThreadController extends Controller {
   }
 
   get currentOrPreviousThread() {
-    return this.threadStore.currentThread ?? this.threadStore.previousThread;
+    return (
+      this.threadStore.currentThread ?? this.threadStore.previousThread ?? null
+    );
   }
 
   get currentPage() {
