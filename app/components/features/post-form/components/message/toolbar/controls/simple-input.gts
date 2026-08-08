@@ -20,7 +20,6 @@ interface Signature {
     prefix?: IconPrefix;
     type?: 'number' | 'text' | 'url';
     useTextarea?: boolean;
-    menuItem?: boolean;
   };
 }
 
@@ -66,12 +65,11 @@ export default class PostFormMessageSimpleInput extends Component<Signature> {
     <Button
       @icon={{@icon}}
       @prefix={{@prefix}}
-      @variant={{if @menuItem 'secondary-transparent' 'primary-transparent'}}
+      @variant='primary-transparent'
       @text={{@title}}
-      @size={{if @menuItem 'medium' 'square'}}
+      @size='square'
       @type='button'
       @onClick={{this.handleClick}}
-      class={{if @menuItem 'menu-item'}}
     />
   </template>
 }
