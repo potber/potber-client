@@ -1,5 +1,12 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.29.3',
+    type: 'patch',
+    changed: [
+      'Die Symbolleiste im Postformular wurde auf das bisherige Layout zurückgesetzt.',
+    ],
+  },
+  {
     version: '1.29.2',
     type: 'patch',
     fixed: [

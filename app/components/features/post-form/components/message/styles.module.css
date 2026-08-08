@@ -5,48 +5,26 @@
 }
 
 .toolbar {
-  position: relative;
   display: flex;
   flex-direction: row;
-  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   height: auto;
+  padding-right: calc(2 * var(--control-default-height));
 }
 
-.toolbar[data-ready='false'] {
-  visibility: hidden;
-}
-
-.toolbar-action,
-.overflow-menu {
-  display: flex;
-  flex: 0 0 auto;
-}
-
-.toolbar-action[data-overflow='true'] {
-  display: none;
-}
-
-.overflow-menu {
-  margin-left: auto;
-}
-
-.overflow-menu[data-empty='true'] {
-  display: none;
-}
-
-.overflow-menu :global(.menu-button menu) {
-  max-height: min(60svh, 28rem);
-  overflow-y: auto;
-}
-
-.menu-section {
-  display: flex;
-  align-items: center;
-  min-height: 2rem !important;
-  color: var(--color-text-subtle) !important;
-  font-size: smaller;
-  font-weight: bold;
+.toolbar-overlay {
+  position: absolute;
+  height: 100%;
+  right: 0;
+  width: calc(2 * var(--control-default-height));
   pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-application-background) 100%
+  );
+  z-index: 1;
 }
 
 .toolbar svg {
