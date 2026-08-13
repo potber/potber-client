@@ -111,7 +111,9 @@ export default class ModalComponent extends Component {
     }
 
     event.preventDefault();
-    this.modal.close();
+    const inputOnCancel = this.inputOptions?.onCancel;
+    void this.modal.close();
+    inputOnCancel?.();
   }
 
   <template>

@@ -1,4 +1,4 @@
-name: "potber"
+name: 'potber'
 
 services:
   client:
@@ -7,7 +7,7 @@ services:
       dockerfile: .devcontainer/Dockerfile
 
     volumes:
-    - ../..:/workspaces:cached
+      - ../..:/workspaces:cached
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
@@ -18,16 +18,18 @@ services:
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
     depends_on:
-    - potber-api
-    - potber-auth
+      - potber-api
+      - potber-auth
     ports:
-    - "4200:4200"
+      - '4200:4200'
 
-  potber-api:
+  potber-api:    
     image: ghcr.io/potber/potber-api
     restart: unless-stopped
     ports:
-    - "3000:3000"
+      - '3000:3000'
+    volumes:
+      - potber-api-user-configuration:/data
     environment:
       - APP_PORT=3000
       - APP_CLIENT_URL=http://localhost:4200
@@ -40,10 +42,13 @@ services:
     image: ghcr.io/potber/potber-auth
     restart: unless-stopped
     ports:
-    - "5173:5173"
+      - '5173:5173'
     environment:
       - PORT=5173
       - ORIGIN=http://localhost:5173
       - VITE_API_URL=http://potber-api:3000
       - VITE_API_LOGIN_ENDPOINT=/auth/login
       - VITE_API_SESSION_ENDPOINT=/auth/session
+
+volumes:
+  potber-api-user-configuration:

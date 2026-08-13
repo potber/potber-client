@@ -52,6 +52,10 @@ export default class ConfirmModalComponent extends Component<Signature> {
     return this.args.options.cancelIcon;
   }
 
+  get submitVariant(): ControlVariant {
+    return this.args.options.variant === 'error' ? 'error' : 'primary';
+  }
+
   @action handleSubmit() {
     if (this.args.options.onSubmit) {
       this.args.options.onSubmit();
@@ -88,9 +92,10 @@ export default class ConfirmModalComponent extends Component<Signature> {
         @icon={{this.submitIcon}}
         @text={{this.submitLabel}}
         @type='submit'
-        @variant='primary'
-        @size='small'
+        @variant={{this.submitVariant}}
+        @size='auto'
         @onClick={{this.handleSubmit}}
+        class='modal-submit'
       />
     </ModalFooter>
   </template>

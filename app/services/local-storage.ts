@@ -10,15 +10,18 @@ import { Boards } from './api/types';
 import ApiService from './api';
 import type { Settings } from './settings';
 import type { Socials } from './socials';
+import SettingsSyncService from './settings-sync';
 
 const PREFIX = 'potber-';
 
 export default class LocalStorageService extends Service {
   @service declare api: ApiService;
   @service declare messages: MessagesService;
+  @service declare settingsSync: SettingsSyncService;
 
   @tracked boardFavorites: Boards.Read[] | null = [];
   @tracked savedPosts: Post[] | null = [];
+  private savedPostsInitialized = false;
 
   async initialize() {
     await this.getBoardFavorites();
@@ -79,13 +82,11 @@ export default class LocalStorageService extends Service {
    * @returns {Promise<Board[]>} A promise of the board favorites.
    */
   @action async getBoardFavorites() {
-    const string = localStorage.getItem(`${PREFIX}boardFavorites`);
     try {
-      let boards: Boards.Read[] = [];
-      if (string) {
-        const ids = string?.split(',') || [];
-        boards = await Promise.all(ids.map((id) => this.api.findBoardById(id)));
-      }
+      const ids = this.readBoardFavoriteIds();
+      const boards = await Promise.all(
+        ids.map((id) => this.api.findBoardById(id)),
+      );
       this.boardFavorites = boards;
     } catch (error) {
       this.messages.log(
@@ -103,12 +104,27 @@ export default class LocalStorageService extends Service {
    */
   @action setBoardFavorites(ids: string[]) {
     // Remove duplicates
-    const unqiueIds = [...new Set(ids)];
-    localStorage.setItem(`${PREFIX}boardFavorites`, unqiueIds.toString());
-    this.messages.log(`${PREFIX}boardFavorites set to: '${unqiueIds}'.`, {
+    const uniqueIds = [...new Set(ids)];
+    this.writeBoardFavoriteIds(uniqueIds);
+    this.settingsSync.boardFavoritesChanged(uniqueIds);
+    this.messages.log(`${PREFIX}boardFavorites set to: '${uniqueIds}'.`, {
       context: this.constructor.name,
     });
-    this.getBoardFavorites();
+    void this.getBoardFavorites();
+  }
+
+  readBoardFavoriteIds(): string[] {
+    const value = localStorage.getItem(`${PREFIX}boardFavorites`);
+    return value ? value.split(',').filter(Boolean) : [];
+  }
+
+  applySyncedBoardFavorites(ids: string[]) {
+    this.writeBoardFavoriteIds([...new Set(ids)]);
+    void this.getBoardFavorites();
+  }
+
+  private writeBoardFavoriteIds(ids: string[]) {
+    localStorage.setItem(`${PREFIX}boardFavorites`, ids.toString());
   }
 
   /**
@@ -118,17 +134,14 @@ export default class LocalStorageService extends Service {
    */
   @action async getSavedPosts(options?: { reload?: boolean }) {
     if (!this.savedPosts || this.savedPosts.length === 0 || options?.reload) {
-      const string = localStorage.getItem(`${PREFIX}savedPosts`);
+      this.savedPostsInitialized = true;
       try {
-        let posts: Post[] = [];
-        if (string) {
-          const persistedPosts: PersistedSavedPost[] = JSON.parse(string);
-          posts = await Promise.all(
-            persistedPosts.map((persistedPost) =>
-              this.api.findPostById(persistedPost.id, persistedPost.threadId),
-            ),
-          );
-        }
+        const persistedPosts = this.readPersistedSavedPosts();
+        const posts = await Promise.all(
+          persistedPosts.map((persistedPost) =>
+            this.api.findPostById(persistedPost.id, persistedPost.threadId),
+          ),
+        );
         this.savedPosts = posts;
       } catch (error) {
         this.messages.log(
@@ -150,7 +163,8 @@ export default class LocalStorageService extends Service {
     for (const post of posts) {
       keys.push({ id: post.id, threadId: post.threadId });
     }
-    localStorage.setItem(`${PREFIX}savedPosts`, JSON.stringify(keys));
+    this.writePersistedSavedPosts(keys);
+    this.settingsSync.savedPostsChanged(keys);
     this.messages.log(
       `${PREFIX}savedPosts set to: '${JSON.stringify(keys)}'.`,
       {
@@ -158,6 +172,35 @@ export default class LocalStorageService extends Service {
       },
     );
     this.savedPosts = [...posts];
+  }
+
+  readPersistedSavedPosts(): PersistedSavedPost[] {
+    try {
+      const value = localStorage.getItem(`${PREFIX}savedPosts`);
+      if (!value) return [];
+      const posts = JSON.parse(value) as unknown;
+      if (!Array.isArray(posts)) return [];
+      return posts.filter(
+        (post): post is PersistedSavedPost =>
+          Boolean(post) &&
+          typeof post === 'object' &&
+          typeof (post as PersistedSavedPost).id === 'string' &&
+          typeof (post as PersistedSavedPost).threadId === 'string',
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  applySyncedSavedPosts(posts: PersistedSavedPost[]) {
+    this.writePersistedSavedPosts(posts);
+    if (this.savedPostsInitialized) {
+      void this.getSavedPosts({ reload: true });
+    }
+  }
+
+  private writePersistedSavedPosts(posts: PersistedSavedPost[]) {
+    localStorage.setItem(`${PREFIX}savedPosts`, JSON.stringify(posts));
   }
 
   /**

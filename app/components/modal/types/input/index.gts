@@ -34,6 +34,7 @@ export interface InputModalOptions {
   cancelIcon?: IconName;
   useTextarea?: boolean;
   onSubmit?: (value: string) => void;
+  onCancel?: () => void;
 }
 
 interface Signature {
@@ -84,6 +85,7 @@ export default class InputModalComponent extends Component<Signature> {
 
   @action handleCancel() {
     this.modal.close();
+    this.args.options.onCancel?.();
   }
 
   <template>
@@ -95,9 +97,13 @@ export default class InputModalComponent extends Component<Signature> {
     />
     <ModalContent>
       {{#if @options.text}}
-        <p>{{@options.text}}</p>
+        <p class='modal-input-description'>{{@options.text}}</p>
       {{/if}}
-      <form id='input-modal-form' {{on 'submit' this.handleSubmit}}>
+      <form
+        id='input-modal-form'
+        class='modal-input-form'
+        {{on 'submit' this.handleSubmit}}
+      >
         {{#if @options.useTextarea}}
           <Textarea
             @size='max'
@@ -139,8 +145,9 @@ export default class InputModalComponent extends Component<Signature> {
         @text={{this.submitLabel}}
         @type='submit'
         @variant='primary'
-        @size='small'
+        @size='auto'
         form='input-modal-form'
+        class='modal-submit'
       />
     </ModalFooter>
   </template>

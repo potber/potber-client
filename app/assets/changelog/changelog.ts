@@ -1,5 +1,12 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.30.0',
+    type: 'minor',
+    added: [
+      'Einstellungen, blockierte Nutzer:innen, Board-Favoriten und gespeicherte Posts lassen sich optional Ende-zu-Ende-verschlüsselt zwischen Geräten synchronisieren.',
+    ],
+  },
+  {
     version: '1.29.3',
     type: 'patch',
     changed: [
