@@ -208,6 +208,7 @@ export default class SettingsSyncService extends Service {
         remote,
         key,
         this.currentValues,
+        { mergeLocalCollections: true },
       );
       const settings = this.settingsFromValues(merged.values);
       this.applyCollectionsFromValues(merged.values);
@@ -440,6 +441,7 @@ export default class SettingsSyncService extends Service {
     remote: RemoteUserConfiguration,
     key: CryptoKey,
     localValues: Record<string, unknown>,
+    options: { mergeLocalCollections?: boolean } = {},
   ): Promise<MergeResult> {
     if (remote.version !== ENVELOPE_VERSION) {
       throw new Error('Unsupported encrypted settings version.');
@@ -457,12 +459,13 @@ export default class SettingsSyncService extends Service {
     if (!isEncryptedSettingsPayload(payload)) {
       throw new Error('Invalid encrypted settings payload.');
     }
-    return this.merge(localValues, payload);
+    return this.merge(localValues, payload, options);
   }
 
   private merge(
     localValues: Record<string, unknown>,
     remote: EncryptedSettingsPayload,
+    options: { mergeLocalCollections?: boolean } = {},
   ): MergeResult {
     const localMetadata = this.readMetadata();
     const merged = { ...localValues };
@@ -487,6 +490,28 @@ export default class SettingsSyncService extends Service {
           deviceId: this.deviceId,
         };
         shouldUpload = true;
+      }
+    }
+
+    if (options.mergeLocalCollections) {
+      for (const key of [BLOCKED_USERS_FIELD, SAVED_POSTS_FIELD]) {
+        const remoteField = remote.fields[key];
+        const localValue = localValues[key];
+        if (!remoteField) continue;
+
+        const union = mergeCollectionValues(key, remoteField.value, localValue);
+        if (!union) continue;
+
+        merged[key] = union.value;
+        if (union.hasLocalAdditions) {
+          mergedMetadata.fields[key] = {
+            modifiedAt: this.nextModifiedAt(mergedMetadata),
+            deviceId: this.deviceId,
+          };
+          shouldUpload = true;
+        } else {
+          mergedMetadata.fields[key] = remoteField.clock;
+        }
       }
     }
 
@@ -710,6 +735,44 @@ function cloneCollections(collections: SyncedCollections): SyncedCollections {
     blockedUsers: collections.blockedUsers.map((user) => ({ ...user })),
     boardFavoriteIds: [...collections.boardFavoriteIds],
     savedPosts: collections.savedPosts.map((post) => ({ ...post })),
+  };
+}
+
+function mergeCollectionValues(
+  key: string,
+  remoteValue: unknown,
+  localValue: unknown,
+): {
+  value: BlockedUser[] | PersistedSavedPost[];
+  hasLocalAdditions: boolean;
+} | null {
+  if (key === BLOCKED_USERS_FIELD) {
+    if (!isBlockedUsers(remoteValue) || !isBlockedUsers(localValue))
+      return null;
+    return unionById(remoteValue, localValue);
+  }
+  if (key === SAVED_POSTS_FIELD) {
+    if (
+      !isPersistedSavedPosts(remoteValue) ||
+      !isPersistedSavedPosts(localValue)
+    ) {
+      return null;
+    }
+    return unionById(remoteValue, localValue);
+  }
+  return null;
+}
+
+function unionById<T extends { id: string }>(remote: T[], local: T[]) {
+  const ids = new Set(remote.map(({ id }) => id));
+  const localAdditions = local.filter(({ id }) => {
+    if (ids.has(id)) return false;
+    ids.add(id);
+    return true;
+  });
+  return {
+    value: [...remote, ...localAdditions],
+    hasLocalAdditions: localAdditions.length > 0,
   };
 }
 

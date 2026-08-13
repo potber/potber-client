@@ -183,6 +183,68 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.deepEqual(restoredCollections, collections);
   });
 
+  test('merges local blocklist and saved posts when unlocking on a new device', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    await service.initialize(
+      settings,
+      { userId: '123', accessToken: 'token' },
+      undefined,
+      collections,
+    );
+    const recoveryKey = await service.enable(settings);
+    await service.forgetThisDevice();
+
+    const localSettings = { ...settings, theme: Theme.default, debug: false };
+    const localCollections: SyncedCollections = {
+      blockedUsers: [
+        { id: '12', name: 'Local Alice' },
+        { id: '34', name: 'Bob' },
+        { id: '34', name: 'Duplicate Bob' },
+      ],
+      boardFavoriteIds: ['777'],
+      savedPosts: [
+        { id: '1234', threadId: '5678' },
+        { id: '4321', threadId: '8765' },
+        { id: '4321', threadId: 'duplicate' },
+      ],
+    };
+    let restoredCollections: SyncedCollections | undefined;
+    await service.initialize(
+      localSettings,
+      { userId: '123', accessToken: 'token' },
+      undefined,
+      localCollections,
+      (value) => {
+        restoredCollections = value;
+      },
+    );
+
+    const recovered = await service.unlock(recoveryKey, localSettings);
+
+    assert.deepEqual(recovered, settings, 'remote settings still win');
+    assert.deepEqual(restoredCollections, {
+      blockedUsers: [
+        { id: '12', name: 'Alice' },
+        { id: '34', name: 'Bob' },
+      ],
+      boardFavoriteIds: ['14', '99'],
+      savedPosts: [
+        { id: '1234', threadId: '5678' },
+        { id: '4321', threadId: '8765' },
+      ],
+    });
+
+    await service.syncNow();
+    assert.strictEqual(
+      service.writes.length,
+      2,
+      'the merged collections are uploaded',
+    );
+    assert.strictEqual(service.writes[1]!.expectedRevision, 1);
+  });
+
   test('rejects an incorrect recovery key', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
