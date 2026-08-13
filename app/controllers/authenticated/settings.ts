@@ -14,7 +14,9 @@ import {
   getCurrentSettingOptions,
   settingsConfig,
 } from 'potber-client/routes/authenticated/settings';
-import SettingsSyncService from 'potber-client/services/settings-sync';
+import SettingsSyncService, {
+  type SettingsSyncUnlockSource,
+} from 'potber-client/services/settings-sync';
 import { tracked } from '@glimmer/tracking';
 import type IntlService from 'ember-intl/services/intl';
 
@@ -181,14 +183,56 @@ export default class SettingsController extends Controller {
   private async unlockSync(recoveryKey: string) {
     this.syncActionBusy = true;
     try {
-      await this.settingsSync.unlock(recoveryKey, this.settings.getSettings());
-      await this.modal.close();
-      window.location.reload();
+      const hasDifferences = await this.settingsSync.unlockHasDifferences(
+        recoveryKey,
+        this.settings.getSettings(),
+      );
+      if (hasDifferences) {
+        this.showUnlockChoice(recoveryKey);
+      } else {
+        await this.completeUnlock(recoveryKey, 'remote');
+      }
     } catch {
       this.messages.showNotification(
         this.intl.t('route.settings.sync.unlock.invalid'),
         'error',
       );
+    } finally {
+      this.syncActionBusy = false;
+    }
+  }
+
+  private showUnlockChoice(recoveryKey: string) {
+    this.modal.confirm({
+      title: this.intl.t('route.settings.sync.unlock.choice.title'),
+      icon: 'sync',
+      text: this.intl.t('route.settings.sync.unlock.choice.text'),
+      submitLabel: this.intl.t('route.settings.sync.unlock.choice.remote'),
+      submitIcon: 'sync',
+      alternativeLabel: this.intl.t('route.settings.sync.unlock.choice.local'),
+      alternativeIcon: 'cloud-arrow-up',
+      alternativeVariant: 'error',
+      onSubmit: () => void this.completeUnlock(recoveryKey, 'remote'),
+      onAlternative: () => void this.completeUnlock(recoveryKey, 'local'),
+    });
+  }
+
+  private async completeUnlock(
+    recoveryKey: string,
+    source: SettingsSyncUnlockSource,
+  ) {
+    this.syncActionBusy = true;
+    try {
+      await this.settingsSync.unlock(
+        recoveryKey,
+        this.settings.getSettings(),
+        source,
+      );
+      await this.modal.close();
+      window.location.reload();
+    } catch {
+      await this.modal.close();
+      this.showSyncError();
     } finally {
       this.syncActionBusy = false;
     }

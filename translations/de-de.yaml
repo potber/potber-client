@@ -144,6 +144,11 @@ route:
         text: Gib den Wiederherstellungsschlüssel ein, den Du beim Einrichten der Synchronisierung gespeichert hast.
         submit: Entschlüsseln
         invalid: Der Wiederherstellungsschlüssel ist ungültig.
+        choice:
+          title: Zu synchronisierende Daten auswählen
+          text: Die lokalen Einstellungen unterscheiden sich von denen auf dem Server. In beiden Fällen werden blockierte Nutzer:innen, gespeicherte Posts und Board-Favoriten zusammengeführt. Welche Einstellungen möchtest du übernehmen?
+          remote: Remote
+          local: Lokal
       forget:
         title: Schlüssel von diesem Gerät entfernen
         text: Die verschlüsselten Einstellungen bleiben auf dem Server und auf Deinen anderen Geräten erhalten. Auf diesem Gerät benötigst Du zum erneuten Entschlüsseln den Wiederherstellungsschlüssel.

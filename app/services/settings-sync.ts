@@ -59,6 +59,20 @@ interface MergeResult {
   shouldUpload: boolean;
 }
 
+interface DecryptedRemote {
+  key: CryptoKey;
+  payload: EncryptedSettingsPayload;
+  remote: RemoteUserConfiguration;
+  values: Record<string, unknown>;
+}
+
+interface OverwriteResult {
+  metadata: SettingsSyncMetadata;
+  remote: RemoteUserConfiguration;
+}
+
+export type SettingsSyncUnlockSource = 'local' | 'remote';
+
 export interface SyncedCollections {
   blockedUsers: BlockedUser[];
   boardFavoriteIds: string[];
@@ -188,42 +202,58 @@ export default class SettingsSyncService extends Service {
     }
   }
 
+  async unlockHasDifferences(
+    recoveryKey: string,
+    localSettings: Settings,
+  ): Promise<boolean> {
+    this.ensureAuthenticated();
+    this.lastError = null;
+
+    try {
+      this.currentSettings = { ...localSettings };
+      const { values } = await this.decryptForUnlock(recoveryKey);
+      return syncedValuesDiffer(this.currentValues, values);
+    } catch (error) {
+      this.throwUnlockError(error);
+    }
+  }
+
   async unlock(
     recoveryKey: string,
     localSettings: Settings,
+    source: SettingsSyncUnlockSource,
   ): Promise<Settings> {
     this.ensureAuthenticated();
     this.state = 'busy';
     this.lastError = null;
 
     try {
-      const rawKey = parseRecoveryKey(recoveryKey);
-      const key = await importRawKey(rawKey);
-      const remote = this.remote ?? (await this.fetchRemote());
-      if (!remote) {
-        throw new Error('No encrypted settings exist for this account.');
-      }
       this.currentSettings = { ...localSettings };
-      const merged = await this.decryptAndMerge(
-        remote,
-        key,
-        this.currentValues,
-        { mergeLocalCollections: true },
-      );
-      const settings = this.settingsFromValues(merged.values);
-      this.applyCollectionsFromValues(merged.values);
-      await this.storeKey(key);
-      this.key = key;
-      this.remote = remote;
+      const localValues = this.currentValues;
+      const decrypted = await this.decryptForUnlock(recoveryKey);
+      const values = mergeUnlockValues(source, localValues, decrypted.values);
+      let metadata = this.metadataFromPayload(values, decrypted.payload);
+
+      if (syncedValuesDiffer(decrypted.values, values)) {
+        const overwritten = await this.overwriteRemote(values, decrypted);
+        metadata = overwritten.metadata;
+        decrypted.remote = overwritten.remote;
+      }
+
+      const settings = this.settingsForValues(values);
+      const collections = this.collectionsFromValues(values);
+      await this.storeKey(decrypted.key);
+      this.writeMetadata(metadata);
+      this.key = decrypted.key;
+      this.remote = decrypted.remote;
+      this.currentSettings = settings;
+      this.collections = cloneCollections(collections);
       this.state = 'enabled';
       this.onRemoteSettings?.(settings);
-      if (merged.shouldUpload) this.scheduleUpload(merged.values);
+      this.onRemoteCollections?.(cloneCollections(collections));
       return settings;
     } catch (error) {
-      this.state = this.remote ? 'locked' : 'disabled';
-      throw new Error('Der Wiederherstellungsschlüssel ist ungültig.', {
-        cause: error,
-      });
+      this.throwUnlockError(error);
     }
   }
 
@@ -255,7 +285,7 @@ export default class SettingsSyncService extends Service {
   }
 
   private valueChanged(key: string) {
-    if (this.state === 'disabled') return;
+    if (this.state === 'disabled' || this.state === 'locked') return;
     const metadata = this.readMetadata() ?? { fields: {} };
     metadata.fields[key] = {
       modifiedAt: this.nextModifiedAt(metadata),
@@ -441,8 +471,15 @@ export default class SettingsSyncService extends Service {
     remote: RemoteUserConfiguration,
     key: CryptoKey,
     localValues: Record<string, unknown>,
-    options: { mergeLocalCollections?: boolean } = {},
   ): Promise<MergeResult> {
+    const payload = await this.decryptPayload(remote, key);
+    return this.merge(localValues, payload);
+  }
+
+  private async decryptPayload(
+    remote: RemoteUserConfiguration,
+    key: CryptoKey,
+  ): Promise<EncryptedSettingsPayload> {
     if (remote.version !== ENVELOPE_VERSION) {
       throw new Error('Unsupported encrypted settings version.');
     }
@@ -459,13 +496,12 @@ export default class SettingsSyncService extends Service {
     if (!isEncryptedSettingsPayload(payload)) {
       throw new Error('Invalid encrypted settings payload.');
     }
-    return this.merge(localValues, payload, options);
+    return payload;
   }
 
   private merge(
     localValues: Record<string, unknown>,
     remote: EncryptedSettingsPayload,
-    options: { mergeLocalCollections?: boolean } = {},
   ): MergeResult {
     const localMetadata = this.readMetadata();
     const merged = { ...localValues };
@@ -493,30 +529,63 @@ export default class SettingsSyncService extends Service {
       }
     }
 
-    if (options.mergeLocalCollections) {
-      for (const key of [BLOCKED_USERS_FIELD, SAVED_POSTS_FIELD]) {
-        const remoteField = remote.fields[key];
-        const localValue = localValues[key];
-        if (!remoteField) continue;
+    this.writeMetadata(mergedMetadata);
+    return { values: merged, shouldUpload };
+  }
 
-        const union = mergeCollectionValues(key, remoteField.value, localValue);
-        if (!union) continue;
+  private async decryptForUnlock(
+    recoveryKey: string,
+  ): Promise<DecryptedRemote> {
+    const rawKey = parseRecoveryKey(recoveryKey);
+    const key = await importRawKey(rawKey);
+    const remote = this.remote ?? (await this.fetchRemote());
+    if (!remote) {
+      throw new Error('No encrypted settings exist for this account.');
+    }
+    this.remote = remote;
+    const payload = await this.decryptPayload(remote, key);
+    const values = valuesFromPayload(payload);
+    this.validateValues(values);
+    return { key, payload, remote, values };
+  }
 
-        merged[key] = union.value;
-        if (union.hasLocalAdditions) {
-          mergedMetadata.fields[key] = {
-            modifiedAt: this.nextModifiedAt(mergedMetadata),
-            deviceId: this.deviceId,
-          };
-          shouldUpload = true;
-        } else {
-          mergedMetadata.fields[key] = remoteField.clock;
+  private async overwriteRemote(
+    values: Record<string, unknown>,
+    decrypted: DecryptedRemote,
+  ): Promise<OverwriteResult> {
+    let remote = decrypted.remote;
+    let payload = decrypted.payload;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const metadata = this.createOverwriteMetadata(values, payload);
+      const encrypted = await this.encrypt(values, decrypted.key, metadata);
+      try {
+        const written = await this.writeRemote({
+          ...encrypted,
+          expectedRevision: remote.revision,
+        });
+        return { metadata, remote: written };
+      } catch (error) {
+        if (
+          attempt !== 0 ||
+          !(error instanceof SettingsSyncRequestError) ||
+          error.status !== 409
+        ) {
+          throw error;
         }
+
+        const latest = await this.fetchRemote();
+        if (!latest) {
+          throw new Error('No encrypted settings exist for this account.', {
+            cause: error,
+          });
+        }
+        remote = latest;
+        payload = await this.decryptPayload(latest, decrypted.key);
       }
     }
 
-    this.writeMetadata(mergedMetadata);
-    return { values: merged, shouldUpload };
+    throw new Error('Unable to overwrite encrypted settings.');
   }
 
   private async encrypt(
@@ -589,6 +658,41 @@ export default class SettingsSyncService extends Service {
     return metadata;
   }
 
+  private createOverwriteMetadata(
+    values: Record<string, unknown>,
+    remote: EncryptedSettingsPayload,
+  ): SettingsSyncMetadata {
+    const latestRemoteClock = Object.values(remote.fields).reduce(
+      (latest, field) => Math.max(latest, field.clock.modifiedAt),
+      0,
+    );
+    const firstModifiedAt = Math.max(Date.now(), latestRemoteClock + 1);
+    const metadata: SettingsSyncMetadata = { fields: {} };
+
+    Object.keys(values).forEach((fieldKey, index) => {
+      metadata.fields[fieldKey] = {
+        modifiedAt: firstModifiedAt + index,
+        deviceId: this.deviceId,
+      };
+    });
+    return metadata;
+  }
+
+  private metadataFromPayload(
+    values: Record<string, unknown>,
+    payload: EncryptedSettingsPayload,
+  ): SettingsSyncMetadata {
+    const metadata: SettingsSyncMetadata = { fields: {} };
+    for (const fieldKey of Object.keys(values)) {
+      const remoteField = payload.fields[fieldKey];
+      if (!remoteField) {
+        throw new Error(`Missing encrypted configuration field: ${fieldKey}`);
+      }
+      metadata.fields[fieldKey] = remoteField.clock;
+    }
+    return metadata;
+  }
+
   private get currentValues(): Record<string, unknown> {
     const settings = Object.fromEntries(
       Object.entries(this.currentSettings ?? {}).map(([key, value]) => [
@@ -604,7 +708,7 @@ export default class SettingsSyncService extends Service {
     };
   }
 
-  private settingsFromValues(values: Record<string, unknown>): Settings {
+  private settingsForValues(values: Record<string, unknown>): Settings {
     const settings = { ...this.currentSettings } as Record<string, unknown>;
     for (const key of Object.keys(settings)) {
       const fieldKey = `${SETTINGS_FIELD_PREFIX}${key}`;
@@ -613,11 +717,17 @@ export default class SettingsSyncService extends Service {
       }
       settings[key] = values[fieldKey];
     }
-    this.currentSettings = settings as unknown as Settings;
+    return settings as unknown as Settings;
+  }
+
+  private settingsFromValues(values: Record<string, unknown>): Settings {
+    this.currentSettings = this.settingsForValues(values);
     return this.currentSettings;
   }
 
-  private applyCollectionsFromValues(values: Record<string, unknown>) {
+  private collectionsFromValues(
+    values: Record<string, unknown>,
+  ): SyncedCollections {
     const blockedUsers = values[BLOCKED_USERS_FIELD];
     const boardFavoriteIds = values[BOARD_FAVORITES_FIELD];
     const savedPosts = values[SAVED_POSTS_FIELD];
@@ -630,7 +740,16 @@ export default class SettingsSyncService extends Service {
     if (!isPersistedSavedPosts(savedPosts)) {
       throw new Error('Invalid encrypted saved posts.');
     }
-    const collections = { blockedUsers, boardFavoriteIds, savedPosts };
+    return { blockedUsers, boardFavoriteIds, savedPosts };
+  }
+
+  private validateValues(values: Record<string, unknown>) {
+    this.settingsForValues(values);
+    this.collectionsFromValues(values);
+  }
+
+  private applyCollectionsFromValues(values: Record<string, unknown>) {
+    const collections = this.collectionsFromValues(values);
     this.collections = cloneCollections(collections);
     this.onRemoteCollections?.(cloneCollections(collections));
   }
@@ -700,6 +819,13 @@ export default class SettingsSyncService extends Service {
     this.lastError = errorMessage(error);
     this.state = 'unavailable';
   }
+
+  private throwUnlockError(error: unknown): never {
+    this.state = this.remote ? 'locked' : 'disabled';
+    throw new Error('Der Wiederherstellungsschlüssel ist ungültig.', {
+      cause: error,
+    });
+  }
 }
 
 function isEncryptedSettingsPayload(
@@ -738,42 +864,122 @@ function cloneCollections(collections: SyncedCollections): SyncedCollections {
   };
 }
 
-function mergeCollectionValues(
-  key: string,
-  remoteValue: unknown,
-  localValue: unknown,
-): {
-  value: BlockedUser[] | PersistedSavedPost[];
-  hasLocalAdditions: boolean;
-} | null {
-  if (key === BLOCKED_USERS_FIELD) {
-    if (!isBlockedUsers(remoteValue) || !isBlockedUsers(localValue))
-      return null;
-    return unionById(remoteValue, localValue);
-  }
-  if (key === SAVED_POSTS_FIELD) {
-    if (
-      !isPersistedSavedPosts(remoteValue) ||
-      !isPersistedSavedPosts(localValue)
-    ) {
-      return null;
-    }
-    return unionById(remoteValue, localValue);
-  }
-  return null;
+function valuesFromPayload(payload: EncryptedSettingsPayload) {
+  return Object.fromEntries(
+    Object.entries(payload.fields).map(([fieldKey, field]) => [
+      fieldKey,
+      field.value,
+    ]),
+  );
 }
 
-function unionById<T extends { id: string }>(remote: T[], local: T[]) {
-  const ids = new Set(remote.map(({ id }) => id));
-  const localAdditions = local.filter(({ id }) => {
-    if (ids.has(id)) return false;
-    ids.add(id);
-    return true;
-  });
+function mergeUnlockValues(
+  source: SettingsSyncUnlockSource,
+  localValues: Record<string, unknown>,
+  remoteValues: Record<string, unknown>,
+) {
+  const primary = source === 'local' ? localValues : remoteValues;
+  const secondary = source === 'local' ? remoteValues : localValues;
+  const primaryBlockedUsers = primary[BLOCKED_USERS_FIELD];
+  const secondaryBlockedUsers = secondary[BLOCKED_USERS_FIELD];
+  const primaryBoardFavorites = primary[BOARD_FAVORITES_FIELD];
+  const secondaryBoardFavorites = secondary[BOARD_FAVORITES_FIELD];
+  const primarySavedPosts = primary[SAVED_POSTS_FIELD];
+  const secondarySavedPosts = secondary[SAVED_POSTS_FIELD];
+
+  if (
+    !isBlockedUsers(primaryBlockedUsers) ||
+    !isBlockedUsers(secondaryBlockedUsers) ||
+    !isStringArray(primaryBoardFavorites) ||
+    !isStringArray(secondaryBoardFavorites) ||
+    !isPersistedSavedPosts(primarySavedPosts) ||
+    !isPersistedSavedPosts(secondarySavedPosts)
+  ) {
+    throw new Error('Invalid collections while unlocking settings sync.');
+  }
+
   return {
-    value: [...remote, ...localAdditions],
-    hasLocalAdditions: localAdditions.length > 0,
+    ...primary,
+    [BLOCKED_USERS_FIELD]: unionById(
+      primaryBlockedUsers,
+      secondaryBlockedUsers,
+    ),
+    [BOARD_FAVORITES_FIELD]: unionBy(
+      primaryBoardFavorites,
+      secondaryBoardFavorites,
+      (id) => id,
+    ),
+    [SAVED_POSTS_FIELD]: unionById(primarySavedPosts, secondarySavedPosts),
   };
+}
+
+function unionById<T extends { id: string }>(primary: T[], secondary: T[]) {
+  return unionBy(primary, secondary, ({ id }) => id);
+}
+
+function unionBy<T>(
+  primary: T[],
+  secondary: T[],
+  identity: (value: T) => string,
+) {
+  const ids = new Set(primary.map(identity));
+  return [
+    ...primary,
+    ...secondary.filter((value) => {
+      const id = identity(value);
+      if (ids.has(id)) return false;
+      ids.add(id);
+      return true;
+    }),
+  ];
+}
+
+function syncedValuesDiffer(
+  localValues: Record<string, unknown>,
+  remoteValues: Record<string, unknown>,
+) {
+  const localKeys = Object.keys(localValues);
+  const remoteKeys = Object.keys(remoteValues);
+  return (
+    localKeys.length !== remoteKeys.length ||
+    localKeys.some(
+      (fieldKey) =>
+        !jsonValuesEqual(localValues[fieldKey], remoteValues[fieldKey]),
+    )
+  );
+}
+
+function jsonValuesEqual(first: unknown, second: unknown): boolean {
+  if (Object.is(first, second)) return true;
+  if (Array.isArray(first) || Array.isArray(second)) {
+    return (
+      Array.isArray(first) &&
+      Array.isArray(second) &&
+      first.length === second.length &&
+      first.every((entry, index) => jsonValuesEqual(entry, second[index]))
+    );
+  }
+  if (
+    !first ||
+    !second ||
+    typeof first !== 'object' ||
+    typeof second !== 'object'
+  ) {
+    return false;
+  }
+
+  const firstRecord = first as Record<string, unknown>;
+  const secondRecord = second as Record<string, unknown>;
+  const firstKeys = Object.keys(firstRecord);
+  const secondKeys = Object.keys(secondRecord);
+  return (
+    firstKeys.length === secondKeys.length &&
+    firstKeys.every(
+      (key) =>
+        Object.hasOwn(secondRecord, key) &&
+        jsonValuesEqual(firstRecord[key], secondRecord[key]),
+    )
+  );
 }
 
 function isStringArray(value: unknown): value is string[] {

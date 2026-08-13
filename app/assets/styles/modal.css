@@ -123,11 +123,12 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .modal-footer button {
   padding: 0 1rem 0 1rem;
-  margin-left: 0.5rem;
 }
 
 .modal-footer .modal-submit {

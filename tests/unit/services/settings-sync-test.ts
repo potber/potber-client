@@ -144,7 +144,11 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(service.state, 'locked');
 
     const defaults = { ...settings, theme: Theme.default, debug: false };
-    const recovered = await service.unlock(recoveryKey, defaults);
+    assert.true(
+      await service.unlockHasDifferences(recoveryKey, defaults),
+      'the service detects that a choice is required',
+    );
+    const recovered = await service.unlock(recoveryKey, defaults, 'remote');
 
     assert.deepEqual(recovered, settings);
     assert.strictEqual(service.state, 'enabled');
@@ -178,12 +182,12 @@ module('Unit | Service | SettingsSync', function (hooks) {
         restoredCollections = value;
       },
     );
-    await service.unlock(recoveryKey, settings);
+    await service.unlock(recoveryKey, settings, 'remote');
 
     assert.deepEqual(restoredCollections, collections);
   });
 
-  test('merges local blocklist and saved posts when unlocking on a new device', async function (assert) {
+  test('does not change either copy before the user chooses an unlock source', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
     ) as SettingsSyncStub;
@@ -201,13 +205,11 @@ module('Unit | Service | SettingsSync', function (hooks) {
       blockedUsers: [
         { id: '12', name: 'Local Alice' },
         { id: '34', name: 'Bob' },
-        { id: '34', name: 'Duplicate Bob' },
       ],
       boardFavoriteIds: ['777'],
       savedPosts: [
-        { id: '1234', threadId: '5678' },
+        { id: '1234', threadId: 'local-thread' },
         { id: '4321', threadId: '8765' },
-        { id: '4321', threadId: 'duplicate' },
       ],
     };
     let restoredCollections: SyncedCollections | undefined;
@@ -220,29 +222,182 @@ module('Unit | Service | SettingsSync', function (hooks) {
         restoredCollections = value;
       },
     );
+    service.settingChanged('theme', localSettings);
 
-    const recovered = await service.unlock(recoveryKey, localSettings);
+    const hasDifferences = await service.unlockHasDifferences(
+      recoveryKey,
+      localSettings,
+    );
 
-    assert.deepEqual(recovered, settings, 'remote settings still win');
+    assert.true(hasDifferences);
+    assert.strictEqual(service.state, 'locked');
+    assert.notOk(service.persistedKey, 'the key is not stored yet');
+    assert.strictEqual(service.writes.length, 1, 'the server is unchanged');
+    assert.strictEqual(
+      restoredCollections,
+      undefined,
+      'local data is unchanged',
+    );
+    assert.strictEqual(
+      localStorage.getItem('potber-settingsSyncMetadata-123'),
+      null,
+      'locked local changes do not receive sync clocks',
+    );
+
+    const recovered = await service.unlock(
+      recoveryKey,
+      localSettings,
+      'remote',
+    );
+
+    assert.deepEqual(recovered, settings, 'the remote settings are applied');
     assert.deepEqual(restoredCollections, {
       blockedUsers: [
         { id: '12', name: 'Alice' },
         { id: '34', name: 'Bob' },
       ],
-      boardFavoriteIds: ['14', '99'],
+      boardFavoriteIds: [...collections.boardFavoriteIds, '777'],
       savedPosts: [
         { id: '1234', threadId: '5678' },
         { id: '4321', threadId: '8765' },
       ],
     });
-
-    await service.syncNow();
     assert.strictEqual(
       service.writes.length,
       2,
-      'the merged collections are uploaded',
+      'merged collections are written back',
     );
+  });
+
+  test('uses local settings while merging remote collections', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const remoteCollections: SyncedCollections = {
+      blockedUsers: [
+        { id: '12', name: 'Alice' },
+        { id: '56', name: 'Carol' },
+      ],
+      boardFavoriteIds: collections.boardFavoriteIds,
+      savedPosts: [
+        { id: '1234', threadId: '5678' },
+        { id: '9999', threadId: '999' },
+      ],
+    };
+    await service.initialize(
+      settings,
+      { userId: '123', accessToken: 'token' },
+      undefined,
+      remoteCollections,
+    );
+    const recoveryKey = await service.enable(settings);
+    await service.forgetThisDevice();
+
+    const localSettings = { ...settings, theme: Theme.default, debug: false };
+    const localCollections: SyncedCollections = {
+      blockedUsers: [
+        { id: '12', name: 'Local Alice' },
+        { id: '34', name: 'Bob' },
+      ],
+      boardFavoriteIds: ['777'],
+      savedPosts: [
+        { id: '1234', threadId: 'local-thread' },
+        { id: '4321', threadId: '8765' },
+      ],
+    };
+    let appliedCollections: SyncedCollections | undefined;
+    await service.initialize(
+      localSettings,
+      { userId: '123', accessToken: 'token' },
+      undefined,
+      localCollections,
+      (value) => {
+        appliedCollections = value;
+      },
+    );
+
+    assert.true(await service.unlockHasDifferences(recoveryKey, localSettings));
+    const recovered = await service.unlock(recoveryKey, localSettings, 'local');
+
+    assert.deepEqual(recovered, localSettings);
+    assert.strictEqual(service.state, 'enabled');
+    assert.strictEqual(service.writes.length, 2);
     assert.strictEqual(service.writes[1]!.expectedRevision, 1);
+    assert.deepEqual(appliedCollections, {
+      blockedUsers: [
+        { id: '12', name: 'Local Alice' },
+        { id: '34', name: 'Bob' },
+        { id: '56', name: 'Carol' },
+      ],
+      boardFavoriteIds: [
+        ...localCollections.boardFavoriteIds,
+        ...remoteCollections.boardFavoriteIds,
+      ],
+      savedPosts: [
+        { id: '1234', threadId: 'local-thread' },
+        { id: '4321', threadId: '8765' },
+        { id: '9999', threadId: '999' },
+      ],
+    });
+
+    await service.forgetThisDevice();
+    let restoredCollections: SyncedCollections | undefined;
+    await service.initialize(
+      settings,
+      { userId: '123', accessToken: 'token' },
+      undefined,
+      { blockedUsers: [], boardFavoriteIds: [], savedPosts: [] },
+      (value) => {
+        restoredCollections = value;
+      },
+    );
+    const restoredSettings = await service.unlock(
+      recoveryKey,
+      settings,
+      'remote',
+    );
+
+    assert.deepEqual(restoredSettings, localSettings);
+    assert.deepEqual(restoredCollections, {
+      blockedUsers: [
+        { id: '12', name: 'Local Alice' },
+        { id: '34', name: 'Bob' },
+        { id: '56', name: 'Carol' },
+      ],
+      boardFavoriteIds: [
+        ...localCollections.boardFavoriteIds,
+        ...remoteCollections.boardFavoriteIds,
+      ],
+      savedPosts: [
+        { id: '1234', threadId: 'local-thread' },
+        { id: '4321', threadId: '8765' },
+        { id: '9999', threadId: '999' },
+      ],
+    });
+  });
+
+  test('detects when local and remote data are already identical', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    await service.initialize(
+      settings,
+      { userId: '123', accessToken: 'token' },
+      undefined,
+      collections,
+    );
+    const recoveryKey = await service.enable(settings);
+    await service.forgetThisDevice();
+    await service.initialize(
+      settings,
+      { userId: '123', accessToken: 'token' },
+      undefined,
+      collections,
+    );
+
+    assert.false(await service.unlockHasDifferences(recoveryKey, settings));
+    assert.strictEqual(service.state, 'locked');
+    assert.strictEqual(service.writes.length, 1);
   });
 
   test('rejects an incorrect recovery key', async function (assert) {
@@ -259,7 +414,7 @@ module('Unit | Service | SettingsSync', function (hooks) {
     const firstKeyCharacter = recoveryKey[keyOffset] === 'A' ? 'B' : 'A';
     const incorrectKey = `${recoveryKey.slice(0, keyOffset)}${firstKeyCharacter}${recoveryKey.slice(keyOffset + 1)}`;
 
-    await assert.rejects(service.unlock(incorrectKey, settings));
+    await assert.rejects(service.unlock(incorrectKey, settings, 'remote'));
     assert.strictEqual(service.state, 'locked');
     assert.notOk(service.persistedKey, 'the incorrect key is not persisted');
   });
