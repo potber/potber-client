@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.30.0] - 2026-08-13
+
+### Added
+
+- Added optional end-to-end encrypted synchronization for settings, blocked users, board favorites, and saved posts across devices.
+
 ## [1.29.3] - 2026-08-08
 
 ### Changed
