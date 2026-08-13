@@ -23,13 +23,15 @@ services:
     ports:
       - '4200:4200'
 
-  potber-api:    
+  potber-api:
     image: ghcr.io/potber/potber-api
     restart: unless-stopped
     ports:
       - '3000:3000'
     volumes:
       - potber-api-user-configuration:/data
+    env_file:
+      - potber-api.local.env
     environment:
       - APP_PORT=3000
       - APP_CLIENT_URL=http://localhost:4200
