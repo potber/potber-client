@@ -2,6 +2,7 @@ import Service from '@ember/service';
 import { service } from '@ember/service';
 import LocalStorageService from './local-storage';
 import { tracked } from '@glimmer/tracking';
+import SettingsSyncService from './settings-sync';
 
 export interface BlockedUser {
   id: string;
@@ -14,6 +15,7 @@ export interface Socials {
 
 export default class SocialsService extends Service implements Socials {
   @service declare localStorage: LocalStorageService;
+  @service declare settingsSync: SettingsSyncService;
   @tracked blockedUsers: BlockedUser[] = [];
 
   load = (): Socials => {
@@ -25,7 +27,13 @@ export default class SocialsService extends Service implements Socials {
 
   save = (): void => {
     this.localStorage.writeSocials({ blockedUsers: this.blockedUsers });
+    this.settingsSync.blockedUsersChanged(this.blockedUsers);
   };
+
+  applySyncedBlockedUsers(blockedUsers: BlockedUser[]) {
+    this.blockedUsers = blockedUsers.map((user) => ({ ...user }));
+    this.localStorage.writeSocials({ blockedUsers: this.blockedUsers });
+  }
 
   blockUser = (userId: string, username: string) => {
     if (!this.blockedUsers.find((user) => user.id === userId)) {

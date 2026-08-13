@@ -1,9 +1,9 @@
 import { module, test } from 'qunit';
-import { click, currentURL, visit } from '@ember/test-helpers';
+import { click, currentURL, settled, visit } from '@ember/test-helpers';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import Service from '@ember/service';
 import SettingsController from 'potber-client/controllers/authenticated/settings';
-import { SidebarLayout } from 'potber-client/services/settings';
+import { SidebarLayout, Theme } from 'potber-client/services/settings';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService from 'potber-client/services/settings';
 
@@ -47,13 +47,26 @@ module('Acceptance | Authenticated | Settings', function (hooks) {
       };
     }
 
+    class SettingsSyncStub extends Service {
+      state = 'disabled';
+      lastError = null;
+
+      settingChanged() {
+        return;
+      }
+    }
+
     this.owner.register('service:app', AppStub);
     this.owner.register('service:session', SessionStub);
+    this.owner.register('service:settings-sync', SettingsSyncStub);
   });
 
   test('visiting /settings', async function (assert) {
     await visit('/settings');
     assert.strictEqual(currentURL(), '/settings');
+    assert
+      .dom('[data-test-settings-sync-enable]')
+      .hasText('Synchronisierung einrichten');
   });
 
   test('changing the sidebar layout to bottom-right', async function (assert) {
@@ -79,6 +92,19 @@ module('Acceptance | Authenticated | Settings', function (hooks) {
 
     assert.strictEqual(settings.sidebarLayout, SidebarLayout.rightBottom);
     assert.strictEqual(updateSidebarLayoutCalls, 1);
+  });
+
+  test('shows settings applied after the route has rendered', async function (assert) {
+    await visit('/settings');
+    const settings = this.owner.lookup('service:settings') as SettingsService;
+
+    settings.replaceSettings({
+      ...settings.getSettings(),
+      theme: Theme['tokyo-night'],
+    });
+    await settled();
+
+    assert.dom('.dropdown-toggle').hasText('Tokyo Night');
   });
 
   test('refreshing the app', async function (assert) {

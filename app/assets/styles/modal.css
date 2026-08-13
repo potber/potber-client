@@ -97,6 +97,18 @@
   margin: 0;
 }
 
+.modal-input-description {
+  line-height: 1.4;
+}
+
+.modal-input-description + .modal-input-form {
+  margin-top: 1rem;
+}
+
+.modal-input-form .textarea-height-small {
+  height: 120px;
+}
+
 .modal-content .hint {
   font-size: 0.7rem;
   margin-top: 1rem !important;
@@ -116,4 +128,9 @@
 .modal-footer button {
   padding: 0 1rem 0 1rem;
   margin-left: 0.5rem;
+}
+
+.modal-footer .modal-submit {
+  width: auto;
+  white-space: nowrap;
 }

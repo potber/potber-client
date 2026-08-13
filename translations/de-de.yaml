@@ -69,6 +69,7 @@ route:
       network: Daten & Netzwerk
       behavior: Verhalten
       blocklist: Blockliste
+      sync: Verschlüsselte Synchronisierung
       advanced: Gefahrenzone ⚠
     theme:
       label: Thema
@@ -116,6 +117,42 @@ route:
     appsignal-error-reporting:
       label: Fehlerberichte senden
       info: Standardmäßig darf potber unerwartete Frontend-Fehler an AppSignal senden, damit Probleme besser nachvollziehbar werden und behoben werden können. Wenn Du das nicht möchtest, kannst Du diese Option deaktivieren. Änderungen werden erst nach einem Neuladen der App wirksam.
+    sync:
+      description: Synchronisiere Deine Einstellungen Ende-zu-Ende-verschlüsselt zwischen Deinen Geräten. Der Server speichert ausschließlich verschlüsselte Daten und kennt Deinen Wiederherstellungsschlüssel nicht.
+      status:
+        label: Status
+        busy: Wird geprüft…
+        disabled: Nicht eingerichtet
+        locked: Wiederherstellungsschlüssel erforderlich
+        enabled: Auf diesem Gerät aktiv
+        unavailable: Der Dienst ist derzeit nicht verfügbar
+      last-error: Die letzte Synchronisierung ist fehlgeschlagen. Deine Einstellungen bleiben lokal gespeichert.
+      enable: Synchronisierung einrichten
+      enabled: Die verschlüsselte Synchronisierung wurde eingerichtet.
+      retry: Erneut versuchen
+      error: Die verschlüsselte Synchronisierung konnte nicht aktualisiert werden. Versuche es später erneut.
+      setup:
+        title: Verschlüsselte Synchronisierung einrichten
+        text: Potber erzeugt einen zufälligen Wiederherstellungsschlüssel. Ohne diesen Schlüssel können Deine synchronisierten Einstellungen auf einem neuen Gerät nicht entschlüsselt werden. Auch der Betreiber kann den Schlüssel nicht wiederherstellen.
+      recovery:
+        title: Wiederherstellungsschlüssel speichern
+        text: Speichere diesen Schlüssel jetzt an einem sicheren Ort. Er wird danach nicht erneut angezeigt. Wenn Du diesen Dialog abbrichst, wird die Synchronisierung wieder entfernt.
+        label: Wiederherstellungsschlüssel
+        saved: Ich habe ihn gespeichert
+      unlock:
+        title: Einstellungen entschlüsseln
+        text: Gib den Wiederherstellungsschlüssel ein, den Du beim Einrichten der Synchronisierung gespeichert hast.
+        submit: Entschlüsseln
+        invalid: Der Wiederherstellungsschlüssel ist ungültig.
+      forget:
+        title: Schlüssel von diesem Gerät entfernen
+        text: Die verschlüsselten Einstellungen bleiben auf dem Server und auf Deinen anderen Geräten erhalten. Auf diesem Gerät benötigst Du zum erneuten Entschlüsseln den Wiederherstellungsschlüssel.
+        submit: Schlüssel entfernen
+      delete:
+        title: Synchronisierte Einstellungen löschen
+        text: Die verschlüsselte Kopie wird vom Server gelöscht. Deine lokalen Einstellungen bleiben erhalten, andere Geräte können sie danach aber nicht mehr synchronisieren.
+        submit: Synchronisierung löschen
+      deleted: Die synchronisierte Kopie wurde gelöscht.
     session:
       title: Sitzung
       user-id: User ID
@@ -131,7 +168,7 @@ route:
       submit: Absenden
       preview: Vorschau
       options: Optionen
-      convert-urls: "[URL]-Tags automatisch einfügen"
+      convert-urls: '[URL]-Tags automatisch einfügen'
       disable-bbcode: BBCode deaktivieren
       disable-emojis: Emojis deaktivieren
   thread:
