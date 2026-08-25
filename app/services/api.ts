@@ -142,12 +142,16 @@ export default class ApiService extends Service {
         );
       }
     }, appConfig.httpTimeoutWarningThreshold);
+    const timeoutSignal = AbortSignal.timeout(appConfig.httpTimeoutThreshold);
+    const signal = request?.signal
+      ? AbortSignal.any([request.signal, timeoutSignal])
+      : timeoutSignal;
     try {
       const response = await fetch(url.toString(), {
         ...request,
         headers: { ...headers, ...request?.headers },
+        signal,
       });
-      window.clearTimeout(timeoutId);
       if (
         response.ok &&
         (response.status === 204 ||
@@ -164,12 +168,13 @@ export default class ApiService extends Service {
       }
       return data;
     } catch (error: unknown) {
-      window.clearTimeout(timeoutId);
       await this.handleErrors(error, options, {
         method: request?.method ?? 'GET',
         url: url.toString(),
       });
       throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 
