@@ -13,6 +13,7 @@ import type { Socials } from './socials';
 import SettingsSyncService from './settings-sync';
 
 const PREFIX = 'potber-';
+const SAVED_POST_FETCH_CONCURRENCY = 4;
 
 export default class LocalStorageService extends Service {
   @service declare api: ApiService;
@@ -137,11 +138,24 @@ export default class LocalStorageService extends Service {
       this.savedPostsInitialized = true;
       try {
         const persistedPosts = this.readPersistedSavedPosts();
-        const posts = await Promise.all(
-          persistedPosts.map((persistedPost) =>
-            this.api.findPostById(persistedPost.id, persistedPost.threadId),
-          ),
-        );
+        const posts: Post[] = [];
+        for (
+          let start = 0;
+          start < persistedPosts.length;
+          start += SAVED_POST_FETCH_CONCURRENCY
+        ) {
+          const batch = persistedPosts.slice(
+            start,
+            start + SAVED_POST_FETCH_CONCURRENCY,
+          );
+          posts.push(
+            ...(await Promise.all(
+              batch.map((persistedPost) =>
+                this.api.findPostById(persistedPost.id, persistedPost.threadId),
+              ),
+            )),
+          );
+        }
         this.savedPosts = posts;
       } catch (error) {
         this.messages.log(
