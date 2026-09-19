@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Added optional end-to-end encrypted synchronization for settings, blocked users, board favorites, and saved posts across devices.
 
+### Fixed
+
+- Saved posts are now loaded in small batches to prevent excessive API load and memory usage.
+
 ## [1.29.3] - 2026-08-08
 
 ### Changed

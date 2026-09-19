@@ -5,6 +5,9 @@ export const changelog: ChangelogItem[] = [
     added: [
       'Einstellungen, blockierte Nutzer:innen, Board-Favoriten und gespeicherte Posts lassen sich optional Ende-zu-Ende-verschlüsselt zwischen Geräten synchronisieren.',
     ],
+    fixed: [
+      'Gespeicherte Posts werden nun in kleinen Gruppen geladen, um übermäßige API-Last und hohen Speicherverbrauch zu vermeiden.',
+    ],
   },
   {
     version: '1.29.3',
