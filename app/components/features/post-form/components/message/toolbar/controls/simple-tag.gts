@@ -16,7 +16,6 @@ interface Signature {
     opening: string;
     closing: string;
     prefix?: IconPrefix;
-    menuItem?: boolean;
   };
 }
 
@@ -48,10 +47,9 @@ export default class PostFormMessageSimpleTag extends Component<Signature> {
       @text={{@text}}
       @icon={{@icon}}
       @prefix={{@prefix}}
-      @variant={{if @menuItem 'secondary-transparent' 'primary-transparent'}}
-      @size={{if @menuItem 'medium' 'square'}}
+      @variant='primary-transparent'
+      @size='square'
       @type='button'
-      class={{if @menuItem 'menu-item'}}
       {{on 'click' this.handleClick}}
     />
   </template>

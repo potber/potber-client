@@ -3,6 +3,7 @@ import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import LocalStorageService from './local-storage';
 import RendererService from './renderer';
+import SettingsSyncService from './settings-sync';
 import type { Settings } from './settings/types';
 import {
   AvatarStyle,
@@ -27,6 +28,7 @@ export type { Settings } from './settings/types';
 export default class SettingsService extends Service {
   @service declare localStorage: LocalStorageService;
   @service declare renderer: RendererService;
+  @service declare settingsSync: SettingsSyncService;
 
   @tracked protected active: Settings = this.load();
   readonly default: Settings = {
@@ -57,8 +59,11 @@ export default class SettingsService extends Service {
    * @returns The settings.
    */
   load(): Settings {
+    return this.normalize(this.localStorage.readSettings());
+  }
+
+  private normalize(storedSettings: Settings | null): Settings {
     const settings = { ...this.default };
-    const storedSettings = this.localStorage.readSettings();
     if (storedSettings) {
       if (Object.values(AvatarStyle).includes(storedSettings.avatarStyle)) {
         settings.avatarStyle = storedSettings.avatarStyle;
@@ -136,6 +141,12 @@ export default class SettingsService extends Service {
   ) {
     this.active = { ...this.active, [key]: value };
     this.save();
+    this.settingsSync.settingChanged(key, this.active);
+  }
+
+  replaceSettings(settings: Settings) {
+    this.active = this.normalize(settings);
+    this.localStorage.writeSettings(this.active);
   }
 
   get sidebarLayout() {

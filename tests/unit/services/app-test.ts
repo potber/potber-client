@@ -87,6 +87,37 @@ module('Unit | Service | App | Version check', function (hooks) {
   });
 });
 
+module('Unit | Service | App | Initialization', function (hooks) {
+  setupTest(hooks);
+
+  test('loads synchronized settings without blocking application startup', async function (assert) {
+    const app = this.owner.lookup('service:app') as AppService;
+    let finishSessionSetup: (() => void) | undefined;
+
+    app.exceptionHandler.initialize = () => undefined;
+    app.settings.initialize = () => undefined;
+    app.newsfeed.initialize = () => undefined;
+    app.renderer.initialize = () => undefined;
+    app.deviceManager.initialize = () => undefined;
+    app.renderer.removeAppSkeleton = async () => undefined;
+    app.checkForNewVersion = async () => undefined;
+    app.checkForDeployedVersion = async () => undefined;
+    app.setupSession = async () =>
+      new Promise<void>((resolve) => {
+        finishSessionSetup = resolve;
+      });
+
+    await app.initialize();
+
+    assert.true(
+      app.initialized,
+      'startup completes while settings are loading',
+    );
+    assert.ok(finishSessionSetup, 'settings synchronization started');
+    finishSessionSetup?.();
+  });
+});
+
 module('Unit | Service | App | Deployment version check', function (hooks) {
   setupTest(hooks);
 

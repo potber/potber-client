@@ -84,6 +84,10 @@ export const appConfig = {
    */
   httpTimeoutWarningThreshold: 5000,
   /**
+   * The maximum duration of an API request in milliseconds.
+   */
+  httpTimeoutThreshold: 60000,
+  /**
    * The default user group id. Other group ids define mods, admins and the like.
    */
   standardUserGroupId: '3',

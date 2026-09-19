@@ -8,7 +8,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.themeOptions}}
-    @default={{@model.currentThemeOption}}
+    @default={{this.currentOptions.currentThemeOption}}
     @onSelect={{this.handleThemeSelect}}
     @size='max'
     @label={{t 'route.settings.theme.label'}}
@@ -23,7 +23,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.sidebarLayoutOptions}}
-    @default={{@model.currentSidebarLayoutOption}}
+    @default={{this.currentOptions.currentSidebarLayoutOption}}
     @onSelect={{this.handleSidebarLayoutSelect}}
     @size='max'
     @label={{t 'route.settings.sidebar.label'}}
@@ -38,7 +38,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.fontSizeOptions}}
-    @default={{@model.currentFontSizeOption}}
+    @default={{this.currentOptions.currentFontSizeOption}}
     @onSelect={{this.handleFontSizeSelect}}
     @size='max'
     @label={{t 'route.settings.font-size.label'}}
@@ -53,7 +53,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.darkenReadPostsOptions}}
-    @default={{@model.currentDarkenReadPostsOption}}
+    @default={{this.currentOptions.currentDarkenReadPostsOption}}
     @onSelect={{fn this.handleSettingSelect 'darkenReadPosts'}}
     @size='max'
     @label={{t 'route.settings.darken-read-posts.label'}}
@@ -68,7 +68,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.hideGlobalAndAnnouncementThreadsOptions}}
-    @default={{@model.currentHideGlobalAndAnnouncementThreadsOption}}
+    @default={{this.currentOptions.currentHideGlobalAndAnnouncementThreadsOption}}
     @onSelect={{fn this.handleSettingSelect 'hideGlobalAndAnnouncementThreads'}}
     @size='max'
     @label={{t 'route.settings.hide-global-and-announcement-threads.label'}}
@@ -85,7 +85,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.avatarStyleOptions}}
-    @default={{@model.currentAvatarStyleOption}}
+    @default={{this.currentOptions.currentAvatarStyleOption}}
     @onSelect={{fn this.handleSettingSelect 'avatarStyle'}}
     @size='max'
     @label={{t 'route.settings.avatar-style.label'}}
@@ -100,7 +100,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.autoRefreshSidebarOptions}}
-    @default={{@model.currentAutoRefreshSidebarOption}}
+    @default={{this.currentOptions.currentAutoRefreshSidebarOption}}
     @onSelect={{this.handleAutoRefreshSidebarSelect}}
     @size='max'
     @label={{t 'route.settings.auto-refresh-sidebar.label'}}
@@ -115,7 +115,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.appsignalErrorReportingOptions}}
-    @default={{@model.currentAppsignalErrorReportingOption}}
+    @default={{this.currentOptions.currentAppsignalErrorReportingOption}}
     @onSelect={{this.handleAppsignalErrorReportingSelect}}
     @size='max'
     @label={{t 'route.settings.appsignal-error-reporting.label'}}
@@ -132,7 +132,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.landingPageOptions}}
-    @default={{@model.currentLandingPageOption}}
+    @default={{this.currentOptions.currentLandingPageOption}}
     @onSelect={{fn this.handleSettingSelect 'landingPage'}}
     @size='max'
     @label={{t 'route.settings.landing-page.label'}}
@@ -147,7 +147,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.transitionsOptions}}
-    @default={{@model.currentTransitionsOption}}
+    @default={{this.currentOptions.currentTransitionsOption}}
     @onSelect={{fn this.handleSettingSelect 'transitions'}}
     @size='max'
     @label={{t 'route.settings.transitions.label'}}
@@ -162,7 +162,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.replaceForumUrlsOptions}}
-    @default={{@model.currentReplaceForumUrlsOption}}
+    @default={{this.currentOptions.currentReplaceForumUrlsOption}}
     @onSelect={{fn this.handleSettingSelect 'replaceForumUrls'}}
     @size='max'
     @label={{t 'route.settings.replace-forum-urls.label'}}
@@ -177,7 +177,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.goToBottomOfThreadPageOptions}}
-    @default={{@model.currentGoToBottomOfThreadPageOption}}
+    @default={{this.currentOptions.currentGoToBottomOfThreadPageOption}}
     @onSelect={{fn this.handleSettingSelect 'goToBottomOfThreadPage'}}
     @size='max'
     @label={{t 'route.settings.go-to-bottom-of-thread-page.label'}}
@@ -192,7 +192,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.collapseQuotesOptions}}
-    @default={{@model.currentCollapseQuotesOption}}
+    @default={{this.currentOptions.currentCollapseQuotesOption}}
     @onSelect={{fn this.handleSettingSelect 'collapseQuotes'}}
     @size='max'
     @label={{t 'route.settings.collapse-quotes.label'}}
@@ -207,7 +207,7 @@
 
   <Common::Control::Dropdown
     @options={{this.config.gesturesOptions}}
-    @default={{@model.currentGesturesOption}}
+    @default={{this.currentOptions.currentGesturesOption}}
     @onSelect={{this.handleGesturesSelect}}
     @size='max'
     @label={{t 'route.settings.enable-gestures.label'}}
@@ -235,11 +235,93 @@
 
   <Features::Blocklist />
 
+  <div class='flex-row align-items-center'>
+    <h3 class='margin-horizontal-x-small'>
+      {{t 'route.settings.category.sync'}}
+    </h3>
+    <Common::Control::InfoButton
+      @title={{t 'route.settings.category.sync'}}
+      @text={{t 'route.settings.sync.description'}}
+      @variant='secondary-transparent'
+      @icon='info-circle'
+    />
+  </div>
+  <p>
+    <strong>{{t 'route.settings.sync.status.label'}}:</strong>
+    {{this.syncStatusLabel}}
+  </p>
+
+  {{#if this.settingsSync.lastError}}
+    <p>{{t 'route.settings.sync.last-error'}}</p>
+  {{/if}}
+
+  <div class='settings-sync-actions margin-vertical-x-small'>
+    {{#if this.syncIsDisabled}}
+      <Common::Control::Button
+        @text={{t 'route.settings.sync.enable'}}
+        @icon='lock'
+        @variant='primary'
+        @size='large'
+        @busy={{this.syncActionBusy}}
+        @onClick={{this.handleEnableSync}}
+        data-test-settings-sync-enable
+      />
+    {{else if this.syncIsLocked}}
+      <Common::Control::Button
+        @text={{t 'route.settings.sync.unlock.submit'}}
+        @icon='key'
+        @variant='primary'
+        @size='large'
+        @busy={{this.syncActionBusy}}
+        @onClick={{this.handleUnlockSync}}
+        data-test-settings-sync-unlock
+      />
+      <Common::Control::Button
+        @text={{t 'route.settings.sync.delete.submit'}}
+        @icon='trash'
+        @variant='secondary'
+        @size='large'
+        @busy={{this.syncActionBusy}}
+        @onClick={{this.handleDeleteSync}}
+        data-test-settings-sync-delete
+      />
+    {{else if this.syncIsEnabled}}
+      <Common::Control::Button
+        @text={{t 'route.settings.sync.forget.submit'}}
+        @icon='key'
+        @variant='primary'
+        @size='large'
+        @busy={{this.syncActionBusy}}
+        @onClick={{this.handleForgetSyncKey}}
+        data-test-settings-sync-forget
+      />
+      <Common::Control::Button
+        @text={{t 'route.settings.sync.delete.submit'}}
+        @icon='trash'
+        @variant='secondary'
+        @size='large'
+        @busy={{this.syncActionBusy}}
+        @onClick={{this.handleDeleteSync}}
+        data-test-settings-sync-delete
+      />
+    {{else if this.syncIsUnavailable}}
+      <Common::Control::Button
+        @text={{t 'route.settings.sync.retry'}}
+        @icon='arrows-rotate'
+        @variant='primary'
+        @size='large'
+        @busy={{this.syncActionBusy}}
+        @onClick={{this.handleRetrySync}}
+        data-test-settings-sync-retry
+      />
+    {{/if}}
+  </div>
+
   <h3>{{t 'route.settings.category.advanced'}}</h3>
 
   <Common::Control::Dropdown
     @options={{this.config.debugOptions}}
-    @default={{@model.currentDebugOption}}
+    @default={{this.currentOptions.currentDebugOption}}
     @onSelect={{this.handleDebugSelect}}
     @size='max'
     @label={{t 'route.settings.debug.label'}}
@@ -252,47 +334,33 @@
     </:info>
   </Common::Control::Dropdown>
 
-  <Common::Control::Button
-    @text={{t 'route.settings.refresh-app'}}
-    @icon='arrows-rotate'
-    @variant='primary'
-    @size='large'
-    @onClick={{this.handleRefreshApp}}
-    class='margin-auto margin-vertical-x-small'
-    data-test-refresh-app
-  />
-
   <hr />
 
-  <Common::Control::Link
-    @route='applog'
-    @size='large'
-    @variant='primary'
-    class='margin-auto margin-vertical-x-small'
-  >
-    <FaIcon @icon='rectangle-list' />
-    <p>{{t 'route.applog.title'}}</p>
-  </Common::Control::Link>
+  <div class='settings-app-actions'>
+    <Common::Control::Button
+      @text={{t 'route.settings.refresh-app'}}
+      @icon='arrows-rotate'
+      @variant='primary'
+      @size='large'
+      @onClick={{this.handleRefreshApp}}
+      data-test-refresh-app
+    />
 
-  <Common::Control::Link
-    @route='changelog'
-    @size='large'
-    @variant='primary'
-    class='margin-auto margin-vertical-x-small'
-  >
-    <FaIcon @icon='star' @prefix='fas' />
-    <p>{{t 'route.changelog.title'}}</p>
-  </Common::Control::Link>
+    <Common::Control::Link @route='applog' @size='large' @variant='primary'>
+      <FaIcon @icon='rectangle-list' />
+      <p>{{t 'route.applog.title'}}</p>
+    </Common::Control::Link>
 
-  <Common::Control::Link
-    @route='about'
-    @size='large'
-    @variant='primary'
-    class='margin-auto margin-vertical-x-small'
-  >
-    <FaIcon @icon='info-circle' @prefix='fas' />
-    <p>{{t 'route.about.title'}}</p>
-  </Common::Control::Link>
+    <Common::Control::Link @route='changelog' @size='large' @variant='primary'>
+      <FaIcon @icon='star' @prefix='fas' />
+      <p>{{t 'route.changelog.title'}}</p>
+    </Common::Control::Link>
+
+    <Common::Control::Link @route='about' @size='large' @variant='primary'>
+      <FaIcon @icon='info-circle' @prefix='fas' />
+      <p>{{t 'route.about.title'}}</p>
+    </Common::Control::Link>
+  </div>
 
   <hr />
 

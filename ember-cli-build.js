@@ -5,9 +5,10 @@ const { compatBuild } = require('@embroider/compat');
 const { buildOnce } = require('@embroider/vite');
 
 module.exports = function (defaults) {
+  const isProduction = EmberApp.env() === 'production';
   const app = new EmberApp(defaults, {
     babel: {
-      sourceMaps: 'inline',
+      sourceMaps: isProduction ? false : 'inline',
       plugins: [
         ...require('ember-cli-code-coverage').buildBabelPlugin({
           embroider: true,

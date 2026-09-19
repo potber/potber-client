@@ -3,6 +3,7 @@ import { module, test } from 'qunit';
 import ApiService from 'potber-client/services/api';
 import { ApiError } from 'potber-client/services/api/error';
 import { setupTest } from 'potber-client/tests/helpers';
+import { appConfig } from 'potber-client/config/app.config';
 
 module('Unit | Service | Api', function (hooks) {
   setupTest(hooks);
@@ -153,5 +154,57 @@ module('Unit | Service | Api', function (hooks) {
 
     assert.strictEqual(session.invalidateCalls, 1);
     assert.deepEqual(messages.notifications, []);
+  });
+
+  test('aborts requests that exceed the HTTP timeout', async function (assert) {
+    class MessagesStub extends Service {
+      log(): void {
+        return;
+      }
+
+      showNotification(): void {
+        return;
+      }
+    }
+
+    class IntlStub extends Service {
+      t(key: string): string {
+        return key;
+      }
+    }
+
+    class SessionStub extends Service {
+      isAuthenticated = false;
+
+      async invalidate(): Promise<void> {
+        return;
+      }
+    }
+
+    this.owner.register('service:messages', MessagesStub);
+    this.owner.register('service:intl', IntlStub);
+    this.owner.register('service:session', SessionStub);
+
+    window.fetch = async (_input, init) => {
+      return new Promise((_resolve, reject) => {
+        const signal = init?.signal;
+        signal?.addEventListener('abort', () => reject(signal.reason), {
+          once: true,
+        });
+      });
+    };
+
+    const originalTimeout = appConfig.httpTimeoutThreshold;
+    appConfig.httpTimeoutThreshold = 10;
+
+    try {
+      const api = this.owner.lookup('service:api') as ApiService;
+
+      await assert.rejects(api.fetch('/test'), (error: unknown) => {
+        return error instanceof DOMException && error.name === 'TimeoutError';
+      });
+    } finally {
+      appConfig.httpTimeoutThreshold = originalTimeout;
+    }
   });
 });

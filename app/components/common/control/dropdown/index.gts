@@ -31,20 +31,24 @@ export default class DropdownComponent extends Component<Signature> {
 
   componentId = 'dropdown-' + guidFor(this);
 
-  @tracked selectedOption: DropdownOption | undefined;
+  @tracked locallySelectedOption: DropdownOption | undefined;
   @tracked expanded = false;
 
   constructor(owner: Owner, args: Args) {
     super(owner, args);
     if (args.options.length > 0) {
       if (args.default) {
-        this.selectedOption = args.default;
+        this.locallySelectedOption = args.default;
       } else {
-        this.selectedOption = args.options[0];
+        this.locallySelectedOption = args.options[0];
       }
     } else {
-      this.selectedOption = undefined;
+      this.locallySelectedOption = undefined;
     }
+  }
+
+  get selectedOption() {
+    return this.args.default ?? this.locallySelectedOption;
   }
 
   get caption() {
@@ -87,7 +91,7 @@ export default class DropdownComponent extends Component<Signature> {
   };
 
   handleItemClick = (option: DropdownOption) => {
-    this.selectedOption = option;
+    this.locallySelectedOption = option;
     this.collapse();
     if (typeof this.args.onSelect === 'function') {
       this.args.onSelect(option);

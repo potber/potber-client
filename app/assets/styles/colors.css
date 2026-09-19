@@ -18,6 +18,13 @@
   color: var(--color-text-default);
 }
 
+.control-variant-error,
+.control-variant-error p:not(.subtitle),
+.control-variant-error svg {
+  background-color: var(--color-error);
+  color: var(--color-text-default);
+}
+
 .control-variant-primary-transparent,
 .control-variant-primary-transparent p:not(.subtitle),
 .control-variant-primary-transparent svg {
