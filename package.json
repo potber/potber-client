@@ -127,7 +127,7 @@
   "dependencies": {
     "@appsignal/ember": "^1.0.18",
     "@appsignal/javascript": "^1.6.1",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.16",
     "katex": "^0.18.4"
   },
   "exports": {
