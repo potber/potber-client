@@ -1,0 +1,19 @@
+// Rendered by deploy/render-injected-config.sh in the static deploy workflow.
+// Empty values are skipped, so the app falls back to its build-time config
+// (app/config/*.config.ts uses `??`, which does not treat '' as missing).
+(function (app, values) {
+  for (var key in values) {
+    if (values[key] !== '') {
+      app[key] = values[key];
+    }
+  }
+})((window.APP = window.APP || {}), {
+  HOSTNAME: window.location.host,
+  API_URL: '${API_URL}',
+  IMGPOT_URL: '${IMGPOT_URL}',
+  AUTH_ISSUER_URL: '${AUTH_ISSUER_URL}',
+  AUTH_CLIENT_ID: '${AUTH_CLIENT_ID}',
+  APPSIGNAL_FRONTEND_KEY: '${APPSIGNAL_FRONTEND_KEY}',
+  APPSIGNAL_REVISION: '${APPSIGNAL_REVISION}',
+  MEME_HOST_URL: '${MEME_HOST_URL}' || window.location.origin,
+});

@@ -26,3 +26,12 @@ jobs:
     uses: potber/.github/.github/workflows/release_image.yml@v1
     with:
       latest: true
+
+  deploy_static:
+    needs:
+    - lint
+    - test
+    uses: ./.github/workflows/deploy_static.yml
+    with:
+      environment: production
+    secrets: inherit

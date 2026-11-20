@@ -25,3 +25,12 @@ jobs:
       contents: read
       packages: write
     uses: potber/.github/.github/workflows/release_image.yml@v1
+
+  deploy_static:
+    needs:
+    - lint
+    - test
+    uses: ./.github/workflows/deploy_static.yml
+    with:
+      environment: test
+    secrets: inherit
