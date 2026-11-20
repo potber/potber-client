@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [1.30.0] - 2026-08-13
+## [1.30.0] - 2026-11-20
 
 ### Added
 
 - Added optional end-to-end encrypted synchronization for settings, blocked users, board favorites, and saved posts across devices.
+
+### Changed
+
+- Migrated Handlebars templates to typed GTS templates.
+- Updated application and development dependencies.
 
 ### Fixed
 
