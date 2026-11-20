@@ -5,6 +5,7 @@ export const changelog: ChangelogItem[] = [
     added: [
       'Einstellungen, blockierte Nutzer:innen, Board-Favoriten und gespeicherte Posts lassen sich optional Ende-zu-Ende-verschlüsselt zwischen Geräten synchronisieren.',
     ],
+    chores: ['Templates auf GTS migriert und Dependencies aktualisiert.'],
     fixed: [
       'Gespeicherte Posts werden nun in kleinen Gruppen geladen, um übermäßige API-Last und hohen Speicherverbrauch zu vermeiden.',
     ],
