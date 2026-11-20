@@ -1,9 +1,0 @@
-{{! @glint-nocheck }}
-{{#if @model}}
-  {{page-title this.pageTitle}}
-  <Nav::Routes::Board @board={{@model.board}} />
-  <Routes::Board::Page @board={{@model.board}} />
-{{else}}
-  {{page-title '404'}}
-  <Misc::Error::NotFound />
-{{/if}}

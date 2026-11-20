@@ -8,7 +8,7 @@ import { NewPrivateMessage } from 'potber-client/services/api/models/private-mes
 interface Signature {
   Args: {
     title: string;
-    subtitle: string;
+    subtitle?: string;
     message: NewPrivateMessage;
   };
 }

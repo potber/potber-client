@@ -27,7 +27,7 @@ import NavHeader from '../../component/header';
 export interface Signature {
   Args: {
     threadId: string;
-    thread?: Threads.Read;
+    thread?: Threads.Read | null;
     postId?: string;
     page?: number;
   };
