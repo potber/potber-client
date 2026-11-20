@@ -136,7 +136,38 @@ You need to have Docker installed on your system and have the [Dev Containers ex
 
 #### Deploying
 
-The application can be deployed via [Docker](https://docker.com) using the repository's single [Dockerfile](Dockerfile).
+The app is served as static files from a [Bunny](https://bunny.net) Storage Zone behind a Pull Zone. The [deploy_static](.github/workflows/deploy_static.yml) workflow builds the app, renders `injected-config.js` from the [template](deploy/injected-config.js.template) and uploads `dist/`. Pushes to `main` deploy the `test` GitHub Environment, `v*` tags deploy `production`.
+
+- Uploads never delete files, so a browser holding an old `index.html` still finds its hashed assets. Clean up old files in `assets/` now and then.
+- `injected-config.js`, `index.html` and `version.json` are uploaded last, then the Pull Zone cache is purged.
+- The deploy is skipped while `BUNNY_STORAGE_ZONE` is unset in the environment.
+
+Bunny setup per environment:
+
+1. Create a Storage Zone and a Pull Zone with the Storage Zone as origin, and add the custom hostname to the Pull Zone.
+2. For client-side routes, set the Storage Zone's 404 file path to `/index.html` and enable rewriting 404 to 200.
+3. Add Edge Rules to the Pull Zone that set `Cache-Control: public, max-age=31536000, immutable` for URLs matching `*/assets/*` and `Cache-Control: no-cache` for all others.
+
+Settings of the GitHub Environments `test` and `production`:
+
+| Kind     | Name                                                                          | Notes                                                                                |
+| -------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Variable | `BUNNY_STORAGE_ZONE`                                                          | Storage Zone name                                                                    |
+| Variable | `BUNNY_PULL_ZONE_ID`                                                          | Numeric Pull Zone ID                                                                 |
+| Variable | `BUNNY_STORAGE_HOSTNAME`                                                      | Optional, defaults to `storage.bunnycdn.com` (Falkenstein)                           |
+| Variable | `API_URL`, `AUTH_ISSUER_URL`, `AUTH_CLIENT_ID`                                | Required                                                                             |
+| Variable | `IMGPOT_URL`, `APPSIGNAL_FRONTEND_KEY`, `APPSIGNAL_REVISION`, `MEME_HOST_URL` | Optional; empty values fall back to the build-time config in `config/environment.js` |
+| Secret   | `BUNNY_STORAGE_PASSWORD`                                                      | Storage Zone password                                                                |
+| Secret   | `BUNNYNET_API_KEY`                                                            | Account API key for the cache purge; can also be a repository secret                 |
+
+If the `production` environment has deployment branch rules, allow `v*` tags.
+
+To check the deploy scripts locally:
+
+- `API_URL=https://test-api.potber.de deploy/render-injected-config.sh /tmp/injected-config.js`
+- `DRY_RUN=1 BUNNY_STORAGE_ZONE=x deploy/upload-to-bunny-storage.sh dist` (prints the upload order)
+
+The [Dockerfile](Dockerfile) still builds an nginx image for the Kubernetes cluster and the PR previews below:
 
 - Build the image with `docker build -t potber-client .`
 - Run it locally with `docker run --rm -p 8080:8080 potber-client`

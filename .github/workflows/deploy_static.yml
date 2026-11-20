@@ -1,0 +1,93 @@
+name: deploy-static
+
+# Builds the client and publishes it to a Bunny Storage Zone behind a Pull Zone.
+# All settings come from the GitHub Environment named by `environment`:
+#   vars:    BUNNY_STORAGE_ZONE, BUNNY_PULL_ZONE_ID, BUNNY_STORAGE_HOSTNAME (optional),
+#            API_URL, AUTH_ISSUER_URL, AUTH_CLIENT_ID, IMGPOT_URL, APPSIGNAL_FRONTEND_KEY,
+#            APPSIGNAL_REVISION and MEME_HOST_URL (the last four optional)
+#   secrets: BUNNY_STORAGE_PASSWORD, BUNNYNET_API_KEY
+# The job is skipped while BUNNY_STORAGE_ZONE is unset in that environment.
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "The GitHub Environment to deploy, e.g. 'test' or 'production'."
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Bunny Storage (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-static-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - name: Check configuration
+        id: check
+        shell: bash
+        run: |
+          if [ -z "${BUNNY_STORAGE_ZONE}" ]; then
+            echo "::notice::BUNNY_STORAGE_ZONE is not set in environment '${{ inputs.environment }}', skipping the static deploy."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          BUNNY_STORAGE_ZONE: ${{ vars.BUNNY_STORAGE_ZONE }}
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.enabled == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.enabled == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Build
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Render injected-config.js
+        if: steps.check.outputs.enabled == 'true'
+        run: deploy/render-injected-config.sh dist/injected-config.js
+        env:
+          API_URL: ${{ vars.API_URL }}
+          IMGPOT_URL: ${{ vars.IMGPOT_URL }}
+          AUTH_ISSUER_URL: ${{ vars.AUTH_ISSUER_URL }}
+          AUTH_CLIENT_ID: ${{ vars.AUTH_CLIENT_ID }}
+          APPSIGNAL_FRONTEND_KEY: ${{ vars.APPSIGNAL_FRONTEND_KEY }}
+          APPSIGNAL_REVISION: ${{ vars.APPSIGNAL_REVISION }}
+          MEME_HOST_URL: ${{ vars.MEME_HOST_URL }}
+
+      - name: Upload to Bunny Storage
+        if: steps.check.outputs.enabled == 'true'
+        run: deploy/upload-to-bunny-storage.sh dist
+        env:
+          BUNNY_STORAGE_ZONE: ${{ vars.BUNNY_STORAGE_ZONE }}
+          BUNNY_STORAGE_HOSTNAME: ${{ vars.BUNNY_STORAGE_HOSTNAME }}
+          BUNNY_STORAGE_PASSWORD: ${{ secrets.BUNNY_STORAGE_PASSWORD }}
+
+      # Hashed assets are re-fetched once; the edge then serves the new
+      # index.html, injected-config.js and SPA fallback responses.
+      - name: Purge Pull Zone cache
+        if: steps.check.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          curl --fail-with-body --silent --show-error --retry 3 \
+            --request POST \
+            --header "AccessKey: ${BUNNYNET_API_KEY}" \
+            "https://api.bunny.net/pullzone/${BUNNY_PULL_ZONE_ID}/purgeCache"
+          echo "Purged pull zone ${BUNNY_PULL_ZONE_ID}"
+        env:
+          BUNNY_PULL_ZONE_ID: ${{ vars.BUNNY_PULL_ZONE_ID }}
+          BUNNYNET_API_KEY: ${{ secrets.BUNNYNET_API_KEY }}

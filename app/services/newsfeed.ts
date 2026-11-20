@@ -51,18 +51,23 @@ export default class NewsfeedService extends Service {
 
   async refresh(options?: PublicFetchOptions) {
     this.isUpdating = true;
-    const promises: Promise<unknown>[] = [];
-    promises.push(sleep(MINIMUM_UPDATE_DURATION));
-    // Only trigger the actual fetches if we may perform an update
-    if (this.checkRateLimit()) {
-      this.lastUpdatedAt = new Date();
-      promises.push(this.bookmarkStore.getUnread({ ...options, reload: true }));
-      promises.push(
-        this.privateMessageStore.getUnread({ ...options, reload: true }),
-      );
+    try {
+      const promises: Promise<unknown>[] = [];
+      promises.push(sleep(MINIMUM_UPDATE_DURATION));
+      // Only trigger the actual fetches if we may perform an update
+      if (this.checkRateLimit()) {
+        this.lastUpdatedAt = new Date();
+        promises.push(
+          this.bookmarkStore.getUnread({ ...options, reload: true }),
+        );
+        promises.push(
+          this.privateMessageStore.getUnread({ ...options, reload: true }),
+        );
+      }
+      await Promise.all(promises);
+    } finally {
+      this.isUpdating = false;
     }
-    await Promise.all(promises);
-    this.isUpdating = false;
   }
 
   get status(): 'none' | 'info' | 'important' {

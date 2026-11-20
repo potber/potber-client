@@ -96,6 +96,7 @@ import {
   faInfo,
   faInfoCircle,
   faItalic,
+  faKey,
   faListAlt,
   faListSquares,
   faLock,
@@ -134,7 +135,7 @@ import {
 // Prevent Font Awesome from injecting CSS at runtime. We import the stylesheet explicitly.
 config.autoAddCss = false;
 
-library.add(
+library.add([
   faGithub,
   faYoutube,
   faAngry,
@@ -229,6 +230,7 @@ library.add(
   faInfo,
   faInfoCircle,
   faItalic,
+  faKey,
   faListAlt,
   faListSquares,
   faLock,
@@ -262,4 +264,4 @@ library.add(
   faCloudArrowUp,
   faUser,
   faWarning,
-);
+]);

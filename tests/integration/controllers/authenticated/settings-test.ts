@@ -2,9 +2,11 @@ import { setupTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 import SettingsController from 'potber-client/controllers/authenticated/settings';
 import type { ConfirmModalOptions } from 'potber-client/components/modal/types/confirm';
+import type { InputModalOptions } from 'potber-client/components/modal/types/input';
 import { ModalType } from 'potber-client/services/modal';
 import Service from '@ember/service';
 import { SidebarLayout } from 'potber-client/services/settings';
+import { waitUntil } from '@ember/test-helpers';
 
 module('Integration | Controller | Authenticated | Settings', function (hooks) {
   setupTest(hooks);
@@ -102,5 +104,67 @@ module('Integration | Controller | Authenticated | Settings', function (hooks) {
     });
 
     assert.deepEqual(modal.activeModal.type, ModalType.confirm);
+  });
+
+  test('asks which copy to use after validating a differing recovery key', async function (assert) {
+    class SettingsStub extends Service {
+      getSettings() {
+        return { theme: 'local' };
+      }
+    }
+
+    class SettingsSyncStub extends Service {
+      state = 'locked';
+      lastError = null;
+      validationCalls: string[] = [];
+
+      async unlockHasDifferences(recoveryKey: string) {
+        this.validationCalls.push(recoveryKey);
+        return true;
+      }
+    }
+
+    class ModalStub extends Service {
+      inputOptions?: InputModalOptions;
+      confirmOptions?: ConfirmModalOptions;
+
+      input(options: InputModalOptions) {
+        this.inputOptions = options;
+      }
+
+      confirm(options: ConfirmModalOptions) {
+        this.confirmOptions = options;
+      }
+    }
+
+    this.owner.register('service:settings', SettingsStub);
+    this.owner.register('service:settings-sync', SettingsSyncStub);
+    this.owner.register('service:modal', ModalStub);
+
+    const controller = this.owner.lookup(
+      'controller:authenticated.settings',
+    ) as SettingsController;
+    const settingsSync = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const modal = this.owner.lookup('service:modal') as ModalStub;
+
+    controller.handleUnlockSync();
+    modal.inputOptions!.onSubmit?.('recovery-key');
+    await waitUntil(() => Boolean(modal.confirmOptions));
+
+    assert.deepEqual(settingsSync.validationCalls, ['recovery-key']);
+    assert.strictEqual(modal.confirmOptions!.submitLabel, 'Remote');
+    assert.strictEqual(modal.confirmOptions!.alternativeLabel, 'Lokal');
+    assert.true(
+      modal.confirmOptions!.text.includes(
+        'In beiden Fällen werden blockierte Nutzer:innen, gespeicherte Posts und Board-Favoriten zusammengeführt.',
+      ),
+      'the dialog explains the collection merge',
+    );
+    assert.strictEqual(modal.confirmOptions!.alternativeVariant, 'error');
+    assert.ok(modal.confirmOptions!.onSubmit);
+    assert.ok(modal.confirmOptions!.onAlternative);
+    assert.false(controller.syncActionBusy);
   });
 });

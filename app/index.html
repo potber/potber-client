@@ -4,10 +4,17 @@
     <meta charset="utf-8" />
     <title>potber</title>
     <meta name="description" content="" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      if ('virtualKeyboard' in navigator) {
+        document
+          .querySelector('meta[name="viewport"]')
+          .setAttribute(
+            'content',
+            'width=device-width, initial-scale=1, interactive-widget=resizes-content',
+          );
+      }
+    </script>
     <meta name="theme-color" content="#0c1c2c" />
     <meta name="apple-mobile-web-app-status-bar-style" content="#0c1c2c" />
 

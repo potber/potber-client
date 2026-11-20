@@ -1,5 +1,29 @@
 export const changelog: ChangelogItem[] = [
   {
+    version: '1.30.0',
+    type: 'minor',
+    added: [
+      'Einstellungen, blockierte Nutzer:innen, Board-Favoriten und gespeicherte Posts lassen sich optional Ende-zu-Ende-verschlüsselt zwischen Geräten synchronisieren.',
+    ],
+    fixed: [
+      'Gespeicherte Posts werden nun in kleinen Gruppen geladen, um übermäßige API-Last und hohen Speicherverbrauch zu vermeiden.',
+    ],
+  },
+  {
+    version: '1.29.3',
+    type: 'patch',
+    changed: [
+      'Die Symbolleiste im Postformular wurde auf das bisherige Layout zurückgesetzt.',
+    ],
+  },
+  {
+    version: '1.29.2',
+    type: 'patch',
+    fixed: [
+      'Direkt aufeinanderfolgende [video]-Tags werden nun vollständig dargestellt.',
+    ],
+  },
+  {
     version: '1.29.1',
     type: 'patch',
     fixed: ['Gelesene Posts sind in Chrome wieder abgedunkelt.'],

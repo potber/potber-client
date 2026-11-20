@@ -7,6 +7,7 @@ import {
   Theme,
 } from 'potber-client/services/settings';
 import type { Settings } from 'potber-client/services/settings';
+import type { DropdownOption } from 'potber-client/components/common/control/dropdown/types';
 
 /**
  * Defines all available options for seach setting.
@@ -218,3 +219,25 @@ export const settingsConfig: Record<
     },
   ],
 };
+
+export type CurrentSettingOptions = Record<
+  `current${Capitalize<keyof Settings>}Option`,
+  DropdownOption
+>;
+
+export function getCurrentSettingOptions(
+  settings: Settings,
+): CurrentSettingOptions {
+  const result: Partial<CurrentSettingOptions> = {};
+
+  for (const [optionsKey, options] of Object.entries(settingsConfig)) {
+    const settingKey = optionsKey.replace('Options', '') as keyof Settings;
+    const currentOptionKey =
+      `current${optionsKey.charAt(0).toUpperCase()}${optionsKey.slice(1, -1)}` as keyof CurrentSettingOptions;
+    result[currentOptionKey] = options.find(
+      (option) => option.data === settings[settingKey],
+    ) as DropdownOption;
+  }
+
+  return result as CurrentSettingOptions;
+}

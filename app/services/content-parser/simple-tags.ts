@@ -90,7 +90,7 @@ const simpleTags: SimpleTag[] = [
   {
     open: {
       regex: /\[trigger\]/gi,
-      replacement: '<p class="trigger" onclick="this.className=null;">',
+      replacement: '<p class="trigger">',
     },
     close: {
       regex: /\[\/trigger\]/gi,

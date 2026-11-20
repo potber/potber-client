@@ -6,7 +6,7 @@ import { getFaIconHtmlString } from 'potber-client/utils/font-awesome';
  * @returns The output string.
  */
 export function parseVideo(input: string, location: Partial<Location>) {
-  const VIDEO_REGEX = /\[video.*\](.*)\[\/video\]/gi;
+  const VIDEO_REGEX = /\[video[^\]]*\]([\s\S]*?)\[\/video\]/gi;
   const YOUTUBE_REGEX = /(youtu\.be)|(youtube\.com)/;
 
   if (!VIDEO_REGEX.test(input)) return input;

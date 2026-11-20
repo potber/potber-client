@@ -33,7 +33,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.themeOptions}}
-      @default={{@model.currentThemeOption}}
+      @default={{@controller.currentOptions.currentThemeOption}}
       @onSelect={{@controller.handleThemeSelect}}
       @size='max'
       @label={{t 'route.settings.theme.label'}}
@@ -48,7 +48,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.sidebarLayoutOptions}}
-      @default={{@model.currentSidebarLayoutOption}}
+      @default={{@controller.currentOptions.currentSidebarLayoutOption}}
       @onSelect={{@controller.handleSidebarLayoutSelect}}
       @size='max'
       @label={{t 'route.settings.sidebar.label'}}
@@ -63,7 +63,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.fontSizeOptions}}
-      @default={{@model.currentFontSizeOption}}
+      @default={{@controller.currentOptions.currentFontSizeOption}}
       @onSelect={{@controller.handleFontSizeSelect}}
       @size='max'
       @label={{t 'route.settings.font-size.label'}}
@@ -78,7 +78,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.darkenReadPostsOptions}}
-      @default={{@model.currentDarkenReadPostsOption}}
+      @default={{@controller.currentOptions.currentDarkenReadPostsOption}}
       @onSelect={{fn @controller.handleSettingSelect 'darkenReadPosts'}}
       @size='max'
       @label={{t 'route.settings.darken-read-posts.label'}}
@@ -93,7 +93,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.hideGlobalAndAnnouncementThreadsOptions}}
-      @default={{@model.currentHideGlobalAndAnnouncementThreadsOption}}
+      @default={{@controller.currentOptions.currentHideGlobalAndAnnouncementThreadsOption}}
       @onSelect={{fn
         @controller.handleSettingSelect
         'hideGlobalAndAnnouncementThreads'
@@ -115,7 +115,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.avatarStyleOptions}}
-      @default={{@model.currentAvatarStyleOption}}
+      @default={{@controller.currentOptions.currentAvatarStyleOption}}
       @onSelect={{fn @controller.handleSettingSelect 'avatarStyle'}}
       @size='max'
       @label={{t 'route.settings.avatar-style.label'}}
@@ -130,7 +130,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.autoRefreshSidebarOptions}}
-      @default={{@model.currentAutoRefreshSidebarOption}}
+      @default={{@controller.currentOptions.currentAutoRefreshSidebarOption}}
       @onSelect={{@controller.handleAutoRefreshSidebarSelect}}
       @size='max'
       @label={{t 'route.settings.auto-refresh-sidebar.label'}}
@@ -145,7 +145,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.appsignalErrorReportingOptions}}
-      @default={{@model.currentAppsignalErrorReportingOption}}
+      @default={{@controller.currentOptions.currentAppsignalErrorReportingOption}}
       @onSelect={{@controller.handleAppsignalErrorReportingSelect}}
       @size='max'
       @label={{t 'route.settings.appsignal-error-reporting.label'}}
@@ -162,7 +162,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.landingPageOptions}}
-      @default={{@model.currentLandingPageOption}}
+      @default={{@controller.currentOptions.currentLandingPageOption}}
       @onSelect={{fn @controller.handleSettingSelect 'landingPage'}}
       @size='max'
       @label={{t 'route.settings.landing-page.label'}}
@@ -177,7 +177,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.transitionsOptions}}
-      @default={{@model.currentTransitionsOption}}
+      @default={{@controller.currentOptions.currentTransitionsOption}}
       @onSelect={{fn @controller.handleSettingSelect 'transitions'}}
       @size='max'
       @label={{t 'route.settings.transitions.label'}}
@@ -192,7 +192,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.replaceForumUrlsOptions}}
-      @default={{@model.currentReplaceForumUrlsOption}}
+      @default={{@controller.currentOptions.currentReplaceForumUrlsOption}}
       @onSelect={{fn @controller.handleSettingSelect 'replaceForumUrls'}}
       @size='max'
       @label={{t 'route.settings.replace-forum-urls.label'}}
@@ -207,7 +207,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.goToBottomOfThreadPageOptions}}
-      @default={{@model.currentGoToBottomOfThreadPageOption}}
+      @default={{@controller.currentOptions.currentGoToBottomOfThreadPageOption}}
       @onSelect={{fn @controller.handleSettingSelect 'goToBottomOfThreadPage'}}
       @size='max'
       @label={{t 'route.settings.go-to-bottom-of-thread-page.label'}}
@@ -222,7 +222,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.collapseQuotesOptions}}
-      @default={{@model.currentCollapseQuotesOption}}
+      @default={{@controller.currentOptions.currentCollapseQuotesOption}}
       @onSelect={{fn @controller.handleSettingSelect 'collapseQuotes'}}
       @size='max'
       @label={{t 'route.settings.collapse-quotes.label'}}
@@ -237,7 +237,7 @@ export default <template>
 
     <Dropdown
       @options={{@controller.config.gesturesOptions}}
-      @default={{@model.currentGesturesOption}}
+      @default={{@controller.currentOptions.currentGesturesOption}}
       @onSelect={{@controller.handleGesturesSelect}}
       @size='max'
       @label={{t 'route.settings.enable-gestures.label'}}
@@ -265,11 +265,93 @@ export default <template>
 
     <Blocklist />
 
+    <div class='flex-row align-items-center'>
+      <h3 class='margin-horizontal-x-small'>
+        {{t 'route.settings.category.sync'}}
+      </h3>
+      <InfoButton
+        @title={{t 'route.settings.category.sync'}}
+        @text={{t 'route.settings.sync.description'}}
+        @variant='secondary-transparent'
+        @icon='info-circle'
+      />
+    </div>
+    <p>
+      <strong>{{t 'route.settings.sync.status.label'}}:</strong>
+      {{@controller.syncStatusLabel}}
+    </p>
+
+    {{#if @controller.settingsSync.lastError}}
+      <p>{{t 'route.settings.sync.last-error'}}</p>
+    {{/if}}
+
+    <div class='settings-sync-actions margin-vertical-x-small'>
+      {{#if @controller.syncIsDisabled}}
+        <Button
+          @text={{t 'route.settings.sync.enable'}}
+          @icon='lock'
+          @variant='primary'
+          @size='large'
+          @busy={{@controller.syncActionBusy}}
+          @onClick={{@controller.handleEnableSync}}
+          data-test-settings-sync-enable
+        />
+      {{else if @controller.syncIsLocked}}
+        <Button
+          @text={{t 'route.settings.sync.unlock.submit'}}
+          @icon='key'
+          @variant='primary'
+          @size='large'
+          @busy={{@controller.syncActionBusy}}
+          @onClick={{@controller.handleUnlockSync}}
+          data-test-settings-sync-unlock
+        />
+        <Button
+          @text={{t 'route.settings.sync.delete.submit'}}
+          @icon='trash'
+          @variant='secondary'
+          @size='large'
+          @busy={{@controller.syncActionBusy}}
+          @onClick={{@controller.handleDeleteSync}}
+          data-test-settings-sync-delete
+        />
+      {{else if @controller.syncIsEnabled}}
+        <Button
+          @text={{t 'route.settings.sync.forget.submit'}}
+          @icon='key'
+          @variant='primary'
+          @size='large'
+          @busy={{@controller.syncActionBusy}}
+          @onClick={{@controller.handleForgetSyncKey}}
+          data-test-settings-sync-forget
+        />
+        <Button
+          @text={{t 'route.settings.sync.delete.submit'}}
+          @icon='trash'
+          @variant='secondary'
+          @size='large'
+          @busy={{@controller.syncActionBusy}}
+          @onClick={{@controller.handleDeleteSync}}
+          data-test-settings-sync-delete
+        />
+      {{else if @controller.syncIsUnavailable}}
+        <Button
+          @text={{t 'route.settings.sync.retry'}}
+          @icon='arrows-rotate'
+          @variant='primary'
+          @size='large'
+          @busy={{@controller.syncActionBusy}}
+          @onClick={{@controller.handleRetrySync}}
+          data-test-settings-sync-retry
+        />
+      {{/if}}
+    </div>
+
     <h3>{{t 'route.settings.category.advanced'}}</h3>
 
     <Dropdown
       @options={{@controller.config.debugOptions}}
-      @default={{@model.currentDebugOption}}
+      @default={{@controller.currentOptions.currentDebugOption}}
       @onSelect={{@controller.handleDebugSelect}}
       @size='max'
       @label={{t 'route.settings.debug.label'}}
@@ -282,47 +364,33 @@ export default <template>
       </:info>
     </Dropdown>
 
-    <Button
-      @text={{t 'route.settings.refresh-app'}}
-      @icon='arrows-rotate'
-      @variant='primary'
-      @size='large'
-      @onClick={{@controller.handleRefreshApp}}
-      class='margin-auto margin-vertical-x-small'
-      data-test-refresh-app
-    />
-
     <hr />
 
-    <ControlLink
-      @route='applog'
-      @size='large'
-      @variant='primary'
-      class='margin-auto margin-vertical-x-small'
-    >
-      <FaIcon @icon='rectangle-list' />
-      <p>{{t 'route.applog.title'}}</p>
-    </ControlLink>
+    <div class='settings-app-actions'>
+      <Button
+        @text={{t 'route.settings.refresh-app'}}
+        @icon='arrows-rotate'
+        @variant='primary'
+        @size='large'
+        @onClick={{@controller.handleRefreshApp}}
+        data-test-refresh-app
+      />
 
-    <ControlLink
-      @route='changelog'
-      @size='large'
-      @variant='primary'
-      class='margin-auto margin-vertical-x-small'
-    >
-      <FaIcon @icon='star' @prefix='fas' />
-      <p>{{t 'route.changelog.title'}}</p>
-    </ControlLink>
+      <ControlLink @route='applog' @size='large' @variant='primary'>
+        <FaIcon @icon='rectangle-list' />
+        <p>{{t 'route.applog.title'}}</p>
+      </ControlLink>
 
-    <ControlLink
-      @route='about'
-      @size='large'
-      @variant='primary'
-      class='margin-auto margin-vertical-x-small'
-    >
-      <FaIcon @icon='info-circle' @prefix='fas' />
-      <p>{{t 'route.about.title'}}</p>
-    </ControlLink>
+      <ControlLink @route='changelog' @size='large' @variant='primary'>
+        <FaIcon @icon='star' @prefix='fas' />
+        <p>{{t 'route.changelog.title'}}</p>
+      </ControlLink>
+
+      <ControlLink @route='about' @size='large' @variant='primary'>
+        <FaIcon @icon='info-circle' @prefix='fas' />
+        <p>{{t 'route.about.title'}}</p>
+      </ControlLink>
+    </div>
 
     <hr />
 

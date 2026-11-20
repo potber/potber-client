@@ -6,6 +6,7 @@ import Avatar from 'potber-client/components/common/avatar';
 import { PrivateMessage } from 'potber-client/services/api/models/private-message';
 import ContentParserService from 'potber-client/services/content-parser';
 import { getPrivateMessageFolderLabel } from 'potber-client/utils/private-messages';
+import { sanitizeHtml } from 'potber-client/utils/sanitize-html';
 
 interface Signature {
   Args: {
@@ -32,7 +33,7 @@ export default class PrivateMessagesViewComponent extends Component<Signature> {
     const content = this.contentParser.parsePrivateMessageContent(
       this.args.message.content || '',
     );
-    return htmlSafe(content);
+    return htmlSafe(sanitizeHtml(content));
   }
 
   <template>

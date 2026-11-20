@@ -31,6 +31,7 @@ import collapseQuotes from 'potber-client/modifiers/collapse-quotes';
 import maskBlockedQuotes from 'potber-client/modifiers/mask-blocked-quotes';
 import quoteNavigation from 'potber-client/modifiers/quote-navigation';
 import renderTex from 'potber-client/modifiers/render-tex';
+import { sanitizeHtml } from 'potber-client/utils/sanitize-html';
 
 interface Signature {
   Args: {
@@ -96,7 +97,7 @@ export default class PostComponent extends Component<Signature> {
       const content = this.contentParser.parsePostContent(this.post.message, {
         groupId: this.post.author.groupId,
       });
-      return htmlSafe(content);
+      return htmlSafe(sanitizeHtml(content));
     } else {
       return null;
     }
@@ -124,6 +125,15 @@ export default class PostComponent extends Component<Signature> {
     } catch (error: any) {
       // In case of an error, do not call the modal
       return;
+    }
+  };
+
+  handleMessageClick = (event: MouseEvent) => {
+    if (!(event.target instanceof Element)) return;
+
+    const trigger = event.target.closest('p.trigger');
+    if (trigger) {
+      trigger.classList.remove('trigger');
     }
   };
 
@@ -327,6 +337,7 @@ export default class PostComponent extends Component<Signature> {
       </div>
       <div
         class={{classNames this 'body'}}
+        {{on 'click' this.handleMessageClick}}
         {{collapseQuotes enabled=this.collapseQuotesEnabled source=this.post}}
         {{maskBlockedQuotes className=this.blockedMaskClassName}}
         {{quoteNavigation}}

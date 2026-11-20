@@ -1,4 +1,5 @@
 import Controller from '@ember/controller';
+import { tracked } from '@glimmer/tracking';
 import { service } from '@ember/service';
 import type { ThreadRouteModel } from 'potber-client/routes/authenticated/thread';
 import SettingsService from 'potber-client/services/settings';
@@ -10,11 +11,11 @@ export default class ThreadController extends Controller {
   declare model: ThreadRouteModel;
 
   queryParams = ['TID', 'page', 'PID', 'lastReadPost', 'scrollToBottom'];
-  TID = '';
-  page = '';
-  PID = '';
-  lastReadPost = '';
-  scrollToBottom = '';
+  @tracked TID = '';
+  @tracked page = '';
+  @tracked PID = '';
+  @tracked lastReadPost = '';
+  @tracked scrollToBottom = '';
 
   get showSkeletonPage() {
     return (

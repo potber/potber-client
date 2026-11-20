@@ -21,9 +21,13 @@ export interface ConfirmModalOptions {
   submitIcon?: IconName;
   cancelLabel?: string;
   cancelIcon?: IconName;
+  alternativeLabel?: string;
+  alternativeIcon?: IconName;
+  alternativeVariant?: ControlVariant;
   hideCancel?: boolean;
   onSubmit?: () => void;
   onCancel?: () => void;
+  onAlternative?: () => void;
 }
 
 interface Signature {
@@ -52,6 +56,14 @@ export default class ConfirmModalComponent extends Component<Signature> {
     return this.args.options.cancelIcon;
   }
 
+  get alternativeVariant() {
+    return this.args.options.alternativeVariant ?? 'secondary';
+  }
+
+  get submitVariant(): ControlVariant {
+    return this.args.options.variant === 'error' ? 'error' : 'primary';
+  }
+
   @action handleSubmit() {
     if (this.args.options.onSubmit) {
       this.args.options.onSubmit();
@@ -63,6 +75,10 @@ export default class ConfirmModalComponent extends Component<Signature> {
     if (this.args.options.onCancel) {
       this.args.options.onCancel();
     }
+  }
+
+  @action handleAlternative() {
+    this.args.options.onAlternative?.();
   }
 
   <template>
@@ -84,13 +100,24 @@ export default class ConfirmModalComponent extends Component<Signature> {
           @onClick={{this.handleCancel}}
         />
       {{/unless}}
+      {{#if @options.alternativeLabel}}
+        <Button
+          @icon={{@options.alternativeIcon}}
+          @text={{@options.alternativeLabel}}
+          @variant={{this.alternativeVariant}}
+          @size='auto'
+          @onClick={{this.handleAlternative}}
+          data-test-modal-alternative
+        />
+      {{/if}}
       <Button
         @icon={{this.submitIcon}}
         @text={{this.submitLabel}}
         @type='submit'
-        @variant='primary'
-        @size='small'
+        @variant={{this.submitVariant}}
+        @size='auto'
         @onClick={{this.handleSubmit}}
+        class='modal-submit'
       />
     </ModalFooter>
   </template>
