@@ -217,6 +217,8 @@ module('Acceptance | Reading the forum', function (hooks) {
   test('moves between thread pages and shows the posts for each page', async function (assert) {
     await visit('/thread?TID=42&page=1');
     await waitUntil(() => startupRefreshed);
+    // CI has seen `visit` settle before the first page rendered; wait like the page changes below.
+    await waitFor('#post-101');
     assert.dom('#post-101').includesText('The opening post');
 
     const pageControls = '.nav-element-center > a[href^="/thread?"]';
