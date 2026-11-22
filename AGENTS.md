@@ -29,7 +29,7 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 - Follow existing Ember routes/controllers/services and typed `.gts` component patterns. Keep component styles colocated when the surrounding feature uses CSS modules.
 - Put ordinary forum API operations in `app/services/api/endpoints/` and expose them through `ApiService`; preserve its authentication, timeout, and error handling. Consult the architecture document for separate transports.
 - Treat network and persisted JSON as untrusted data. Type annotations and assertions do not validate responses at runtime.
-- Validate API responses by passing a Valibot schema from `app/services/api/schemas/` as the `fetch` `schema` option. Thread reads are validated so far; other endpoints still return unchecked JSON.
+- Validate API responses by passing a Valibot schema from `app/services/api/schemas/` as the `fetch` `schema` option. See [Authentication and forum requests](ARCHITECTURE.md#authentication-and-forum-requests) when adding validation to an endpoint.
 - Preserve final HTML sanitization before `htmlSafe`; include hostile-input cases when changing parsers or rendering boundaries.
 - Keep user-facing translations in `translations/de-de.yaml` where the feature uses `ember-intl`.
 - Preserve stored settings and synchronization payload compatibility; test old payloads and conflict behavior when changing their formats.
@@ -41,14 +41,14 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 - Run `npm run quality:check` for application changes. Fix new or worsened findings before handoff. For PRs targeting a branch other than `main`, pass its remote-tracking ref. See the [structural checks guide](docs/guides/quality-gates.md) for reporting and troubleshooting.
 - Exercise changed user flows end-to-end in a browser when the change affects interaction, navigation, authentication, or rendering; report any unavailable backend or browser prerequisite.
 - For documentation-only changes, check Markdown formatting and local link targets; application tests are unnecessary unless commands or runtime configuration also changed.
-- Verify that coverage output actually exists before reporting coverage. The saved assessment recorded a run with passing tests but no report; a successful script alone is insufficient evidence.
+- Verify that coverage output actually exists before reporting coverage. Check for `coverage/coverage-summary.json` and `coverage/index.html` after the run.
 - Review the final diff and report checks run, remaining failures, and material limitations. Keep unrelated changes out of the patch.
 
 ## Documentation
 
 - [README.md](README.md): setup, features, deployment configuration, and preview environments.
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, data flow, and system boundaries.
-- Readiness history: [original assessment](AGENT_READY_ASSESSMENT.md) and [reassessment at `dc6b5ef`](AGENT_READY_REASSESSMENT_2026-11-22.md).
+- Readiness history: [original assessment](AGENT_READY_ASSESSMENT.md) and [reassessment at `dc6b5ef`](AGENT_READY_REASSESSMENT_2026-11-22.md), and [reassessment at `54b7937`](AGENT_READY_REASSESSMENT_2026-11-22_54b7937.md).
 
 Create an ADR under `docs/adr/` only when a decision is costly to reverse, surprising without context, and involves a real trade-off. Record the context, decision, and rationale; create the directory with the first qualifying record.
 
