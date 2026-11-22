@@ -2,6 +2,7 @@ import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
 import { Bookmark } from '../models/bookmark';
 import type { IBookmark } from '../models/bookmark';
+import { bookmarkListSchema } from '../schemas/bookmarks';
 
 /**
  * Finds and returns all bookmarks for the user that is currently logged in.
@@ -10,7 +11,10 @@ export async function _findAll(
   this: ApiService,
   options?: PublicFetchOptions,
 ): Promise<Bookmark[]> {
-  const data: IBookmark[] = await this.fetch(`bookmarks`, options);
+  const data: IBookmark[] = await this.fetch(`bookmarks`, {
+    ...options,
+    schema: bookmarkListSchema,
+  });
   const bookmarks: Bookmark[] = data.map(
     (record) => new Bookmark(record, this),
   );

@@ -3,6 +3,8 @@ import { module, test } from 'qunit';
 import type * as v from 'valibot';
 import type ApiService from 'potber-client/services/api';
 import { PayloadValidationError } from 'potber-client/services/api/error';
+import type { IBookmark } from 'potber-client/services/api/models/bookmark';
+import { bookmarkSchema } from 'potber-client/services/api/schemas/bookmarks';
 import { boardCategoriesSchema } from 'potber-client/services/api/schemas/board-categories';
 import { boardReadSchema } from 'potber-client/services/api/schemas/boards';
 import { threadReadSchema } from 'potber-client/services/api/schemas/threads';
@@ -32,6 +34,19 @@ const categorySchemaMatchesType: Equals<
   v.InferOutput<typeof boardCategoriesSchema>,
   BoardCategories.Read[]
 > = true;
+
+const bookmarkSchemaMatchesType: Equals<
+  v.InferOutput<typeof bookmarkSchema>,
+  IBookmark
+> = true;
+
+const bookmark: IBookmark = {
+  id: '55',
+  postId: '101',
+  newPostsCount: 1,
+  thread: { id: '42', title: 'Weekend plans', isClosed: false, pagesCount: 2 },
+  board: { id: '14', name: 'General discussion' },
+};
 
 const author = { id: '7', name: 'Thread Author' };
 
@@ -358,6 +373,30 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
       (error: unknown) =>
         error instanceof PayloadValidationError &&
         error.issues.includes('id: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
+
+  test('an empty bookmark list is valid', async function (assert) {
+    body = '[]';
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.true(bookmarkSchemaMatchesType);
+    assert.deepEqual(await api.findAllBookmarks(), []);
+    assert.deepEqual(notifications, []);
+  });
+
+  test('rejects a bookmark list with invalid nested thread data', async function (assert) {
+    body = JSON.stringify([
+      { ...bookmark, thread: { ...bookmark.thread, pagesCount: 'two' } },
+    ]);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findAllBookmarks(),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('0.thread.pagesCount: expected number'),
     );
     assert.strictEqual(notifications.length, 1, 'shows one fallback error');
   });
