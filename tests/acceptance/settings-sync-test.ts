@@ -28,6 +28,7 @@ async function setUpSync() {
 module('Acceptance | Settings sync', function (hooks) {
   setupApplicationTest(hooks);
   let remote: RemoteUserConfiguration | undefined;
+  let syncUnavailable: boolean;
   let originalFetch: typeof fetch;
   let originalErrorHandler: typeof window.onerror;
   let originalTheme: string | null;
@@ -58,6 +59,7 @@ module('Acceptance | Settings sync', function (hooks) {
       }),
     );
     remote = undefined;
+    syncUnavailable = false;
     window.fetch = async (input, init) => {
       const request = new Request(input, init);
       const { pathname } = new URL(request.url);
@@ -77,6 +79,7 @@ module('Acceptance | Settings sync', function (hooks) {
         case 'GET /version.json':
           return new Response(null, { status: 404 });
         case 'GET /user-configuration':
+          if (syncUnavailable) return new Response(null, { status: 503 });
           return remote
             ? Response.json(remote)
             : new Response(null, { status: 404 });
@@ -172,5 +175,25 @@ module('Acceptance | Settings sync', function (hooks) {
 
     assert.dom('.dropdown-toggle').hasText('Tokyo Night');
     assert.dom(forget).exists('the recovery key activates this device');
+  });
+
+  test('a sync outage keeps local settings and offers a working retry', async function (assert) {
+    syncUnavailable = true;
+    await visit('/settings');
+
+    const retry = '[data-test-settings-sync-retry]';
+    await waitFor(retry);
+    assert.dom('.dropdown-toggle').hasText('Tokyo Night');
+    assert.dom().includesText('Deine Einstellungen bleiben lokal gespeichert.');
+
+    syncUnavailable = false;
+    await click(retry);
+    await waitFor(enable);
+
+    assert.dom(retry).doesNotExist();
+    assert.dom('.dropdown-toggle').hasText('Tokyo Night');
+    assert
+      .dom()
+      .doesNotIncludeText('Deine Einstellungen bleiben lokal gespeichert.');
   });
 });
