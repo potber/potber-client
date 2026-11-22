@@ -7,9 +7,11 @@ import {
   waitFor,
   waitUntil,
 } from '@ember/test-helpers';
+import { waitForPromise } from '@ember/test-waiters';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
+import type BookmarkStore from 'potber-client/services/stores/bookmark';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -25,6 +27,7 @@ const threadSubmit =
 const editEditor = '#edit-post-form textarea';
 const editSubmit =
   '#edit-post-form button[type="submit"], button[type="submit"][form="edit-post-form"]';
+const replyLink = 'a[href^="/post/create?"]';
 const editor = '#create-post-form textarea';
 const submit =
   '#create-post-form button[type="submit"], button[type="submit"][form="create-post-form"]';
@@ -87,6 +90,12 @@ module('Acceptance | Writing posts', function (hooks) {
 
   hooks.beforeEach(async function () {
     this.owner.register('session-store:application', EphemeralSessionStore);
+    const bookmarkStore = this.owner.lookup(
+      'service:stores/bookmark',
+    ) as BookmarkStore;
+    const reload = bookmarkStore.reload;
+    // The thread schedules a bookmark refresh outside Ember's run loop.
+    bookmarkStore.reload = (options) => waitForPromise(reload(options));
     originalOnError = window.onerror;
     storedValues = new Map(
       [
@@ -248,7 +257,8 @@ module('Acceptance | Writing posts', function (hooks) {
   test('submitting a reply returns the user to the thread with the new post', async function (assert) {
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
-    await click('a[href^="/post/create?"]');
+    await waitFor(replyLink);
+    await click(replyLink);
     await fillIn(editor, 'A reply from the browser');
 
     await click(submit);
@@ -268,7 +278,8 @@ module('Acceptance | Writing posts', function (hooks) {
 
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
-    await click('a[href^="/post/create?"]');
+    await waitFor(replyLink);
+    await click(replyLink);
     await fillIn(editor, draft);
     const editorURL = currentURL();
 
