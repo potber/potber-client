@@ -154,6 +154,83 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(service.state, 'enabled');
   });
 
+  test('restores existing v1 settings with a saved recovery key and remembers the device', async function (assert) {
+    const recoveryKey =
+      'potber-sync-v1--_v7-_v7-_v7-_v7-_v7-_v7-_v7-_v7-_v7-_v7-_s';
+    const authentication = { userId: '123', accessToken: 'token' };
+    const defaults = { ...settings, theme: Theme.default, debug: false };
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new Uint8Array(32).fill(251),
+      'AES-GCM',
+      false,
+      ['encrypt'],
+    );
+    const iv = new Uint8Array(12).fill(7);
+    const clock = { modifiedAt: 1, deviceId: 'legacy-device' };
+    const values = {
+      ...Object.fromEntries(
+        Object.entries(settings).map(([key, value]) => [
+          `settings.${key}`,
+          value,
+        ]),
+      ),
+      ...collections,
+    };
+    const fields = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [key, { value, clock }]),
+    );
+    const ciphertext = await crypto.subtle.encrypt(
+      {
+        name: 'AES-GCM',
+        iv,
+        additionalData: new TextEncoder().encode(
+          'potber-user-configuration:v1:123',
+        ),
+      },
+      key,
+      new TextEncoder().encode(JSON.stringify({ schemaVersion: 1, fields })),
+    );
+    service.remoteValue = {
+      version: 1,
+      iv: 'BwcHBwcHBwcHBwcH',
+      ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+      revision: 4,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    let restoredCollections: SyncedCollections | undefined;
+    await service.initialize(
+      defaults,
+      authentication,
+      undefined,
+      undefined,
+      (values) => {
+        restoredCollections = values;
+      },
+    );
+    assert.strictEqual(service.state, 'locked');
+
+    assert.deepEqual(
+      await service.unlock(` ${recoveryKey}\n`, defaults, 'remote'),
+      settings,
+    );
+    assert.deepEqual(restoredCollections, collections);
+    assert.deepEqual(
+      await service.initialize(defaults, authentication),
+      settings,
+    );
+    assert.strictEqual(service.state, 'enabled');
+    assert.false(service.persistedKey?.extractable);
+    assert.strictEqual(
+      service.writes.length,
+      0,
+      'recovery leaves the existing payload intact',
+    );
+  });
+
   test('encrypts and restores blocklist, board favorites and saved posts', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
