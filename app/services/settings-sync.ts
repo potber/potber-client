@@ -2,11 +2,16 @@ import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import { appConfig } from 'potber-client/config/app.config';
 import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
+import {
+  createRecoveryKey,
+  fromBase64,
+  importRecoveryKey,
+  toBase64,
+} from 'potber-client/utils/settings-sync-crypto';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
 
 const ENVELOPE_VERSION = 1;
-const RECOVERY_KEY_PREFIX = 'potber-sync-v1-';
 const KEY_DATABASE = 'potber-settings-sync';
 const KEY_STORE = 'keys';
 const METADATA_PREFIX = 'potber-settingsSyncMetadata-';
@@ -176,14 +181,7 @@ export default class SettingsSyncService extends Service {
         );
       }
 
-      const generatedKey = await crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt'],
-      );
-      const rawKey = await crypto.subtle.exportKey('raw', generatedKey);
-      const recoveryKey = `${RECOVERY_KEY_PREFIX}${toBase64Url(rawKey)}`;
-      const key = await importRawKey(rawKey);
+      const { key, recoveryKey } = await createRecoveryKey();
       this.currentSettings = { ...localSettings };
       const values = this.currentValues;
       const metadata = this.createInitialMetadata(values);
@@ -536,8 +534,7 @@ export default class SettingsSyncService extends Service {
   private async decryptForUnlock(
     recoveryKey: string,
   ): Promise<DecryptedRemote> {
-    const rawKey = parseRecoveryKey(recoveryKey);
-    const key = await importRawKey(rawKey);
+    const key = await importRecoveryKey(recoveryKey);
     const remote = this.remote ?? (await this.fetchRemote());
     if (!remote) {
       throw new Error('No encrypted settings exist for this account.');
@@ -1012,60 +1009,6 @@ function isPersistedSavedPosts(value: unknown): value is PersistedSavedPost[] {
         typeof (entry as PersistedSavedPost).threadId === 'string',
     )
   );
-}
-
-async function importRawKey(rawKey: BufferSource) {
-  return crypto.subtle.importKey(
-    'raw',
-    rawKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt'],
-  );
-}
-
-function parseRecoveryKey(recoveryKey: string): ArrayBuffer {
-  const normalized = recoveryKey.trim();
-  if (!normalized.startsWith(RECOVERY_KEY_PREFIX)) {
-    throw new Error('Invalid recovery key prefix.');
-  }
-  const encodedKey = normalized.slice(RECOVERY_KEY_PREFIX.length);
-  if (!/^[A-Za-z0-9_-]{43}$/.test(encodedKey)) {
-    throw new Error('Invalid recovery key encoding.');
-  }
-  const rawKey = fromBase64Url(encodedKey);
-  if (rawKey.byteLength !== 32) throw new Error('Invalid recovery key length.');
-  if (toBase64Url(rawKey) !== encodedKey) {
-    throw new Error('Non-canonical recovery key encoding.');
-  }
-  return rawKey.buffer as ArrayBuffer;
-}
-
-function toBase64(value: ArrayBuffer | ArrayBufferView) {
-  const bytes =
-    value instanceof ArrayBuffer
-      ? new Uint8Array(value)
-      : new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-}
-
-function fromBase64(value: string) {
-  const binary = atob(value);
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-}
-
-function toBase64Url(value: ArrayBuffer | ArrayBufferView) {
-  return toBase64(value)
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-}
-
-function fromBase64Url(value: string) {
-  const base64 = value.replaceAll('-', '+').replaceAll('_', '/');
-  return fromBase64(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
 }
 
 function errorMessage(error: unknown) {
