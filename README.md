@@ -122,6 +122,7 @@ You need to have Docker installed on your system and have the [Dev Containers ex
 
 - `npm run lint`
 - `npm run lint:fix`
+- `npm run quality:check` — check for structural regressions against the merge base. See the [structural checks guide](docs/guides/quality-gates.md).
 
 #### Testing
 

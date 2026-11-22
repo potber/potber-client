@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "includeSubpathExports": true,
+  "entry": [
+    ".template-lintrc.js",
+    "scripts/**/*.mjs",
+    "app/formats.js",
+    "app/authenticators/*.{js,ts}",
+    "app/session-stores/*.{js,ts}"
+  ],
+  "project": [
+    "app/**/*.{ts,gts,js}",
+    "tests/**/*.ts",
+    "scripts/**/*.mjs",
+    "*.{js,mjs}"
+  ],
+  "include": ["files", "exports"],
+  "ignore": [".agents/**"]
+}

@@ -23,7 +23,10 @@
     "test:coverage": "node scripts/test-coverage.mjs",
     "test:tooling": "node --test scripts/tests/*.test.mjs",
     "update": "npx npm-check-updates -u",
-    "test:ember": "vite build --mode development && ember test --path dist"
+    "test:ember": "vite build --mode development && ember test --path dist",
+    "quality:check": "node scripts/structural-check.mjs check",
+    "quality:report": "node scripts/structural-check.mjs report",
+    "quality:test": "node --test scripts/structural-check.test.mjs"
   },
   "devDependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
@@ -108,6 +111,8 @@
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-qunit": "^8.2.6",
     "globals": "^17.6.0",
+    "jscpd": "5.4.3",
+    "knip": "6.47.0",
     "postcss": "^8.5.23",
     "prettier": "^3.0.3",
     "prettier-plugin-ember-template-tag": "^2.1.8",
