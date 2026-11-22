@@ -135,7 +135,8 @@
     "@appsignal/ember": "^1.0.18",
     "@appsignal/javascript": "^1.6.1",
     "dompurify": "^3.4.17",
-    "katex": "^0.18.4"
+    "katex": "^0.18.4",
+    "valibot": "^1.5.0"
   },
   "exports": {
     "./tests/*": "./tests/*",
