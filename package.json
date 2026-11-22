@@ -22,7 +22,10 @@
     "test": "vite build --mode development && ember test --path dist",
     "test:coverage": "COVERAGE=true vite build --mode development && ember test --path dist",
     "update": "npx npm-check-updates -u",
-    "test:ember": "vite build --mode development && ember test --path dist"
+    "test:ember": "vite build --mode development && ember test --path dist",
+    "quality:check": "node scripts/structural-check.mjs check",
+    "quality:report": "node scripts/structural-check.mjs report",
+    "quality:test": "node --test scripts/structural-check.test.mjs"
   },
   "devDependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",

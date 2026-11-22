@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -68,6 +68,8 @@ function duplication(cwd) {
         '--absolute',
         '--silent',
         '--fail-on-empty',
+        '--workers',
+        '1',
       ],
       cwd,
     );
@@ -125,7 +127,8 @@ function unused(cwd) {
   ]);
 }
 
-export async function collectFindings(cwd) {
+export async function collectFindings(directory) {
+  const cwd = realpathSync(directory);
   return [...(await complexity(cwd)), ...duplication(cwd), ...unused(cwd)];
 }
 
