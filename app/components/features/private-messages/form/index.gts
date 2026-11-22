@@ -58,7 +58,12 @@ export default class PrivateMessageForm extends Component<Signature> {
 
   handleSubmit = async (event: Event) => {
     event.preventDefault();
-    await this.message.save();
+    try {
+      await this.message.save();
+    } catch {
+      // The API shows the error. Keep the form open so the user can retry.
+      return;
+    }
     this.messages.showNotification(
       this.intl.t('feature.private-messages.form.message-sent'),
       'success',
