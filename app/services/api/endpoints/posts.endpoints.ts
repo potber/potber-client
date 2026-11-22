@@ -49,8 +49,9 @@ export async function create(
   post: Posts.Write,
   options?: PublicFetchOptions,
 ): Promise<Posts.Read> {
-  const createdPost = await this.fetch('posts', {
+  const createdPost: Posts.Read = await this.fetch('posts', {
     ...options,
+    schema: postReadSchema,
     statusNotifications: [
       {
         statusCode: 403,
