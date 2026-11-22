@@ -46,6 +46,7 @@ module('Acceptance | Posting a reply', function (hooks) {
   let originalOnError: typeof window.onerror;
   let storedValues: Map<string, string | null>;
   let submittedReplies: Posts.Write[];
+  let failNextSubmission: boolean;
 
   hooks.beforeEach(async function () {
     this.owner.register('session-store:application', EphemeralSessionStore);
@@ -69,6 +70,7 @@ module('Acceptance | Posting a reply', function (hooks) {
 
     const posts = [openingPost];
     submittedReplies = [];
+    failNextSubmission = false;
     originalFetch = window.fetch;
     window.fetch = async (input, init) => {
       const request = new Request(input, init);
@@ -95,6 +97,17 @@ module('Acceptance | Posting a reply', function (hooks) {
         case 'POST /posts': {
           const payload: Posts.Write = await request.json();
           submittedReplies.push(payload);
+          if (failNextSubmission) {
+            failNextSubmission = false;
+            return Response.json(
+              {
+                statusCode: 500,
+                error: 'Internal Server Error',
+                message: 'Try again',
+              },
+              { status: 500 },
+            );
+          }
           const reply: Posts.Read = {
             ...openingPost,
             id: replyId,
@@ -136,6 +149,38 @@ module('Acceptance | Posting a reply', function (hooks) {
     assert.deepEqual(
       submittedReplies.map(({ threadId, message }) => ({ threadId, message })),
       [{ threadId, message: 'A reply from the browser' }],
+    );
+  });
+
+  test('a failed submission keeps the reply draft and lets the user retry', async function (assert) {
+    const draft = 'Keep this draft for my retry';
+    failNextSubmission = true;
+
+    await visit(`/thread?TID=${threadId}`);
+    await click('a[href^="/post/create?"]');
+    await fillIn(editor, draft);
+    const editorURL = currentURL();
+
+    const firstAttempt = click(submit);
+    await waitFor('[data-test-notification-message="error"]');
+    assert.dom('[data-test-notification-message="error"]').exists();
+    await firstAttempt;
+
+    assert.strictEqual(currentURL(), editorURL);
+    assert.dom(editor).hasValue(draft);
+    assert.dom(submit).isNotDisabled();
+
+    await click(submit);
+    await waitFor(`#post-${replyId}`);
+
+    assert.dom(`#post-${replyId}`).includesText(draft);
+    assert.true(currentURL().startsWith('/thread?'));
+    assert.deepEqual(
+      submittedReplies.map(({ threadId, message }) => ({ threadId, message })),
+      [
+        { threadId, message: draft },
+        { threadId, message: draft },
+      ],
     );
   });
 });
