@@ -400,4 +400,17 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
     );
     assert.strictEqual(notifications.length, 1, 'shows one fallback error');
   });
+
+  test('rejects a malformed bookmark creation response before returning a model', async function (assert) {
+    body = JSON.stringify({ ...bookmark, postId: 101 });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.createBookmark('101', '42'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('postId: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
 });
