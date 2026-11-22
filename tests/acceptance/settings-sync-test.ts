@@ -32,6 +32,8 @@ module('Acceptance | Settings sync', function (hooks) {
   setupApplicationTest(hooks);
   let remote: RemoteUserConfiguration | undefined;
   let syncUnavailable: boolean;
+  let conflictNextWrite: boolean;
+  let expectedRevisions: Array<number | undefined>;
   let originalFetch: typeof fetch;
   let originalErrorHandler: typeof window.onerror;
   let originalTheme: string | null;
@@ -63,6 +65,8 @@ module('Acceptance | Settings sync', function (hooks) {
     );
     remote = undefined;
     syncUnavailable = false;
+    conflictNextWrite = false;
+    expectedRevisions = [];
     window.fetch = async (input, init) => {
       const request = new Request(input, init);
       const { pathname } = new URL(request.url);
@@ -91,6 +95,15 @@ module('Acceptance | Settings sync', function (hooks) {
           return new Response(null, { status: 204 });
         case 'PUT /user-configuration': {
           const body = await request.json();
+          expectedRevisions.push(body.expectedRevision);
+          if (conflictNextWrite && remote) {
+            conflictNextWrite = false;
+            remote = { ...remote, revision: remote.revision + 1 };
+            return Response.json(
+              { message: 'Revision conflict' },
+              { status: 409 },
+            );
+          }
           remote = {
             ...body,
             revision: (remote?.revision ?? 0) + 1,
@@ -202,6 +215,20 @@ module('Acceptance | Settings sync', function (hooks) {
     } finally {
       restartedSync.destroy();
     }
+  });
+
+  test('a concurrent remote update is fetched and the local settings upload is retried', async function (assert) {
+    await visit('/settings');
+    await setUpSync();
+    conflictNextWrite = true;
+
+    await click('.dropdown-toggle');
+    await click('.dropdown-menu-visible .dropdown-item');
+    await waitUntil(() => remote?.revision === 3, { timeout: 5000 });
+
+    assert.deepEqual(expectedRevisions, [undefined, 1, 2]);
+    assert.dom('.dropdown-toggle').hasText('potber');
+    assert.dom(forget).exists('sync stays enabled');
   });
 
   test('a sync outage keeps local settings and offers a working retry', async function (assert) {
