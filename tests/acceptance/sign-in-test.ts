@@ -1,4 +1,10 @@
-import { currentURL, visit } from '@ember/test-helpers';
+import {
+  click,
+  currentURL,
+  findAll,
+  visit,
+  waitUntil,
+} from '@ember/test-helpers';
 import { module, test } from 'qunit';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authConfig } from 'potber-client/config/auth.config';
@@ -11,8 +17,8 @@ function setCallbackFragment(fragment: string) {
   window.history.replaceState(window.history.state, '', fragment);
 }
 
-async function captureSignInRedirect(path: string) {
-  // Observe the browser's outbound navigation and keep the test runner local.
+async function captureSignInRedirect(perform: () => Promise<unknown>) {
+  // Keep the runner in place during OAuth redirects and sign-out reloads.
   if (
     !('navigation' in window) ||
     !(window.navigation instanceof EventTarget)
@@ -29,14 +35,13 @@ async function captureSignInRedirect(path: string) {
       destination: { url: string };
     };
     const url = new URL(target.url);
-    if (url.origin === window.location.origin) return;
     event.preventDefault();
-    destination = url;
+    if (url.origin !== window.location.origin) destination = url;
   }
 
   navigation.addEventListener('navigate', capture);
   try {
-    await visit(path);
+    await perform();
     return destination;
   } finally {
     navigation.removeEventListener('navigate', capture);
@@ -50,6 +55,7 @@ module('Acceptance | Sign-in', function (hooks) {
   let originalURL: string;
   let originalOnError: typeof window.onerror;
   let storedValues: Map<string, string | null>;
+  let startupRefreshed: boolean;
   let sessionAuthorization: string | null;
 
   hooks.beforeEach(function () {
@@ -73,6 +79,7 @@ module('Acceptance | Sign-in', function (hooks) {
       }),
     );
 
+    startupRefreshed = false;
     sessionAuthorization = null;
     originalFetch = window.fetch;
     window.fetch = async (input, init) => {
@@ -90,8 +97,10 @@ module('Acceptance | Sign-in', function (hooks) {
             iat: 0,
             exp: 0,
           });
-        case '/bookmarks':
         case '/privateMessages':
+          startupRefreshed = true;
+          return Response.json([]);
+        case '/bookmarks':
           return Response.json([]);
         case '/user-configuration':
         case '/version.json':
@@ -117,7 +126,9 @@ module('Acceptance | Sign-in', function (hooks) {
       '#access_token=test%2Btoken%2Fwith%3Dpadding&token_type=Bearer',
     );
 
-    const destination = await captureSignInRedirect('/auth/callback');
+    const destination = await captureSignInRedirect(() =>
+      visit('/auth/callback'),
+    );
 
     assert.strictEqual(destination, undefined, 'sign-in stays in the app');
     assert.strictEqual(currentURL(), '/home');
@@ -126,7 +137,7 @@ module('Acceptance | Sign-in', function (hooks) {
   });
 
   test('a signed-out visitor to settings is sent to the authorization page', async function (assert) {
-    const destination = await captureSignInRedirect('/settings');
+    const destination = await captureSignInRedirect(() => visit('/settings'));
 
     assert.strictEqual(
       destination?.origin,
@@ -148,7 +159,9 @@ module('Acceptance | Sign-in', function (hooks) {
   test('a rejected callback starts sign-in again without creating a session', async function (assert) {
     setCallbackFragment('#error=access_denied');
 
-    const destination = await captureSignInRedirect('/auth/callback');
+    const destination = await captureSignInRedirect(() =>
+      visit('/auth/callback'),
+    );
 
     assert.strictEqual(
       destination?.origin,
@@ -161,5 +174,28 @@ module('Acceptance | Sign-in', function (hooks) {
       'no authenticated session request',
     );
     assert.dom('.home h2').doesNotExist();
+  });
+
+  test('signing out requires authorization to revisit settings', async function (assert) {
+    setCallbackFragment(
+      '#access_token=test%2Btoken%2Fwith%3Dpadding&token_type=Bearer',
+    );
+    await visit('/auth/callback');
+    await waitUntil(() => startupRefreshed);
+    await visit('/settings');
+    const signOut = findAll('button').find(
+      (button) => button.textContent?.trim() === 'Abmelden',
+    );
+    if (!signOut) throw new Error('Sign-out button missing');
+
+    await captureSignInRedirect(() => click(signOut));
+    await visit('/about');
+    const destination = await captureSignInRedirect(() => visit('/settings'));
+    assert.strictEqual(
+      destination?.origin,
+      new URL(authConfig.issuerUrl).origin,
+    );
+    assert.strictEqual(destination?.pathname, '/authorize');
+    assert.dom('[data-test-settings-sync-enable]').doesNotExist();
   });
 });
