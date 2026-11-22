@@ -2,6 +2,7 @@ import {
   click,
   currentURL,
   fillIn,
+  findAll,
   visit,
   waitFor,
   waitUntil,
@@ -17,6 +18,13 @@ const replyId = '102';
 const createdThreadId = '43';
 const createdPostId = '103';
 const quote = '[quote]The opening post[/quote]';
+const threadTitle = '#create-thread-form input[required]';
+const threadEditor = '#create-thread-form textarea';
+const threadSubmit =
+  '#create-thread-form button[type="submit"], button[type="submit"][form="create-thread-form"]';
+const editEditor = '#edit-post-form textarea';
+const editSubmit =
+  '#edit-post-form button[type="submit"], button[type="submit"][form="edit-post-form"]';
 const editor = '#create-post-form textarea';
 const submit =
   '#create-post-form button[type="submit"], button[type="submit"][form="create-post-form"]';
@@ -50,8 +58,17 @@ function threadWithPosts(posts: Posts.Read[]): Threads.Read {
 }
 
 async function openPostMenuLink(action: 'quote' | 'edit') {
+  await waitFor('#post-101 .menu-button');
   await click('#post-101 .menu-button');
   await click(`menu[data-visible="true"] a[href^="/post/${action}?"]`);
+}
+
+async function expectFailedWrite(button: string, assert: Assert) {
+  const submission = click(button);
+  const notice = '[data-test-notification-message="error"]';
+  await waitFor(notice);
+  assert.dom(notice).exists();
+  await submission;
 }
 
 module('Acceptance | Writing posts', function (hooks) {
@@ -64,6 +81,8 @@ module('Acceptance | Writing posts', function (hooks) {
   let submittedReplies: Posts.Write[];
   let failNextSubmission: boolean;
   let startupRefreshed: boolean;
+  let failNextWrite: boolean;
+  let report: Posts.Report | undefined;
   let submittedThread: Threads.Create | undefined;
 
   hooks.beforeEach(async function () {
@@ -89,6 +108,8 @@ module('Acceptance | Writing posts', function (hooks) {
     posts = [openingPost];
     let createdThread: Threads.Read | undefined;
     submittedThread = undefined;
+    failNextWrite = false;
+    report = undefined;
     startupRefreshed = false;
     submittedReplies = [];
     failNextSubmission = false;
@@ -140,6 +161,10 @@ module('Acceptance | Writing posts', function (hooks) {
           return Response.json(createdThread);
         case 'POST /threads': {
           const payload: Threads.Create = await request.json();
+          if (failNextWrite) {
+            failNextWrite = false;
+            return Response.json({ message: 'Try again' }, { status: 500 });
+          }
           submittedThread = payload;
           const post: Posts.Read = {
             ...openingPost,
@@ -164,9 +189,16 @@ module('Acceptance | Writing posts', function (hooks) {
           return Response.json(posts[0]);
         case 'PUT /posts/101': {
           const payload: Posts.Write = await request.json();
+          if (failNextWrite) {
+            failNextWrite = false;
+            return Response.json({ message: 'Try again' }, { status: 500 });
+          }
           posts[0] = { ...openingPost, ...posts[0], message: payload.message };
           return Response.json(posts[0]);
         }
+        case 'POST /posts/101/report':
+          report = await request.json();
+          return new Response(null, { status: 204 });
         case 'POST /posts': {
           const payload: Posts.Write = await request.json();
           submittedReplies.push(payload);
@@ -267,11 +299,9 @@ module('Acceptance | Writing posts', function (hooks) {
     await visit('/board?BID=14');
     await waitUntil(() => startupRefreshed);
     await click('a[href^="/create-thread?"][href*="BID=14"]');
-    await fillIn('#create-thread-form input[required]', 'Weekend meetup');
-    await fillIn('#create-thread-form textarea', 'Let’s meet on Saturday.');
-    await click(
-      '#create-thread-form button[type="submit"], button[type="submit"][form="create-thread-form"]',
-    );
+    await fillIn(threadTitle, 'Weekend meetup');
+    await fillIn(threadEditor, 'Let’s meet on Saturday.');
+    await click(threadSubmit);
     await waitFor(`#post-${createdPostId}`);
 
     const url = new URL(currentURL(), window.location.origin);
@@ -314,12 +344,10 @@ I agree with this plan.`,
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
     await openPostMenuLink('edit');
-    assert.dom('#edit-post-form textarea').hasValue(openingPost.message);
+    assert.dom(editEditor).hasValue(openingPost.message);
 
-    await fillIn('#edit-post-form textarea', 'Updated opening post');
-    await click(
-      '#edit-post-form button[type="submit"], button[type="submit"][form="edit-post-form"]',
-    );
+    await fillIn(editEditor, 'Updated opening post');
+    await click(editSubmit);
     await waitFor('#post-101');
 
     const url = new URL(currentURL(), window.location.origin);
@@ -327,5 +355,64 @@ I agree with this plan.`,
     assert.strictEqual(url.searchParams.get('TID'), threadId);
     assert.dom('#post-101').includesText('Updated opening post');
     assert.dom('#post-101').doesNotIncludeText(openingPost.message);
+  });
+
+  test('a failed thread submission preserves the title and opening post for retry', async function (assert) {
+    failNextWrite = true;
+    await visit('/board?BID=14');
+    await waitUntil(() => startupRefreshed);
+    await click('a[href^="/create-thread?"][href*="BID=14"]');
+    await fillIn(threadTitle, 'Weekend meetup');
+    await fillIn(threadEditor, 'Let’s meet on Saturday.');
+    const draftURL = currentURL();
+
+    await expectFailedWrite(threadSubmit, assert);
+    assert.strictEqual(currentURL(), draftURL);
+    assert.dom(threadTitle).hasValue('Weekend meetup');
+    assert.dom(threadEditor).hasValue('Let’s meet on Saturday.');
+
+    await click(threadSubmit);
+    await waitFor(`#post-${createdPostId}`);
+    assert
+      .dom(`#post-${createdPostId}`)
+      .includesText('Let’s meet on Saturday.');
+  });
+
+  test('a failed edit preserves the changes and lets the user retry', async function (assert) {
+    failNextWrite = true;
+    posts[0] = { ...openingPost, author: { id: '9', name: 'Test User' } };
+    await visit(`/thread?TID=${threadId}`);
+    await waitUntil(() => startupRefreshed);
+    await openPostMenuLink('edit');
+    await fillIn(editEditor, 'Updated opening post');
+    const draftURL = currentURL();
+
+    await expectFailedWrite(editSubmit, assert);
+    assert.strictEqual(currentURL(), draftURL);
+    assert.dom(editEditor).hasValue('Updated opening post');
+
+    await click(editSubmit);
+    await waitFor('#post-101');
+    assert.dom('#post-101').includesText('Updated opening post');
+  });
+
+  test('reporting a post sends the reason and confirms submission', async function (assert) {
+    await visit(`/thread?TID=${threadId}`);
+    await waitUntil(() => startupRefreshed);
+    await click('#post-101 .menu-button');
+    const action = findAll('menu[data-visible="true"] button.menu-item').find(
+      (button) => button.textContent?.trim() === 'Post melden',
+    );
+    if (!action) throw new Error('Report post action missing');
+    await click(action);
+    await fillIn('#modal textarea', 'This post is spam.');
+
+    const submission = click('#modal .modal-submit');
+    const notice = '[data-test-notification-message="success"]';
+    await waitFor(notice);
+    assert.dom(notice).includesText('Der Post wurde gemeldet.');
+    await submission;
+    assert.deepEqual(report, { cause: 'This post is spam.' });
+    assert.dom('#post-101').exists();
   });
 });
