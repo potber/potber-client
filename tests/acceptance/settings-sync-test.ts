@@ -1,12 +1,15 @@
 import { click, fillIn, visit, waitFor, waitUntil } from '@ember/test-helpers';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
+import type SettingsService from 'potber-client/services/settings';
 import { LandingPage, Theme } from 'potber-client/services/settings';
 import type SettingsSyncService from 'potber-client/services/settings-sync';
 import type { RemoteUserConfiguration } from 'potber-client/services/settings-sync';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
+const userId = 'settings-sync-browser-test';
+const accessToken = 'settings-sync-test-token';
 const enable = '[data-test-settings-sync-enable]';
 const forget = '[data-test-settings-sync-forget]';
 const confirm = '#modal .modal-submit';
@@ -39,7 +42,6 @@ module('Acceptance | Settings sync', function (hooks) {
     originalFetch = window.fetch;
     originalErrorHandler = window.onerror;
     originalTheme = document.documentElement.getAttribute('data-theme');
-    const userId = 'settings-sync-browser-test';
     storedValues = new Map(
       [
         'potber-settings',
@@ -102,7 +104,7 @@ module('Acceptance | Settings sync', function (hooks) {
           );
       }
     };
-    await authenticateSession({ access_token: 'settings-sync-test-token' });
+    await authenticateSession({ access_token: accessToken });
   });
 
   hooks.afterEach(async function () {
@@ -179,6 +181,27 @@ module('Acceptance | Settings sync', function (hooks) {
 
     assert.dom('.dropdown-toggle').hasText('Tokyo Night');
     assert.dom(forget).exists('the recovery key activates this device');
+
+    const settings = this.owner.lookup('service:settings') as SettingsService;
+    const factory = this.owner.factoryFor('service:settings-sync');
+    if (!factory) throw new Error('Missing settings sync service factory');
+    const restartedSync = factory.create() as SettingsSyncService;
+    try {
+      const local = { ...settings.getSettings(), theme: Theme.default };
+      const remembered = await restartedSync.initialize(local, {
+        userId,
+        accessToken,
+      });
+
+      assert.strictEqual(remembered.theme, Theme['tokyo-night']);
+      assert.strictEqual(
+        restartedSync.state,
+        'enabled',
+        'startup loads the saved key without asking again',
+      );
+    } finally {
+      restartedSync.destroy();
+    }
   });
 
   test('a sync outage keeps local settings and offers a working retry', async function (assert) {

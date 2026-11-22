@@ -9,11 +9,14 @@ import {
   importRecoveryKey,
   type SettingsSyncEnvelope,
 } from 'potber-client/utils/settings-sync-crypto';
+import {
+  deleteDeviceKey,
+  readDeviceKey,
+  writeDeviceKey,
+} from 'potber-client/utils/settings-sync-key-storage';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
 
-const KEY_DATABASE = 'potber-settings-sync';
-const KEY_STORE = 'keys';
 const METADATA_PREFIX = 'potber-settingsSyncMetadata-';
 const DEVICE_ID_KEY = 'potber-settingsSyncDeviceId';
 const SYNC_DEBOUNCE_MS = 750;
@@ -372,65 +375,15 @@ export default class SettingsSyncService extends Service {
   }
 
   protected async loadKey(): Promise<CryptoKey | undefined> {
-    const userId = this.requireUserId();
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(KEY_DATABASE, 1);
-      request.onupgradeneeded = () => {
-        request.result.createObjectStore(KEY_STORE);
-      };
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const database = request.result;
-        const transaction = database.transaction(KEY_STORE, 'readonly');
-        const getRequest = transaction.objectStore(KEY_STORE).get(userId);
-        getRequest.onerror = () => reject(getRequest.error);
-        getRequest.onsuccess = () => resolve(getRequest.result as CryptoKey);
-        transaction.oncomplete = () => database.close();
-      };
-    });
+    return readDeviceKey(this.requireUserId());
   }
 
   protected async storeKey(key: CryptoKey): Promise<void> {
-    const userId = this.requireUserId();
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(KEY_DATABASE, 1);
-      request.onupgradeneeded = () => {
-        request.result.createObjectStore(KEY_STORE);
-      };
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const database = request.result;
-        const transaction = database.transaction(KEY_STORE, 'readwrite');
-        transaction.objectStore(KEY_STORE).put(key, userId);
-        transaction.onerror = () => reject(transaction.error);
-        transaction.oncomplete = () => {
-          database.close();
-          resolve();
-        };
-      };
-    });
+    await writeDeviceKey(this.requireUserId(), key);
   }
 
   protected async removeKey(): Promise<void> {
-    const userId = this.userId;
-    if (!userId) return;
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(KEY_DATABASE, 1);
-      request.onupgradeneeded = () => {
-        request.result.createObjectStore(KEY_STORE);
-      };
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const database = request.result;
-        const transaction = database.transaction(KEY_STORE, 'readwrite');
-        transaction.objectStore(KEY_STORE).delete(userId);
-        transaction.onerror = () => reject(transaction.error);
-        transaction.oncomplete = () => {
-          database.close();
-          resolve();
-        };
-      };
-    });
+    if (this.userId) await deleteDeviceKey(this.userId);
   }
 
   private async request(path: string, init: RequestInit = {}) {
