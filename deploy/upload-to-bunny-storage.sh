@@ -6,12 +6,14 @@
 # Usage: deploy/upload-to-bunny-storage.sh <dist-dir>
 # Env:   BUNNY_STORAGE_ZONE, BUNNY_STORAGE_PASSWORD,
 #        BUNNY_STORAGE_HOSTNAME (default storage.bunnycdn.com),
+#        BUNNY_STORAGE_PREFIX (optional folder, e.g. pr-132 for previews),
 #        DRY_RUN=1 to only print the upload order.
 set -euo pipefail
 
 DIST="${1:?usage: $0 <dist-dir>}"
 : "${BUNNY_STORAGE_ZONE:?BUNNY_STORAGE_ZONE is required}"
 export BUNNY_STORAGE_HOSTNAME="${BUNNY_STORAGE_HOSTNAME:-storage.bunnycdn.com}"
+export BUNNY_STORAGE_PREFIX="${BUNNY_STORAGE_PREFIX:+${BUNNY_STORAGE_PREFIX%/}/}"
 export BUNNY_STORAGE_ZONE DRY_RUN="${DRY_RUN:-}"
 if [ -z "$DRY_RUN" ]; then
   : "${BUNNY_STORAGE_PASSWORD:?BUNNY_STORAGE_PASSWORD is required}"
@@ -21,7 +23,7 @@ fi
 upload() {
   local path="$1"
   if [ -n "$DRY_RUN" ]; then
-    echo "$path"
+    echo "${BUNNY_STORAGE_PREFIX}${path}"
     return
   fi
   local checksum
@@ -32,8 +34,8 @@ upload() {
     --header "Checksum: ${checksum}" \
     --header "Content-Type: application/octet-stream" \
     --upload-file "$path" \
-    "https://${BUNNY_STORAGE_HOSTNAME}/${BUNNY_STORAGE_ZONE}/${path}" > /dev/null
-  echo "uploaded $path"
+    "https://${BUNNY_STORAGE_HOSTNAME}/${BUNNY_STORAGE_ZONE}/${BUNNY_STORAGE_PREFIX}${path}" > /dev/null
+  echo "uploaded ${BUNNY_STORAGE_PREFIX}${path}"
 }
 export -f upload
 
