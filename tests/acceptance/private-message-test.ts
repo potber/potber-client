@@ -1,4 +1,11 @@
-import { click, currentURL, visit } from '@ember/test-helpers';
+import {
+  click,
+  currentURL,
+  fillIn,
+  visit,
+  waitFor,
+  waitUntil,
+} from '@ember/test-helpers';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { PrivateMessages } from 'potber-client/services/api/types';
@@ -27,6 +34,8 @@ module('Acceptance | Private messages', function (hooks) {
   let originalFetch: typeof fetch;
   let originalOnError: typeof window.onerror;
   let storedValues: Map<string, string | null>;
+  let sentMessages: PrivateMessages.Create[];
+  let startupRefreshed: boolean;
 
   hooks.beforeEach(async function () {
     this.owner.register('session-store:application', EphemeralSessionStore);
@@ -49,6 +58,8 @@ module('Acceptance | Private messages', function (hooks) {
     );
 
     const message = { ...inboundMessage };
+    sentMessages = [];
+    startupRefreshed = false;
     originalFetch = window.fetch;
     window.fetch = async (input, init) => {
       const request = new Request(input, init);
@@ -65,6 +76,7 @@ module('Acceptance | Private messages', function (hooks) {
             exp: 0,
           });
         case 'GET /bookmarks':
+          startupRefreshed = true;
           return Response.json([]);
         case 'GET /version.json':
         case 'GET /user-configuration':
@@ -82,6 +94,16 @@ module('Acceptance | Private messages', function (hooks) {
         case `GET /privateMessages/${inboundMessage.id}`:
           message.unread = false;
           return Response.json(message);
+        case `GET /privateMessages/${inboundMessage.id}/reply`:
+          return Response.json({
+            recipientName: 'Forum Member',
+            title: 'Re: Forum meetup',
+            content: '',
+            saveCopy: true,
+          } satisfies PrivateMessages.Create);
+        case 'POST /privateMessages':
+          sentMessages.push(await request.json());
+          return new Response(null, { status: 204 });
         default:
           throw new Error(
             `Unexpected private-message test request: ${request.method} ${pathname}`,
@@ -102,6 +124,7 @@ module('Acceptance | Private messages', function (hooks) {
 
   test('opening an unread message shows its contents and clears the inbox unread indicator', async function (assert) {
     await visit(inboxPath);
+    await waitUntil(() => startupRefreshed);
     assert.dom(unreadIndicator).exists();
 
     await click(messageLink);
@@ -113,7 +136,59 @@ module('Acceptance | Private messages', function (hooks) {
       .hasText('Shall we meet on Saturday?');
 
     await visit(inboxPath);
+    await waitUntil(() => startupRefreshed);
     assert.dom(messageLink).includesText('Forum meetup');
     assert.dom(unreadIndicator).doesNotExist();
+  });
+
+  test('replying sends the message to the original sender and shows confirmation', async function (assert) {
+    await visit(inboxPath);
+    await waitUntil(() => startupRefreshed);
+    await click(messageLink);
+    await click('.nav-element-center .menu-button');
+    await click(`menu[data-visible="true"] a[href="${messagePath}/reply"]`);
+
+    assert.strictEqual(currentURL(), `${messagePath}/reply`);
+    assert
+      .dom('#private-message-form input[aria-placeholder="Empfänger:in"]')
+      .hasValue('Forum Member');
+    assert
+      .dom('#private-message-form input[aria-placeholder="Betreff"]')
+      .hasValue('Re: Forum meetup');
+    await fillIn('#private-message-form textarea', 'Saturday works for me.');
+
+    // Ember's test router does not create browser history entries. Seed one at
+    // the current URL so the form's history.back() stays inside the runner.
+    const originalState: unknown = window.history.state;
+    window.history.pushState({ privateMessageForm: true }, '');
+    try {
+      const submission = click(
+        'button[type="submit"][form="private-message-form"]',
+      );
+      const notice = '[data-test-notification-message="success"]';
+      await waitFor(notice);
+      assert.dom(notice).includesText('Die Nachricht wurde gesendet.');
+      await submission;
+      await waitUntil(() => !window.history.state?.privateMessageForm);
+    } finally {
+      window.history.replaceState(originalState, '');
+    }
+
+    assert.deepEqual(
+      sentMessages.map(({ recipientName, title, content, saveCopy }) => ({
+        recipientName,
+        title,
+        content,
+        saveCopy,
+      })),
+      [
+        {
+          recipientName: 'Forum Member',
+          title: 'Re: Forum meetup',
+          content: 'Saturday works for me.',
+          saveCopy: true,
+        },
+      ],
+    );
   });
 });
