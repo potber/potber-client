@@ -9,4 +9,4 @@ jobs:
     uses: potber/.github/.github/workflows/npm_lint.yml@v2
 
   test:
-    uses: potber/.github/.github/workflows/npm_test-coverage.yml@v2
+    uses: ./.github/workflows/pr-coverage.yml

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 const metrics = ['lines', 'statements', 'functions', 'branches'];
@@ -33,6 +33,25 @@ if (
     readFileSync('config/coverage-thresholds.json'),
   );
   checkCoverage(summary, thresholds);
+
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+  if (summaryPath) {
+    const rows = metrics.map((metric) => {
+      const { covered, total, pct } = summary.total[metric];
+      return `| ${metric} | ${covered} / ${total} | ${pct}% | ${thresholds[metric]}% |`;
+    });
+    appendFileSync(
+      summaryPath,
+      [
+        '## Browser test coverage',
+        '',
+        '| Metric | Covered | Coverage | Minimum |',
+        '| --- | ---: | ---: | ---: |',
+        ...rows,
+        '',
+      ].join('\n'),
+    );
+  }
   console.log(
     metrics
       .map((metric) => `${metric}: ${summary.total[metric].pct}%`)
