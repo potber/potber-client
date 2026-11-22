@@ -365,7 +365,7 @@ I agree with this plan.`,
     assert.strictEqual(url.pathname, '/thread');
     assert.strictEqual(url.searchParams.get('TID'), threadId);
     assert.dom('#post-101').includesText('Updated opening post');
-    assert.dom('#post-101').doesNotIncludeText(openingPost.message);
+    assert.dom('#post-101').doesNotIncludeText('The opening post');
   });
 
   test('a failed thread submission preserves the title and opening post for retry', async function (assert) {

@@ -1,6 +1,7 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
 import { Threads } from '../types';
+import { threadReadSchema } from '../schemas/threads';
 
 interface FindByIdOptions extends PublicFetchOptions {
   query?: { page?: number; updateBookmark?: boolean; postId?: string };
@@ -15,8 +16,9 @@ export async function _findById(
   id: string,
   options?: FindByIdOptions,
 ): Promise<Threads.Read> {
-  const thread = await this.fetch(`threads/${id}`, {
+  const thread: Threads.Read = await this.fetch(`threads/${id}`, {
     ...options,
+    schema: threadReadSchema,
     statusNotifications: [
       {
         statusCode: 403,

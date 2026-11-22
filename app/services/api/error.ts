@@ -15,3 +15,18 @@ export class ApiError extends Error {
     Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
+
+/**
+ * Thrown when a successful API response does not match the expected payload shape.
+ * The message names the failing paths only, so post content and user data stay out of error reports.
+ */
+export class PayloadValidationError extends Error {
+  public issues: string[];
+
+  constructor(path: string, issues: string[]) {
+    super(`Unexpected API payload for ${path}: ${issues.join('; ')}`);
+    this.name = 'PayloadValidationError';
+    this.issues = issues;
+    Object.setPrototypeOf(this, PayloadValidationError.prototype);
+  }
+}

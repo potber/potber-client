@@ -4,7 +4,8 @@ export type Author = Users.Read;
 
 export interface Read {
   id: string;
-  message: string;
+  /** Absent when the forum hides the post's content. */
+  message?: string;
   date: string;
   threadId: string;
   boardId: string;

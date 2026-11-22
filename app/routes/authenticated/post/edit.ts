@@ -34,7 +34,10 @@ export default class PostEditRoute extends SlowRoute {
   async model(params: Params, transition: Transition) {
     try {
       const currentPost = await this.api.findPostById(params.PID, params.TID);
-      const post = new WritablePost(this.api, { ...currentPost });
+      const post = new WritablePost(this.api, {
+        ...currentPost,
+        message: currentPost.message ?? '',
+      });
       return {
         threadId: params.TID,
         post,

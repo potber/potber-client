@@ -10,7 +10,8 @@ import * as BoardCategories from './api/endpoints/board-categories.endpoints';
 import * as Threads from './api/endpoints/threads.endpoints';
 import * as Users from './api/endpoints/users.endpoints';
 import * as Posts from './api/endpoints/posts.endpoints';
-import { ApiError } from './api/error';
+import { ApiError, PayloadValidationError } from './api/error';
+import * as v from 'valibot';
 import CustomSession from './custom-session';
 import * as Bookmarks from './api/endpoints/bookmarks.endpoints';
 import * as PrivateMessages from './api/endpoints/private-messages.endpoints';
@@ -56,6 +57,10 @@ export interface ProtectedFetchOptions extends PublicFetchOptions {
    * The `RequestInit` object.
    */
   request?: RequestInit;
+  /**
+   * Validates a successful response body. Mismatches are reported and thrown like request errors.
+   */
+  schema?: v.GenericSchema;
 }
 
 export default class ApiService extends Service {
@@ -106,7 +111,7 @@ export default class ApiService extends Service {
     path: string,
     options?: ProtectedFetchOptions,
   ): Promise<any> => {
-    const { request, query, timeoutWarning } = {
+    const { request, query, timeoutWarning, schema } = {
       timeoutWarning: false,
       ...options,
     };
@@ -166,7 +171,7 @@ export default class ApiService extends Service {
           data.message ?? response.statusText,
         );
       }
-      return data;
+      return this.parsePayload(schema, data, path);
     } catch (error: unknown) {
       await this.handleErrors(error, options, {
         method: request?.method ?? 'GET',
@@ -177,6 +182,28 @@ export default class ApiService extends Service {
       window.clearTimeout(timeoutId);
     }
   };
+
+  private parsePayload(
+    schema: v.GenericSchema | undefined,
+    data: unknown,
+    path: string,
+  ) {
+    if (!schema) return data;
+    const result = v.safeParse(schema, data);
+    if (result.success) return result.output;
+    throw new PayloadValidationError(
+      path,
+      result.issues.map(
+        // `received` can echo string values, so only use it to detect absent keys.
+        (issue) =>
+          `${v.getDotPath(issue) ?? '(root)'}: ${
+            issue.received === 'undefined'
+              ? 'missing'
+              : `expected ${issue.expected ?? issue.kind}`
+          }`,
+      ),
+    );
+  }
 
   private async handleErrors(
     error: unknown,
