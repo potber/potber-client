@@ -16,6 +16,7 @@ const threadId = '42';
 const replyId = '102';
 const createdThreadId = '43';
 const createdPostId = '103';
+const quote = '[quote]The opening post[/quote]';
 const editor = '#create-post-form textarea';
 const submit =
   '#create-post-form button[type="submit"], button[type="submit"][form="create-post-form"]';
@@ -46,6 +47,11 @@ function threadWithPosts(posts: Posts.Read[]): Threads.Read {
     lastPost: posts.at(-1),
     page: { number: 1, offset: 0, postCount: posts.length, posts },
   };
+}
+
+async function openPostMenuLink(action: 'quote' | 'edit') {
+  await click('#post-101 .menu-button');
+  await click(`menu[data-visible="true"] a[href^="/post/${action}?"]`);
 }
 
 module('Acceptance | Writing posts', function (hooks) {
@@ -151,6 +157,8 @@ module('Acceptance | Writing posts', function (hooks) {
           };
           return Response.json(createdThread, { status: 201 });
         }
+        case 'GET /posts/101/quote':
+          return Response.json({ message: quote });
         case 'POST /posts': {
           const payload: Posts.Write = await request.json();
           submittedReplies.push(payload);
@@ -266,5 +274,29 @@ module('Acceptance | Writing posts', function (hooks) {
       .includesText('Let’s meet on Saturday.');
     assert.strictEqual(submittedThread?.boardId, '14');
     assert.strictEqual(submittedThread?.title, 'Weekend meetup');
+  });
+
+  test('quoting a post prefills the reply and submits the quote with new text', async function (assert) {
+    await visit(`/thread?TID=${threadId}`);
+    await waitUntil(() => startupRefreshed);
+    await openPostMenuLink('quote');
+    assert.dom(editor).hasValue(quote);
+
+    await fillIn(
+      editor,
+      `${quote}
+I agree with this plan.`,
+    );
+    await click(submit);
+    await waitFor(`#post-${replyId}`);
+
+    assert.dom(`#post-${replyId}`).includesText('The opening post');
+    assert.dom(`#post-${replyId}`).includesText('I agree with this plan.');
+    assert.strictEqual(submittedReplies[0]?.threadId, threadId);
+    assert.strictEqual(
+      submittedReplies[0]?.message,
+      `${quote}
+I agree with this plan.`,
+    );
   });
 });
