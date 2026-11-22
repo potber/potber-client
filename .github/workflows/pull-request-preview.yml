@@ -1,5 +1,10 @@
 name: pull-request-preview
 
+# Deploys each same-repository PR to https://pr-<number>.preview.potber.de.
+# The build is uploaded to the folder pr-<number>/ of the preview Storage Zone;
+# the Edge Script in deploy/preview-edge-script.ts maps the hostname to it.
+# Settings come from the GitHub Environment `preview` (see README).
+
 on:
   pull_request:
     types:
@@ -10,193 +15,51 @@ on:
 
 permissions:
   contents: read
-  packages: write
   pull-requests: write
 
 concurrency:
-  group: flux-preview-${{ github.event.pull_request.number }}
+  group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
-  INFRA_REPOSITORY: potber/infrastructure
-  PREVIEW_ROOT_DOMAIN: preview.potber.de
-  PREVIEW_API_URL: https://test-api.potber.de
-  PREVIEW_AUTH_URL: https://test-auth.potber.de
-  PREVIEW_AUTH_CLIENT_ID: ${{ vars.PREVIEW_AUTH_CLIENT_ID }}
-  PREVIEW_APPSIGNAL_FRONTEND_KEY: ${{ vars.PREVIEW_APPSIGNAL_FRONTEND_KEY }}
+  PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.preview.potber.de
 
 jobs:
-  # Dependabot PRs run lint/tests only; skip previews even on human-triggered updates.
-  prepare:
-    if: >-
-      github.event.action != 'closed' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    outputs:
-      host: ${{ steps.meta.outputs.host }}
-      image_name: ${{ steps.meta.outputs.image_name }}
-      image_tag: ${{ steps.meta.outputs.image_tag }}
-      image_names: ${{ steps.meta.outputs.image_names }}
-      image_labels: ${{ steps.meta.outputs.image_labels }}
-      manifest_path: ${{ steps.meta.outputs.manifest_path }}
-
-    steps:
-      - name: Derive preview metadata
-        id: meta
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [ -z "${PREVIEW_AUTH_CLIENT_ID:-}" ]; then
-            echo "Missing required workflow variable: PREVIEW_AUTH_CLIENT_ID" >&2
-            exit 1
-          fi
-
-          pr_number="${{ github.event.pull_request.number }}"
-          preview_host="pr-${pr_number}.${PREVIEW_ROOT_DOMAIN}"
-          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
-          image_tag="pr-${pr_number}-${{ github.event.pull_request.head.sha }}"
-          image_ref="${image_name}:${image_tag}"
-          manifest_name="pr-${pr_number}.yaml"
-          manifest_path="kubernetes/previews/generated/${manifest_name}"
-          image_labels="$(
-            cat <<EOF
-          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-          org.opencontainers.image.description=Preview image for pull request #${{ github.event.pull_request.number }}.
-          EOF
-          )"
-
-          echo "host=${preview_host}" >> "${GITHUB_OUTPUT}"
-          echo "image_name=${image_name}" >> "${GITHUB_OUTPUT}"
-          echo "image_tag=${image_tag}" >> "${GITHUB_OUTPUT}"
-          echo "manifest_name=${manifest_name}" >> "${GITHUB_OUTPUT}"
-          echo "manifest_path=${manifest_path}" >> "${GITHUB_OUTPUT}"
-          echo "image_names<<EOF" >> "${GITHUB_OUTPUT}"
-          echo "${image_ref}" >> "${GITHUB_OUTPUT}"
-          echo "EOF" >> "${GITHUB_OUTPUT}"
-          echo "image_labels<<EOF" >> "${GITHUB_OUTPUT}"
-          echo "${image_labels}" >> "${GITHUB_OUTPUT}"
-          echo "EOF" >> "${GITHUB_OUTPUT}"
-
-  build_preview_image:
-    if: >-
-      github.event.action != 'closed' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    needs:
-      - prepare
-    permissions:
-      contents: read
-      packages: write
-    uses: potber/.github/.github/workflows/build_and_push_image.yml@v2
-    with:
-      image_name: ${{ needs.prepare.outputs.image_name }}
-      image_names: ${{ needs.prepare.outputs.image_names }}
-      image_labels: ${{ needs.prepare.outputs.image_labels }}
-      dockerfile: Dockerfile
-
+  # Dependabot and fork PRs get no secrets; they run lint/tests only.
   deploy:
     if: >-
       github.event.action != 'closed' &&
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/deploy_static.yml
+    with:
+      environment: preview
+      storage_prefix: pr-${{ github.event.pull_request.number }}
+      appsignal_revision: pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+    secrets: inherit
+
+  comment:
+    if: needs.deploy.outputs.deployed == 'true'
     needs:
-      - prepare
-      - build_preview_image
+      - deploy
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out infrastructure repository
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ env.INFRA_REPOSITORY }}
-          token: ${{ secrets.INFRA_REPO_TOKEN }}
-          path: infrastructure
-
-      - name: Render and publish preview manifest
-        shell: bash
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PREVIEW_HOST: ${{ needs.prepare.outputs.host }}
-          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
-          PREVIEW_MEME_HOST_URL: https://${{ needs.prepare.outputs.host }}
-          TEMPLATE_FILE: infrastructure/kubernetes/previews/potber-client-preview.yaml.tpl
-          OUTPUT_FILE: infrastructure/${{ needs.prepare.outputs.manifest_path }}
-        run: |
-          set -euo pipefail
-
-          if ! command -v envsubst >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y gettext-base
-          fi
-
-          regenerate_kustomization() {
-            local generated_dir="infrastructure/kubernetes/previews/generated"
-            local tmp_file
-            tmp_file="$(mktemp)"
-
-            {
-              echo "apiVersion: kustomize.config.k8s.io/v1beta1"
-              echo "kind: Kustomization"
-
-              mapfile -t preview_files < <(find "${generated_dir}" -maxdepth 1 -type f -name 'pr-*.yaml' -printf '%f\n' | sort)
-
-              if [ "${#preview_files[@]}" -eq 0 ]; then
-                echo "resources: []"
-              else
-                echo "resources:"
-                for file in "${preview_files[@]}"; do
-                  echo "  - ${file}"
-                done
-              fi
-            } > "${tmp_file}"
-
-            mv "${tmp_file}" "${generated_dir}/kustomization.yaml"
-          }
-
-          git -C infrastructure config user.name "potber-preview-bot"
-          git -C infrastructure config user.email "potber-preview-bot@users.noreply.github.com"
-
-          for attempt in 1 2 3 4 5; do
-            git -C infrastructure fetch origin main
-            git -C infrastructure checkout -B main origin/main
-
-            mkdir -p "$(dirname "${OUTPUT_FILE}")"
-            envsubst < "${TEMPLATE_FILE}" > "${OUTPUT_FILE}"
-            regenerate_kustomization
-
-            if [ -z "$(git -C infrastructure status --porcelain)" ]; then
-              exit 0
-            fi
-
-            git -C infrastructure add "${OUTPUT_FILE#infrastructure/}" "kubernetes/previews/generated/kustomization.yaml"
-            git -C infrastructure commit -m "Deploy preview for PR #${PR_NUMBER}"
-
-            if git -C infrastructure push origin HEAD:main; then
-              exit 0
-            fi
-
-            sleep 2
-          done
-
-          echo "Failed to publish preview manifest after multiple attempts." >&2
-          exit 1
-
       - name: Comment preview URL
         uses: actions/github-script@v8
-        env:
-          PREVIEW_URL: https://${{ needs.prepare.outputs.host }}
         with:
           script: |
-            const marker = '<!-- flux-preview -->';
+            const marker = '<!-- bunny-preview -->';
             const body = `${marker}\nPreview deployed: ${process.env.PREVIEW_URL}`;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find((comment) => comment.body?.includes(marker));
+            const existing = comments.find(
+              (comment) =>
+                comment.body?.includes(marker) ||
+                comment.body?.includes('<!-- flux-preview -->'),
+            );
 
             if (existing) {
               await github.rest.issues.updateComment({
@@ -220,89 +83,56 @@ jobs:
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-
+    environment: preview
     steps:
-      - name: Check out infrastructure repository
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ env.INFRA_REPOSITORY }}
-          token: ${{ secrets.INFRA_REPO_TOKEN }}
-          path: infrastructure
-
-      - name: Remove preview manifest
+      - name: Delete preview folder
+        if: vars.BUNNY_STORAGE_ZONE != ''
         shell: bash
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -euo pipefail
+          # A path ending in / deletes the folder and everything in it.
+          status="$(curl --silent --show-error --retry 3 --output /dev/null --write-out '%{http_code}' \
+            --request DELETE \
+            --header "AccessKey: ${BUNNY_STORAGE_PASSWORD}" \
+            "https://${BUNNY_STORAGE_HOSTNAME:-storage.bunnycdn.com}/${BUNNY_STORAGE_ZONE}/${PREFIX}/")"
+          case "$status" in
+            2??) echo "Deleted ${PREFIX}/" ;;
+            404) echo "Nothing to delete for ${PREFIX}/" ;;
+            *) echo "Deleting ${PREFIX}/ failed with HTTP ${status}" >&2; exit 1 ;;
+          esac
+        env:
+          PREFIX: pr-${{ github.event.pull_request.number }}
+          BUNNY_STORAGE_ZONE: ${{ vars.BUNNY_STORAGE_ZONE }}
+          BUNNY_STORAGE_HOSTNAME: ${{ vars.BUNNY_STORAGE_HOSTNAME }}
+          BUNNY_STORAGE_PASSWORD: ${{ secrets.BUNNY_STORAGE_PASSWORD }}
 
-          regenerate_kustomization() {
-            local generated_dir="infrastructure/kubernetes/previews/generated"
-            local tmp_file
-            tmp_file="$(mktemp)"
-
-            {
-              echo "apiVersion: kustomize.config.k8s.io/v1beta1"
-              echo "kind: Kustomization"
-
-              mapfile -t preview_files < <(find "${generated_dir}" -maxdepth 1 -type f -name 'pr-*.yaml' -printf '%f\n' | sort)
-
-              if [ "${#preview_files[@]}" -eq 0 ]; then
-                echo "resources: []"
-              else
-                echo "resources:"
-                for file in "${preview_files[@]}"; do
-                  echo "  - ${file}"
-                done
-              fi
-            } > "${tmp_file}"
-
-            mv "${tmp_file}" "${generated_dir}/kustomization.yaml"
-          }
-
-          manifest_path="infrastructure/kubernetes/previews/generated/pr-${PR_NUMBER}.yaml"
-
-          git -C infrastructure config user.name "potber-preview-bot"
-          git -C infrastructure config user.email "potber-preview-bot@users.noreply.github.com"
-
-          for attempt in 1 2 3 4 5; do
-            git -C infrastructure fetch origin main
-            git -C infrastructure checkout -B main origin/main
-
-            rm -f "${manifest_path}"
-            regenerate_kustomization
-
-            if [ -z "$(git -C infrastructure status --porcelain)" ]; then
-              exit 0
-            fi
-
-            git -C infrastructure add "kubernetes/previews/generated"
-            git -C infrastructure commit -m "Remove preview for PR #${PR_NUMBER}"
-
-            if git -C infrastructure push origin HEAD:main; then
-              exit 0
-            fi
-
-            sleep 2
-          done
-
-          echo "Failed to remove preview manifest after multiple attempts." >&2
-          exit 1
+      - name: Purge Pull Zone cache
+        if: vars.BUNNY_STORAGE_ZONE != ''
+        shell: bash
+        run: |
+          curl --fail-with-body --silent --show-error --retry 3 \
+            --request POST \
+            --header "AccessKey: ${BUNNYNET_API_KEY}" \
+            "https://api.bunny.net/pullzone/${BUNNY_PULL_ZONE_ID}/purgeCache"
+        env:
+          BUNNY_PULL_ZONE_ID: ${{ vars.BUNNY_PULL_ZONE_ID }}
+          BUNNYNET_API_KEY: ${{ secrets.BUNNYNET_API_KEY }}
 
       - name: Mark preview comment as removed
         uses: actions/github-script@v8
-        env:
-          PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.${{ env.PREVIEW_ROOT_DOMAIN }}
         with:
           script: |
-            const marker = '<!-- flux-preview -->';
+            const marker = '<!-- bunny-preview -->';
             const body = `${marker}\nPreview removed: ${process.env.PREVIEW_URL}`;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find((comment) => comment.body?.includes(marker));
+            const existing = comments.find(
+              (comment) =>
+                comment.body?.includes(marker) ||
+                comment.body?.includes('<!-- flux-preview -->'),
+            );
 
             if (existing) {
               await github.rest.issues.updateComment({

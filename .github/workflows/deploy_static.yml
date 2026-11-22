@@ -7,6 +7,7 @@ name: deploy-static
 #            APPSIGNAL_REVISION and MEME_HOST_URL (the last four optional)
 #   secrets: BUNNY_STORAGE_PASSWORD, BUNNYNET_API_KEY
 # The job is skipped while BUNNY_STORAGE_ZONE is unset in that environment.
+# `storage_prefix` deploys into a folder of the Storage Zone (PR previews).
 
 on:
   workflow_call:
@@ -15,6 +16,18 @@ on:
         description: "The GitHub Environment to deploy, e.g. 'test' or 'production'."
         type: string
         required: true
+      storage_prefix:
+        description: "Optional folder inside the Storage Zone, e.g. 'pr-132'."
+        type: string
+        default: ""
+      appsignal_revision:
+        description: "Optional AppSignal revision; overrides the environment's APPSIGNAL_REVISION."
+        type: string
+        default: ""
+    outputs:
+      deployed:
+        description: "'true' when the build was uploaded, 'false' when the deploy was skipped."
+        value: ${{ jobs.deploy.outputs.deployed }}
 
 permissions:
   contents: read
@@ -25,8 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: ${{ inputs.environment }}
+    outputs:
+      deployed: ${{ steps.check.outputs.enabled }}
     concurrency:
-      group: deploy-static-${{ inputs.environment }}
+      group: deploy-static-${{ inputs.environment }}-${{ inputs.storage_prefix }}
       cancel-in-progress: false
     steps:
       - name: Check configuration
@@ -66,7 +81,7 @@ jobs:
           AUTH_ISSUER_URL: ${{ vars.AUTH_ISSUER_URL }}
           AUTH_CLIENT_ID: ${{ vars.AUTH_CLIENT_ID }}
           APPSIGNAL_FRONTEND_KEY: ${{ vars.APPSIGNAL_FRONTEND_KEY }}
-          APPSIGNAL_REVISION: ${{ vars.APPSIGNAL_REVISION }}
+          APPSIGNAL_REVISION: ${{ inputs.appsignal_revision || vars.APPSIGNAL_REVISION }}
           MEME_HOST_URL: ${{ vars.MEME_HOST_URL }}
 
       - name: Upload to Bunny Storage
@@ -76,6 +91,7 @@ jobs:
           BUNNY_STORAGE_ZONE: ${{ vars.BUNNY_STORAGE_ZONE }}
           BUNNY_STORAGE_HOSTNAME: ${{ vars.BUNNY_STORAGE_HOSTNAME }}
           BUNNY_STORAGE_PASSWORD: ${{ secrets.BUNNY_STORAGE_PASSWORD }}
+          BUNNY_STORAGE_PREFIX: ${{ inputs.storage_prefix }}
 
       # Hashed assets are re-fetched once; the edge then serves the new
       # index.html, injected-config.js and SPA fallback responses.

@@ -148,7 +148,7 @@ Bunny setup per environment:
 2. For client-side routes, set the Storage Zone's 404 file path to `/index.html` and enable rewriting 404 to 200.
 3. Add Edge Rules to the Pull Zone that set `Cache-Control: public, max-age=31536000, immutable` for URLs matching `*/assets/*` and `Cache-Control: no-cache` for all others.
 
-Settings of the GitHub Environments `test` and `production`:
+Settings of the GitHub Environments `test`, `production` and `preview`:
 
 | Kind     | Name                                                                          | Notes                                                                                |
 | -------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -167,30 +167,22 @@ To check the deploy scripts locally:
 - `API_URL=https://test-api.potber.de deploy/render-injected-config.sh /tmp/injected-config.js`
 - `DRY_RUN=1 BUNNY_STORAGE_ZONE=x deploy/upload-to-bunny-storage.sh dist` (prints the upload order)
 
-The [Dockerfile](Dockerfile) still builds an nginx image for the Kubernetes cluster and the PR previews below:
+The [Dockerfile](Dockerfile) still builds an nginx image for the Kubernetes cluster:
 
 - Build the image with `docker build -t potber-client .`
 - Run it locally with `docker run --rm -p 8080:8080 potber-client`
 
-#### PR Previews On Kubernetes
+#### PR Previews
 
-The repository also includes a pull request preview workflow for the Potber Kubernetes cluster. Each same-repository PR can be deployed to its own preview hostname like `https://pr-123.preview.potber.de`.
+Each same-repository PR is deployed to its own hostname like `https://pr-123.preview.potber.de` by the [pull-request-preview](.github/workflows/pull-request-preview.yml) workflow. It runs [deploy_static](.github/workflows/deploy_static.yml) with the GitHub Environment `preview` and uploads the build into the folder `pr-123/` of one shared Storage Zone. When the PR is closed, the folder is deleted. Dependabot and fork PRs get no preview, since they have no access to the secrets.
 
-Required repository secrets:
+Bunny setup:
 
-- `INFRA_REPO_TOKEN`
-  A token with write access to `potber/infrastructure` so the workflow can publish generated preview manifests.
+1. A Storage Zone (`potber-preview`) and a Pull Zone with the Storage Zone as origin and the wildcard hostname `*.preview.potber.de`. Enable the hostname under the Pull Zone's Vary Cache settings, otherwise all previews share one cache and serve each other's files.
+2. An Edge Script (middleware) linked to the Pull Zone with the content of [deploy/preview-edge-script.ts](deploy/preview-edge-script.ts). It maps the hostname to the PR's folder and answers paths without a file extension with that PR's `index.html`, so the Storage Zone needs no 404 settings.
+3. The same Edge Rules for `Cache-Control` as above.
 
-Required repository variables:
-
-- `PREVIEW_AUTH_CLIENT_ID`
-  The dedicated preview OAuth client id from `potber-auth`
-
-The workflow builds and pushes a PR-specific image to GHCR, writes a generated manifest into the infrastructure repository, and lets Flux deploy the preview into Kubernetes. On PR close it removes that generated manifest again so Flux prunes the preview resources.
-
-Preview deployments are intentionally limited to pull requests from the same repository so the infrastructure repository token is never exposed to forked pull requests.
-
-The cluster-side preview setup lives in the infrastructure repository under [`kubernetes/previews`](https://github.com/potber/infrastructure/tree/main/kubernetes/previews).
+The `preview` environment takes the same settings as `test` and `production`, with `API_URL`, `AUTH_ISSUER_URL` pointing at the test instances and `AUTH_CLIENT_ID` set to the dedicated preview OAuth client from `potber-auth`. Allow all branches in its deployment branch rules.
 
 ## Further Reading / Useful Links
 
