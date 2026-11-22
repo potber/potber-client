@@ -37,6 +37,7 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 ## Definition of done
 
 - For application changes, run `npm run lint`, relevant browser tests, and `npm run build` when build/configuration behavior is affected. Run the full `npm test` suite before handing off broad behavioral changes.
+- Run `npm run quality:check` for application changes. Fix new or worsened findings before handoff. For PRs targeting a branch other than `main`, pass its remote-tracking ref. See the [structural checks guide](docs/guides/quality-gates.md) for reporting and troubleshooting.
 - Exercise changed user flows end-to-end in a browser when the change affects interaction, navigation, authentication, or rendering; report any unavailable backend or browser prerequisite.
 - For documentation-only changes, check Markdown formatting and local link targets; application tests are unnecessary unless commands or runtime configuration also changed.
 - Verify that coverage output actually exists before reporting coverage. The saved assessment recorded a run with passing tests but no report; a successful script alone is insufficient evidence.
@@ -46,7 +47,7 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 
 - [README.md](README.md): setup, features, deployment configuration, and preview environments.
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, data flow, and system boundaries.
-- [AGENT_READY_ASSESSMENT.md](AGENT_READY_ASSESSMENT.md): dated baseline and improvement roadmap, not a live status report.
+- Readiness history: [original assessment](AGENT_READY_ASSESSMENT.md) and [reassessment at `dc6b5ef`](AGENT_READY_REASSESSMENT_2026-11-22.md).
 
 Create an ADR under `docs/adr/` only when a decision is costly to reverse, surprising without context, and involves a real trade-off. Record the context, decision, and rationale; create the directory with the first qualifying record.
 
@@ -56,7 +57,6 @@ Create an ADR under `docs/adr/` only when a decision is costly to reverse, surpr
 - `start:remote` uses shared staging services. Use test fixtures for automated behavior checks instead of assuming isolated backend state.
 - OAuth callbacks use the current origin plus `/auth/callback`; changing hosts or client IDs also requires compatible redirect configuration in the separate auth service.
 - ESLint's Prettier integration covers code files; `prettier:check` also checks Markdown, CSS, HTML, and JSON.
-- No regression-aware structural gate is installed. Use the existing checks; do not claim complexity, duplication, or coverage regressions are automatically blocked.
 
 <!-- BEGIN ZEISS WEB AUTOMATION -->
 
