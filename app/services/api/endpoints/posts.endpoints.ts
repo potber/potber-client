@@ -1,5 +1,6 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
+import { postReadSchema } from '../schemas/posts';
 import { Posts } from '../types';
 
 /**
@@ -13,24 +14,28 @@ export async function findById(
   threadId: string,
   options?: PublicFetchOptions,
 ): Promise<Posts.Read> {
-  const post = await this.fetch(`posts/${id}?threadId=${threadId}`, {
-    ...options,
-    statusNotifications: [
-      {
-        statusCode: 403,
-        message: this.intl.t('error.posts.find-by-id.forbidden'),
-      },
-      {
-        statusCode: 404,
-        message: this.intl.t('error.posts.find-by-id.not-found'),
-      },
-      {
-        statusCode: '*',
-        message: this.intl.t('error.unknown'),
-      },
-    ],
-    request: { method: 'GET' },
-  });
+  const post: Posts.Read = await this.fetch(
+    `posts/${id}?threadId=${threadId}`,
+    {
+      ...options,
+      schema: postReadSchema,
+      statusNotifications: [
+        {
+          statusCode: 403,
+          message: this.intl.t('error.posts.find-by-id.forbidden'),
+        },
+        {
+          statusCode: 404,
+          message: this.intl.t('error.posts.find-by-id.not-found'),
+        },
+        {
+          statusCode: '*',
+          message: this.intl.t('error.unknown'),
+        },
+      ],
+      request: { method: 'GET' },
+    },
+  );
   return post;
 }
 
