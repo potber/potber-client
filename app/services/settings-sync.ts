@@ -28,6 +28,12 @@ import {
   type SettingsSyncMetadata,
   type SyncedField,
 } from 'potber-client/utils/settings-sync-merge';
+import {
+  clearSyncMetadata,
+  getOrCreateDeviceId,
+  readSyncMetadata,
+  writeSyncMetadata,
+} from 'potber-client/utils/settings-sync-metadata-storage';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
 
@@ -36,8 +42,6 @@ export {
   type RemoteUserConfiguration,
 } from 'potber-client/utils/settings-sync-transport';
 
-const METADATA_PREFIX = 'potber-settingsSyncMetadata-';
-const DEVICE_ID_KEY = 'potber-settingsSyncDeviceId';
 const SYNC_DEBOUNCE_MS = 750;
 const SETTINGS_FIELD_PREFIX = 'settings.';
 const BLOCKED_USERS_FIELD = 'blockedUsers';
@@ -159,7 +163,7 @@ export default class SettingsSyncService extends Service {
       this.currentSettings = { ...localSettings };
       const values = this.currentValues;
       const metadata = this.createInitialMetadata(values);
-      this.writeMetadata(metadata);
+      writeSyncMetadata(this.requireUserId(), metadata);
       const encrypted = await this.encrypt(values, key, metadata);
       const remote = await this.writeRemote(encrypted);
 
@@ -215,7 +219,7 @@ export default class SettingsSyncService extends Service {
       const settings = this.settingsForValues(values);
       const collections = this.collectionsFromValues(values);
       await this.storeKey(decrypted.key);
-      this.writeMetadata(metadata);
+      writeSyncMetadata(this.requireUserId(), metadata);
       this.key = decrypted.key;
       this.remote = decrypted.remote;
       this.currentSettings = settings;
@@ -258,12 +262,12 @@ export default class SettingsSyncService extends Service {
 
   private valueChanged(key: string) {
     if (this.state === 'disabled' || this.state === 'locked') return;
-    const metadata = this.readMetadata() ?? { fields: {} };
+    const metadata = readSyncMetadata(this.userId) ?? { fields: {} };
     metadata.fields[key] = {
       modifiedAt: this.nextModifiedAt(metadata),
-      deviceId: this.deviceId,
+      deviceId: getOrCreateDeviceId(),
     };
-    this.writeMetadata(metadata);
+    writeSyncMetadata(this.requireUserId(), metadata);
     const values = this.currentValues;
     this.pendingValues = values;
     if (this.state === 'enabled' && this.key) this.scheduleUpload(values);
@@ -290,8 +294,8 @@ export default class SettingsSyncService extends Service {
 
     try {
       const metadata =
-        this.readMetadata() ?? this.createInitialMetadata(values);
-      this.writeMetadata(metadata);
+        readSyncMetadata(this.userId) ?? this.createInitialMetadata(values);
+      writeSyncMetadata(this.requireUserId(), metadata);
       const encrypted = await this.encrypt(values, this.key, metadata);
       this.remote = await this.writeRemote({
         ...encrypted,
@@ -363,13 +367,13 @@ export default class SettingsSyncService extends Service {
     const merged = mergeSettings(
       localValues,
       payload,
-      this.readMetadata(),
+      readSyncMetadata(this.userId),
       (metadata) => ({
         modifiedAt: this.nextModifiedAt(metadata),
-        deviceId: this.deviceId,
+        deviceId: getOrCreateDeviceId(),
       }),
     );
-    this.writeMetadata(merged.metadata);
+    writeSyncMetadata(this.requireUserId(), merged.metadata);
     return merged;
   }
 
@@ -452,7 +456,7 @@ export default class SettingsSyncService extends Service {
           metadata.fields[fieldKey] ??
           ({
             modifiedAt: this.nextModifiedAt(metadata),
-            deviceId: this.deviceId,
+            deviceId: getOrCreateDeviceId(),
           } satisfies FieldClock),
       };
     }
@@ -478,7 +482,8 @@ export default class SettingsSyncService extends Service {
     this.onRemoteSettings?.(settings);
     this.applyCollectionsFromValues(merged.values);
     const metadata =
-      this.readMetadata() ?? this.createInitialMetadata(merged.values);
+      readSyncMetadata(this.userId) ??
+      this.createInitialMetadata(merged.values);
     const encrypted = await this.encrypt(merged.values, this.key!, metadata);
     this.remote = await this.writeRemote({
       ...encrypted,
@@ -493,7 +498,7 @@ export default class SettingsSyncService extends Service {
     for (const key of Object.keys(values)) {
       metadata.fields[key] = {
         modifiedAt: this.nextModifiedAt(metadata),
-        deviceId: this.deviceId,
+        deviceId: getOrCreateDeviceId(),
       };
     }
     return metadata;
@@ -513,7 +518,7 @@ export default class SettingsSyncService extends Service {
     Object.keys(values).forEach((fieldKey, index) => {
       metadata.fields[fieldKey] = {
         modifiedAt: firstModifiedAt + index,
-        deviceId: this.deviceId,
+        deviceId: getOrCreateDeviceId(),
       };
     });
     return metadata;
@@ -595,30 +600,10 @@ export default class SettingsSyncService extends Service {
     this.onRemoteCollections?.(cloneCollections(collections));
   }
 
-  private readMetadata(): SettingsSyncMetadata | undefined {
-    const userId = this.userId;
-    if (!userId) return undefined;
-    try {
-      const stored = localStorage.getItem(`${METADATA_PREFIX}${userId}`);
-      if (!stored) return undefined;
-      const metadata = JSON.parse(stored) as SettingsSyncMetadata;
-      return metadata?.fields ? metadata : undefined;
-    } catch {
-      return undefined;
-    }
-  }
-
-  private writeMetadata(metadata: SettingsSyncMetadata) {
-    localStorage.setItem(
-      `${METADATA_PREFIX}${this.requireUserId()}`,
-      JSON.stringify(metadata),
-    );
-  }
-
   private async clearLocalSyncState() {
     await this.removeKey();
     if (this.userId) {
-      localStorage.removeItem(`${METADATA_PREFIX}${this.userId}`);
+      clearSyncMetadata(this.userId);
     }
   }
 
@@ -628,15 +613,6 @@ export default class SettingsSyncService extends Service {
       0,
     );
     return Math.max(Date.now(), latest + 1);
-  }
-
-  private get deviceId() {
-    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-    if (!deviceId) {
-      deviceId = crypto.randomUUID();
-      localStorage.setItem(DEVICE_ID_KEY, deviceId);
-    }
-    return deviceId;
   }
 
   private ensureAuthenticated() {
