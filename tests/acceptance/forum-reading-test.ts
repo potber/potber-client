@@ -100,10 +100,12 @@ module('Acceptance | Reading the forum', function (hooks) {
       [
         'potber-settings',
         'potber-boardFavorites',
+        'potber-savedPosts',
         'potber-lastEncountedVersion',
       ].map((key) => [key, localStorage.getItem(key)]),
     );
     localStorage.removeItem('potber-boardFavorites');
+    localStorage.removeItem('potber-savedPosts');
     localStorage.removeItem('potber-lastEncountedVersion');
     localStorage.setItem(
       'potber-settings',
@@ -151,6 +153,11 @@ module('Acceptance | Reading the forum', function (hooks) {
           return Response.json([
             { id: '1', name: 'Community', description: '', boards: [board] },
           ]);
+        case 'GET /posts/101':
+          if (searchParams.get('threadId') !== '42') {
+            throw new Error('Saved post was requested from a different thread');
+          }
+          return Response.json(openingPost);
         case 'GET /boards/14':
           return Response.json(board);
         case 'GET /threads/42': {
@@ -271,5 +278,25 @@ module('Acceptance | Reading the forum', function (hooks) {
     await visit(bookmarksPath);
     assert.dom(bookmarkLink).doesNotExist();
     assert.dom().includesText('Du hast keine Lesezeichen gespeichert.');
+  });
+
+  test('a saved post is still available after leaving and revisiting saved posts', async function (assert) {
+    const savedPostsPath = '/bookmarks/saved-posts';
+    await visit(bookmarksPath);
+    await waitUntil(() => startupRefreshed);
+    await click(`a[href="${savedPostsPath}"]`);
+    assert.dom().includesText('Du hast keine Posts gespeichert.');
+
+    await visit('/thread?TID=42&page=1');
+    await clickMenuAction('#post-101 .menu-button', 'Post speichern');
+    await visit(bookmarksPath);
+    await click(`a[href="${savedPostsPath}"]`);
+    assert.dom(bookmarkLink).includesText('The opening post');
+
+    await click(`a[href="${bookmarksPath}"]`);
+    assert.strictEqual(currentURL(), bookmarksPath);
+    await click(`a[href="${savedPostsPath}"]`);
+    assert.strictEqual(currentURL(), savedPostsPath);
+    assert.dom(bookmarkLink).includesText('The opening post');
   });
 });
