@@ -1,16 +1,16 @@
 .list-modal-entry {
-    display: flex;
-    align-items: center;
-    margin-bottom: .25rem;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
 }
 
 .list-modal-entry:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .list-modal-entry > * {
-    margin-right: .25rem;
+  margin-right: 0.25rem;
 }
 .list-modal-entry > *:last-child {
-    margin-right: 0;
+  margin-right: 0;
 }
