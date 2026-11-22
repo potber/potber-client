@@ -1,0 +1,159 @@
+import {
+  click,
+  currentURL,
+  findAll,
+  visit,
+  waitFor,
+} from '@ember/test-helpers';
+import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
+import { authenticateSession } from 'ember-simple-auth/test-support';
+import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
+import { setupApplicationTest } from 'potber-client/tests/helpers';
+import { module, test } from 'qunit';
+
+const boardLink = 'a[href^="/board?"][href*="BID=14"]';
+const threadLink = 'a[href^="/thread?"][href*="TID=42"]';
+
+const openingPost: Posts.Read = {
+  id: '101',
+  message: 'The opening post',
+  date: '2026-01-01T12:00:00Z',
+  threadId: '42',
+  boardId: '14',
+  author: { id: '7', name: 'Thread Author' },
+};
+const latestPost: Posts.Read = {
+  ...openingPost,
+  id: '102',
+  message: 'A post on page two',
+};
+
+const thread: Threads.Read = {
+  id: '42',
+  title: 'Weekend plans',
+  boardId: '14',
+  repliesCount: 1,
+  hitsCount: 20,
+  pagesCount: 2,
+  isClosed: false,
+  isSticky: false,
+  isImportant: false,
+  isAnnouncement: false,
+  isGlobal: false,
+  firstPost: openingPost,
+  lastPost: latestPost,
+};
+const board: Boards.Read = {
+  id: '14',
+  categoryId: '1',
+  name: 'General discussion',
+  description: 'Community discussion',
+  threadsCount: 1,
+  repliesCount: 1,
+  lastPost: latestPost,
+  page: {
+    number: 1,
+    stickiesCount: 0,
+    globalsCount: 0,
+    threadsCount: 1,
+    threads: [thread],
+  },
+};
+
+module('Acceptance | Reading the forum', function (hooks) {
+  setupApplicationTest(hooks);
+
+  let originalFetch: typeof fetch;
+  let originalOnError: typeof window.onerror;
+  let storedValues: Map<string, string | null>;
+
+  hooks.beforeEach(async function () {
+    this.owner.register('session-store:application', EphemeralSessionStore);
+    originalOnError = window.onerror;
+    storedValues = new Map(
+      [
+        'potber-settings',
+        'potber-boardFavorites',
+        'potber-lastEncountedVersion',
+      ].map((key) => [key, localStorage.getItem(key)]),
+    );
+    localStorage.removeItem('potber-boardFavorites');
+    localStorage.removeItem('potber-lastEncountedVersion');
+    localStorage.setItem(
+      'potber-settings',
+      JSON.stringify({
+        autoRefreshSidebar: false,
+        appsignalErrorReporting: false,
+      }),
+    );
+
+    originalFetch = window.fetch;
+    window.fetch = async (input, init) => {
+      const request = new Request(input, init);
+      const { pathname, searchParams } = new URL(request.url);
+
+      switch (`${request.method} ${pathname}`) {
+        case 'GET /auth/session':
+          return Response.json({
+            userId: '9',
+            username: 'Test User',
+            avatarUrl: '',
+            cookie: '',
+            iat: 0,
+            exp: 0,
+          });
+        case 'GET /bookmarks':
+        case 'GET /privateMessages':
+          return Response.json([]);
+        case 'GET /version.json':
+        case 'GET /user-configuration':
+          return new Response(null, { status: 404 });
+        case 'GET /boardCategories':
+          return Response.json([
+            { id: '1', name: 'Community', description: '', boards: [board] },
+          ]);
+        case 'GET /boards/14':
+          return Response.json(board);
+        case 'GET /threads/42': {
+          const number = searchParams.get('page') === '2' ? 2 : 1;
+          const post = number === 2 ? latestPost : openingPost;
+          return Response.json({
+            ...thread,
+            page: { number, offset: number - 1, postCount: 1, posts: [post] },
+          } satisfies Threads.Read);
+        }
+        default:
+          throw new Error(
+            `Unexpected reading test request: ${request.method} ${pathname}`,
+          );
+      }
+    };
+    await authenticateSession({ access_token: 'reading-test-token' });
+  });
+
+  hooks.afterEach(function () {
+    window.fetch = originalFetch;
+    window.onerror = originalOnError;
+    for (const [key, value] of storedValues) {
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    }
+  });
+
+  test('opens a board and reads a thread from the board overview', async function (assert) {
+    await visit('/board-overview');
+    const category = findAll('button').find(
+      (button) => button.textContent?.trim() === 'Community',
+    );
+    if (!category) throw new Error('Community category missing');
+    await click(category);
+    assert.dom(boardLink).includesText('General discussion');
+    await click(boardLink);
+    assert.true(currentURL().startsWith('/board?'));
+    assert.dom(threadLink).includesText('Weekend plans');
+    await click(threadLink);
+    await waitFor('#post-102');
+    assert.true(currentURL().startsWith('/thread?'));
+    assert.dom('#post-102').includesText('A post on page two');
+  });
+});
