@@ -1,4 +1,4 @@
-import { click, visit, waitFor } from '@ember/test-helpers';
+import { click, fillIn, visit, waitFor, waitUntil } from '@ember/test-helpers';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import { Theme } from 'potber-client/services/settings';
@@ -126,5 +126,51 @@ module('Acceptance | Settings sync', function (hooks) {
       'the server never receives the recovery key',
     );
     assert.dom(forget).exists('this device can now use sync');
+  });
+
+  test('a device without a key can recover the remote settings', async function (assert) {
+    await visit('/settings');
+    const key = await setUpSync();
+    await click(forget);
+    await click(confirm);
+    const unlock = '[data-test-settings-sync-unlock]';
+    await waitFor(unlock);
+
+    // With the key removed, a local theme change cannot overwrite the remote copy.
+    await click('.dropdown-toggle');
+    await click('.dropdown-menu-visible .dropdown-item');
+    assert.dom('.dropdown-toggle').hasText('potber');
+
+    await click(unlock);
+    await fillIn(keyInput, key);
+    await click(confirm);
+    await waitFor('[data-test-modal-alternative]');
+    assert.dom(confirm).hasText('Remote');
+
+    // Observe the reload, keeping the test runner on the same page.
+    if (
+      !('navigation' in window) ||
+      !(window.navigation instanceof EventTarget)
+    ) {
+      throw new Error('Recovery test requires the browser Navigation API');
+    }
+    const { navigation } = window;
+    let reloadRequested = false;
+    function captureReload(event: Event) {
+      if ('navigationType' in event && event.navigationType === 'reload') {
+        event.preventDefault();
+        reloadRequested = true;
+      }
+    }
+    navigation.addEventListener('navigate', captureReload);
+    try {
+      await click(confirm);
+      await waitUntil(() => reloadRequested);
+    } finally {
+      navigation.removeEventListener('navigate', captureReload);
+    }
+
+    assert.dom('.dropdown-toggle').hasText('Tokyo Night');
+    assert.dom(forget).exists('the recovery key activates this device');
   });
 });
