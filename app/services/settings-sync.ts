@@ -20,6 +20,14 @@ import {
   type RemoteUserConfiguration,
   type WriteUserConfiguration,
 } from 'potber-client/utils/settings-sync-transport';
+import {
+  mergeSettings,
+  type EncryptedSettingsPayload,
+  type FieldClock,
+  type MergeResult,
+  type SettingsSyncMetadata,
+  type SyncedField,
+} from 'potber-client/utils/settings-sync-merge';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
 
@@ -38,30 +46,6 @@ const SAVED_POSTS_FIELD = 'savedPosts';
 
 export type SettingsSyncState =
   'busy' | 'disabled' | 'locked' | 'enabled' | 'unavailable';
-
-interface FieldClock {
-  modifiedAt: number;
-  deviceId: string;
-}
-
-interface SyncedField {
-  value: unknown;
-  clock: FieldClock;
-}
-
-interface EncryptedSettingsPayload {
-  schemaVersion: 1;
-  fields: Record<string, SyncedField>;
-}
-
-interface SettingsSyncMetadata {
-  fields: Record<string, FieldClock>;
-}
-
-interface MergeResult {
-  values: Record<string, unknown>;
-  shouldUpload: boolean;
-}
 
 interface DecryptedRemote {
   key: CryptoKey;
@@ -376,7 +360,17 @@ export default class SettingsSyncService extends Service {
     localValues: Record<string, unknown>,
   ): Promise<MergeResult> {
     const payload = await this.decryptPayload(remote, key);
-    return this.merge(localValues, payload);
+    const merged = mergeSettings(
+      localValues,
+      payload,
+      this.readMetadata(),
+      (metadata) => ({
+        modifiedAt: this.nextModifiedAt(metadata),
+        deviceId: this.deviceId,
+      }),
+    );
+    this.writeMetadata(merged.metadata);
+    return merged;
   }
 
   private async decryptPayload(
@@ -389,40 +383,6 @@ export default class SettingsSyncService extends Service {
       throw new Error('Invalid encrypted settings payload.');
     }
     return payload;
-  }
-
-  private merge(
-    localValues: Record<string, unknown>,
-    remote: EncryptedSettingsPayload,
-  ): MergeResult {
-    const localMetadata = this.readMetadata();
-    const merged = { ...localValues };
-    const mergedMetadata: SettingsSyncMetadata = { fields: {} };
-    let shouldUpload = false;
-
-    for (const key of Object.keys(localValues)) {
-      const localClock = localMetadata?.fields[key];
-      const remoteField = remote.fields[key];
-      if (
-        remoteField &&
-        (!localClock || compareClocks(remoteField.clock, localClock) >= 0)
-      ) {
-        merged[key] = remoteField.value;
-        mergedMetadata.fields[key] = remoteField.clock;
-      } else if (localClock) {
-        mergedMetadata.fields[key] = localClock;
-        shouldUpload = true;
-      } else {
-        mergedMetadata.fields[key] = {
-          modifiedAt: this.nextModifiedAt(mergedMetadata),
-          deviceId: this.deviceId,
-        };
-        shouldUpload = true;
-      }
-    }
-
-    this.writeMetadata(mergedMetadata);
-    return { values: merged, shouldUpload };
   }
 
   private async decryptForUnlock(
@@ -719,13 +679,6 @@ function isEncryptedSettingsPayload(
       typeof candidate.clock.deviceId === 'string'
     );
   });
-}
-
-function compareClocks(first: FieldClock, second: FieldClock) {
-  if (first.modifiedAt !== second.modifiedAt) {
-    return first.modifiedAt - second.modifiedAt;
-  }
-  return first.deviceId.localeCompare(second.deviceId);
 }
 
 function emptyCollections(): SyncedCollections {
