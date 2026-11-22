@@ -48,7 +48,7 @@ const thread: Threads.Read = {
   firstPost: openingPost,
   lastPost: latestPost,
 };
-const board: Boards.Read = {
+const boardSummary: Boards.Summary = {
   id: '14',
   categoryId: '1',
   name: 'General discussion',
@@ -56,6 +56,9 @@ const board: Boards.Read = {
   threadsCount: 1,
   repliesCount: 1,
   lastPost: latestPost,
+};
+const board: Boards.Read = {
+  ...boardSummary,
   page: {
     number: 1,
     stickiesCount: 0,
@@ -153,7 +156,12 @@ module('Acceptance | Reading the forum', function (hooks) {
           return new Response(null, { status: 404 });
         case 'GET /boardCategories':
           return Response.json([
-            { id: '1', name: 'Community', description: '', boards: [board] },
+            {
+              id: '1',
+              name: 'Community',
+              description: '',
+              boards: [boardSummary],
+            },
           ]);
         case 'GET /posts/101':
           if (searchParams.get('threadId') !== '42') {

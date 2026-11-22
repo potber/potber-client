@@ -3,9 +3,14 @@ import { module, test } from 'qunit';
 import type * as v from 'valibot';
 import type ApiService from 'potber-client/services/api';
 import { PayloadValidationError } from 'potber-client/services/api/error';
+import { boardCategoriesSchema } from 'potber-client/services/api/schemas/board-categories';
 import { boardReadSchema } from 'potber-client/services/api/schemas/boards';
 import { threadReadSchema } from 'potber-client/services/api/schemas/threads';
-import type { Boards, Threads } from 'potber-client/services/api/types';
+import type {
+  BoardCategories,
+  Boards,
+  Threads,
+} from 'potber-client/services/api/types';
 import { setupTest } from 'potber-client/tests/helpers';
 
 // Compile-time guard: the schema output and the hand-written type must stay identical.
@@ -21,6 +26,11 @@ const schemaMatchesType: Equals<
 const boardSchemaMatchesType: Equals<
   v.InferOutput<typeof boardReadSchema>,
   Boards.Read
+> = true;
+
+const categorySchemaMatchesType: Equals<
+  v.InferOutput<typeof boardCategoriesSchema>,
+  BoardCategories.Read[]
 > = true;
 
 const author = { id: '7', name: 'Thread Author' };
@@ -230,6 +240,54 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
       (error: unknown) =>
         error instanceof PayloadValidationError &&
         error.issues.includes('page.threads.0.title: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
+
+  test('accepts board summaries without pagination and categories without boards', async function (assert) {
+    const board = {
+      id: '14',
+      categoryId: '1',
+      name: 'General discussion',
+      threadsCount: 1,
+      repliesCount: 2,
+    };
+    body = JSON.stringify([
+      { id: '1', name: 'Community', boards: [board] },
+      { id: '2', name: 'Empty category', description: '', boards: [] },
+    ]);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    const categories = await api.findAllBoardCategories();
+
+    assert.true(categorySchemaMatchesType);
+    assert.deepEqual(categories, [
+      {
+        id: '1',
+        name: 'Community',
+        description: '',
+        boards: [{ ...board, description: '' }],
+      },
+      { id: '2', name: 'Empty category', description: '', boards: [] },
+    ]);
+    assert.deepEqual(notifications, []);
+  });
+
+  test('rejects malformed board summaries in category responses', async function (assert) {
+    body = JSON.stringify([
+      {
+        id: '1',
+        name: 'Community',
+        boards: [{ ...boardPayload([]), threadsCount: 'many' }],
+      },
+    ]);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findAllBoardCategories(),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('0.boards.0.threadsCount: expected number'),
     );
     assert.strictEqual(notifications.length, 1, 'shows one fallback error');
   });
