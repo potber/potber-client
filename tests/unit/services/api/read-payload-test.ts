@@ -1,6 +1,6 @@
 import Service from '@ember/service';
 import { module, test } from 'qunit';
-import type * as v from 'valibot';
+import * as v from 'valibot';
 import type ApiService from 'potber-client/services/api';
 import { PayloadValidationError } from 'potber-client/services/api/error';
 import type { IBookmark } from 'potber-client/services/api/models/bookmark';
@@ -412,5 +412,58 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
         error.issues.includes('postId: expected string'),
     );
     assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
+
+  test('rejects empty success responses for an endpoint that requires JSON', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    for (const makeResponse of [
+      () => new Response(null, { status: 204 }),
+      () => new Response(null, { headers: { 'content-length': '0' } }),
+      () => new Response(''),
+    ]) {
+      window.fetch = async () => makeResponse();
+      await assert.rejects(
+        api.findThreadById('42'),
+        (error: unknown) =>
+          error instanceof PayloadValidationError &&
+          error.issues.includes('(root): missing'),
+      );
+    }
+    assert.strictEqual(
+      notifications.length,
+      3,
+      'one fallback error per request',
+    );
+  });
+
+  test('infers the transformed schema output and returns the parsed value', async function (assert) {
+    body = JSON.stringify('42');
+    const api = this.owner.lookup('service:api') as ApiService;
+    const result = await api.fetch('/test', {
+      schema: v.pipe(v.string(), v.transform(Number)),
+    });
+    const outputIsNumber: Equals<typeof result, number> = true;
+
+    assert.true(outputIsNumber);
+    assert.strictEqual(result, 42);
+  });
+
+  test('applies a schema default to an absent body', async function (assert) {
+    window.fetch = async () => new Response(null, { status: 204 });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.strictEqual(
+      await api.fetch('/test', { schema: v.optional(v.string(), 'default') }),
+      'default',
+    );
+    assert.deepEqual(notifications, []);
+  });
+
+  test('allows an empty success response for a no-content endpoint', async function (assert) {
+    window.fetch = async () => new Response(null, { status: 204 });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.strictEqual(await api.deleteBookmark('55'), undefined);
+    assert.deepEqual(notifications, []);
   });
 });
