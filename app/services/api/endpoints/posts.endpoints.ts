@@ -1,5 +1,6 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
+import { postQuoteSchema, postReadSchema } from '../schemas/posts';
 import { Posts } from '../types';
 
 /**
@@ -13,24 +14,28 @@ export async function findById(
   threadId: string,
   options?: PublicFetchOptions,
 ): Promise<Posts.Read> {
-  const post = await this.fetch(`posts/${id}?threadId=${threadId}`, {
-    ...options,
-    statusNotifications: [
-      {
-        statusCode: 403,
-        message: this.intl.t('error.posts.find-by-id.forbidden'),
-      },
-      {
-        statusCode: 404,
-        message: this.intl.t('error.posts.find-by-id.not-found'),
-      },
-      {
-        statusCode: '*',
-        message: this.intl.t('error.unknown'),
-      },
-    ],
-    request: { method: 'GET' },
-  });
+  const post: Posts.Read = await this.fetch(
+    `posts/${id}?threadId=${threadId}`,
+    {
+      ...options,
+      schema: postReadSchema,
+      statusNotifications: [
+        {
+          statusCode: 403,
+          message: this.intl.t('error.posts.find-by-id.forbidden'),
+        },
+        {
+          statusCode: 404,
+          message: this.intl.t('error.posts.find-by-id.not-found'),
+        },
+        {
+          statusCode: '*',
+          message: this.intl.t('error.unknown'),
+        },
+      ],
+      request: { method: 'GET' },
+    },
+  );
   return post;
 }
 
@@ -44,8 +49,9 @@ export async function create(
   post: Posts.Write,
   options?: PublicFetchOptions,
 ): Promise<Posts.Read> {
-  const createdPost = await this.fetch('posts', {
+  const createdPost: Posts.Read = await this.fetch('posts', {
     ...options,
+    schema: postReadSchema,
     statusNotifications: [
       {
         statusCode: 403,
@@ -80,8 +86,9 @@ export async function update(
   post: Posts.Write,
   options?: PublicFetchOptions,
 ): Promise<Posts.Read> {
-  const updatedPost = await this.fetch(`posts/${id}`, {
+  const updatedPost: Posts.Read = await this.fetch(`posts/${id}`, {
     ...options,
+    schema: postReadSchema,
     statusNotifications: [
       {
         statusCode: 403,
@@ -116,6 +123,7 @@ export async function quote(
 ): Promise<Posts.Quote> {
   const quotedPost: Posts.Quote = await this.fetch(`posts/${id}/quote`, {
     ...options,
+    schema: postQuoteSchema,
     statusNotifications: [
       {
         statusCode: 403,

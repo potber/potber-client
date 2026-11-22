@@ -291,4 +291,74 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
     );
     assert.strictEqual(notifications.length, 1, 'shows one fallback error');
   });
+
+  test('post lookup rejects a malformed success response', async function (assert) {
+    body = JSON.stringify({
+      id: 101,
+      threadId: '42',
+      boardId: '14',
+      date: '2026-01-01T12:00:00Z',
+      author,
+    });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findPostById('101', '42'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('id: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
+
+  test('quoting a post rejects a malformed success response', async function (assert) {
+    body = JSON.stringify({ message: ['invalid'] });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.quotePost('101'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('message: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
+
+  test('creating a post rejects a malformed success response', async function (assert) {
+    body = JSON.stringify({
+      id: 101,
+      threadId: '42',
+      boardId: '14',
+      date: '2026-01-01T12:00:00Z',
+      author,
+    });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.createPost({ threadId: '42', message: 'Draft' }),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('id: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
+
+  test('updating a post rejects a malformed success response', async function (assert) {
+    body = JSON.stringify({
+      id: 101,
+      threadId: '42',
+      boardId: '14',
+      date: '2026-01-01T12:00:00Z',
+      author,
+    });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.updatePost('101', { threadId: '42', message: 'Draft' }),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('id: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
 });

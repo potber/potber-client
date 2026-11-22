@@ -29,3 +29,7 @@ export const postPreviewSchema = v.object({
   threadId: v.string(),
   boardId: v.string(),
 });
+
+export const postQuoteSchema = v.object({
+  message: v.string(),
+});
