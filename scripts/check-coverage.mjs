@@ -24,6 +24,40 @@ export function checkCoverage(summary, thresholds) {
   }
 }
 
+export function formatCoverageSummary(summary, thresholds, baseline) {
+  const header = ['Metric', 'Covered', 'Coverage', 'Minimum'];
+  if (baseline) header.push('Base coverage', 'Change (pp)');
+  const rows = metrics.map((metric) => {
+    const { covered, total, pct } = summary.total[metric];
+    const row = [
+      metric,
+      `${covered} / ${total}`,
+      `${pct}%`,
+      `${thresholds[metric]}%`,
+    ];
+    if (baseline) {
+      const base = baseline.total?.[metric]?.pct;
+      if (!Number.isFinite(base)) {
+        throw new Error(`Baseline coverage has no measured ${metric}.`);
+      }
+      const delta = Math.round((pct - base) * 100) / 100;
+      row.push(`${base}%`, `${delta > 0 ? '+' : ''}${delta.toFixed(2)}`);
+    }
+    return row;
+  });
+  const table = [
+    header,
+    ['---', ...header.slice(1).map(() => '---:')],
+    ...rows,
+  ];
+  return [
+    '## Browser test coverage',
+    '',
+    ...table.map((row) => `| ${row.join(' | ')} |`),
+    '',
+  ].join('\n');
+}
+
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
@@ -36,20 +70,13 @@ if (
 
   const summaryPath = process.env.GITHUB_STEP_SUMMARY;
   if (summaryPath) {
-    const rows = metrics.map((metric) => {
-      const { covered, total, pct } = summary.total[metric];
-      return `| ${metric} | ${covered} / ${total} | ${pct}% | ${thresholds[metric]}% |`;
-    });
+    const baselinePath = process.env.COVERAGE_BASELINE;
+    const baseline = baselinePath
+      ? JSON.parse(readFileSync(baselinePath))
+      : undefined;
     appendFileSync(
       summaryPath,
-      [
-        '## Browser test coverage',
-        '',
-        '| Metric | Covered | Coverage | Minimum |',
-        '| --- | ---: | ---: | ---: |',
-        ...rows,
-        '',
-      ].join('\n'),
+      formatCoverageSummary(summary, thresholds, baseline),
     );
   }
   console.log(

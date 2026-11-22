@@ -11,13 +11,33 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out pull request base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run test:coverage
+      - name: Measure base coverage
+        run: |
+          env -u GITHUB_STEP_SUMMARY npm run test:coverage
+          cp coverage/coverage-summary.json "$RUNNER_TEMP/coverage-base.json"
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Measure pull request coverage
+        run: npm run test:coverage
+        env:
+          COVERAGE_BASELINE: ${{ runner.temp }}/coverage-base.json
       - name: Upload complete coverage report
         uses: actions/upload-artifact@v6
         with:

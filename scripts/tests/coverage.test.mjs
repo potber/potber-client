@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { checkCoverage } from '../check-coverage.mjs';
+import { checkCoverage, formatCoverageSummary } from '../check-coverage.mjs';
 
 const thresholds = { lines: 45, statements: 44, functions: 32, branches: 38 };
 function summary() {
@@ -9,7 +9,7 @@ function summary() {
     total: Object.fromEntries(
       Object.keys(thresholds).map((metric) => [
         metric,
-        { total: 100, pct: 50 },
+        { total: 100, covered: 50, pct: 50 },
       ]),
     ),
     'app/services/api.ts': {},
@@ -40,6 +40,23 @@ test('coverage gate rejects a regression in each metric', () => {
     regressed.total[metric].pct = thresholds[metric] - 0.01;
     assert.throws(() => checkCoverage(regressed, thresholds), /below/);
   }
+});
+
+test('coverage summary shows signed percentage-point changes against the base', () => {
+  const base = summary();
+  base.total.lines.pct = 49.93;
+  base.total.statements.pct = 51.25;
+  const report = formatCoverageSummary(summary(), thresholds, base);
+  assert.match(
+    report,
+    /\| lines \| 50 \/ 100 \| 50% \| 45% \| 49.93% \| \+0.07 \|/,
+  );
+  assert.match(report, /\| statements .* \| 51.25% \| -1.25 \|/);
+  assert.match(report, /\| branches .* \| 50% \| 0.00 \|/);
+  assert.doesNotMatch(
+    formatCoverageSummary(summary(), thresholds),
+    /Base coverage/,
+  );
 });
 
 test('active Babel configuration instruments app code only in coverage mode', () => {
