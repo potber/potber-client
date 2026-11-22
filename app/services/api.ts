@@ -107,10 +107,13 @@ export default class ApiService extends Service {
    * Triggers a `fetch` to the API server and returns the data. Any errors will be logged automatically.
    * @returns The data.
    */
-  fetch = async (
-    path: string,
-    options?: ProtectedFetchOptions,
-  ): Promise<any> => {
+  fetch: {
+    <Schema extends v.GenericSchema>(
+      path: string,
+      options: ProtectedFetchOptions & { schema: Schema },
+    ): Promise<v.InferOutput<Schema>>;
+    (path: string, options?: ProtectedFetchOptions): Promise<any>;
+  } = async (path: string, options?: ProtectedFetchOptions): Promise<any> => {
     const { request, query, timeoutWarning, schema } = {
       timeoutWarning: false,
       ...options,
@@ -162,8 +165,8 @@ export default class ApiService extends Service {
         (response.status === 204 ||
           response.headers.get('content-length') === '0')
       )
-        return;
-      const data = await response.json();
+        return this.parsePayload(schema, undefined, path);
+      const data = await this.readResponseBody(response, schema);
       if (!response.ok) {
         throw new ApiError(
           data.statusCode ?? response.status,
@@ -182,6 +185,13 @@ export default class ApiService extends Service {
       window.clearTimeout(timeoutId);
     }
   };
+
+  private async readResponseBody(response: Response, schema?: v.GenericSchema) {
+    if (!schema || !response.ok) return response.json();
+
+    const body = await response.text();
+    return body === '' ? undefined : JSON.parse(body);
+  }
 
   private parsePayload(
     schema: v.GenericSchema | undefined,
