@@ -43,7 +43,7 @@ function threadWithPosts(posts: Posts.Read[]): Threads.Read {
     isImportant: false,
     isAnnouncement: false,
     isGlobal: false,
-    firstPost: openingPost,
+    firstPost: posts[0] ?? openingPost,
     lastPost: posts.at(-1),
     page: { number: 1, offset: 0, postCount: posts.length, posts },
   };
@@ -60,6 +60,7 @@ module('Acceptance | Writing posts', function (hooks) {
   let originalFetch: typeof fetch;
   let originalOnError: typeof window.onerror;
   let storedValues: Map<string, string | null>;
+  let posts: Posts.Read[];
   let submittedReplies: Posts.Write[];
   let failNextSubmission: boolean;
   let startupRefreshed: boolean;
@@ -85,7 +86,7 @@ module('Acceptance | Writing posts', function (hooks) {
       }),
     );
 
-    const posts = [openingPost];
+    posts = [openingPost];
     let createdThread: Threads.Read | undefined;
     submittedThread = undefined;
     startupRefreshed = false;
@@ -159,6 +160,13 @@ module('Acceptance | Writing posts', function (hooks) {
         }
         case 'GET /posts/101/quote':
           return Response.json({ message: quote });
+        case 'GET /posts/101':
+          return Response.json(posts[0]);
+        case 'PUT /posts/101': {
+          const payload: Posts.Write = await request.json();
+          posts[0] = { ...openingPost, ...posts[0], message: payload.message };
+          return Response.json(posts[0]);
+        }
         case 'POST /posts': {
           const payload: Posts.Write = await request.json();
           submittedReplies.push(payload);
@@ -298,5 +306,26 @@ I agree with this plan.`,
       `${quote}
 I agree with this plan.`,
     );
+  });
+
+  test('editing a post opens the existing draft and updates the same post', async function (assert) {
+    posts[0] = { ...openingPost, author: { id: '9', name: 'Test User' } };
+
+    await visit(`/thread?TID=${threadId}`);
+    await waitUntil(() => startupRefreshed);
+    await openPostMenuLink('edit');
+    assert.dom('#edit-post-form textarea').hasValue(openingPost.message);
+
+    await fillIn('#edit-post-form textarea', 'Updated opening post');
+    await click(
+      '#edit-post-form button[type="submit"], button[type="submit"][form="edit-post-form"]',
+    );
+    await waitFor('#post-101');
+
+    const url = new URL(currentURL(), window.location.origin);
+    assert.strictEqual(url.pathname, '/thread');
+    assert.strictEqual(url.searchParams.get('TID'), threadId);
+    assert.dom('#post-101').includesText('Updated opening post');
+    assert.dom('#post-101').doesNotIncludeText(openingPost.message);
   });
 });
