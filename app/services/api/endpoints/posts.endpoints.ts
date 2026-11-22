@@ -86,8 +86,9 @@ export async function update(
   post: Posts.Write,
   options?: PublicFetchOptions,
 ): Promise<Posts.Read> {
-  const updatedPost = await this.fetch(`posts/${id}`, {
+  const updatedPost: Posts.Read = await this.fetch(`posts/${id}`, {
     ...options,
+    schema: postReadSchema,
     statusNotifications: [
       {
         statusCode: 403,
