@@ -3,8 +3,9 @@ import { module, test } from 'qunit';
 import type * as v from 'valibot';
 import type ApiService from 'potber-client/services/api';
 import { PayloadValidationError } from 'potber-client/services/api/error';
+import { boardReadSchema } from 'potber-client/services/api/schemas/boards';
 import { threadReadSchema } from 'potber-client/services/api/schemas/threads';
-import type { Threads } from 'potber-client/services/api/types';
+import type { Boards, Threads } from 'potber-client/services/api/types';
 import { setupTest } from 'potber-client/tests/helpers';
 
 // Compile-time guard: the schema output and the hand-written type must stay identical.
@@ -15,6 +16,11 @@ type Equals<A, B> =
 const schemaMatchesType: Equals<
   v.InferOutput<typeof threadReadSchema>,
   Threads.Read
+> = true;
+
+const boardSchemaMatchesType: Equals<
+  v.InferOutput<typeof boardReadSchema>,
+  Boards.Read
 > = true;
 
 const author = { id: '7', name: 'Thread Author' };
@@ -61,7 +67,24 @@ function threadPayload(overrides: Record<string, unknown> = {}) {
   };
 }
 
-module('Unit | Service | Api | Thread payloads', function (hooks) {
+function boardPayload(threads: unknown[]) {
+  return {
+    id: '14',
+    categoryId: '1',
+    name: 'General discussion',
+    threadsCount: 1,
+    repliesCount: 1,
+    page: {
+      number: 1,
+      stickiesCount: 0,
+      globalsCount: 0,
+      threadsCount: 1,
+      threads,
+    },
+  };
+}
+
+module('Unit | Service | Api | Read payloads', function (hooks) {
   setupTest(hooks);
 
   let originalFetch: typeof fetch;
@@ -181,5 +204,33 @@ module('Unit | Service | Api | Thread payloads', function (hooks) {
         (error as PayloadValidationError).issues.includes('id: missing'),
       );
     }
+  });
+
+  test('validates a board page without a description or last post', async function (assert) {
+    const thread = threadPayload({ page: undefined });
+    body = JSON.stringify(boardPayload([thread]));
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    const board = await api.findBoardById('14');
+
+    assert.true(boardSchemaMatchesType);
+    assert.strictEqual(board.description, '');
+    assert.strictEqual(board.lastPost, undefined);
+    assert.strictEqual(board.page.number, 1);
+    assert.strictEqual(board.page.threads[0]?.title, 'Weekend plans');
+    assert.deepEqual(notifications, []);
+  });
+
+  test('rejects a malformed nested thread on a board page', async function (assert) {
+    body = JSON.stringify(boardPayload([threadPayload({ title: 123 })]));
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findBoardById('14'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('page.threads.0.title: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
   });
 });
