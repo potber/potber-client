@@ -561,6 +561,39 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.notOk(service.persistedKey);
   });
 
+  test('reuses stored device metadata and clears only the current account on forget', async function (assert) {
+    const deviceKey = 'potber-settingsSyncDeviceId';
+    const metadataKey = 'potber-settingsSyncMetadata-123';
+    const otherMetadataKey = 'potber-settingsSyncMetadata-456';
+    const deviceId = 'remembered-device';
+    const previousClock = Date.UTC(2100, 0, 1);
+    localStorage.setItem(deviceKey, deviceId);
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    await service.initialize(settings, { userId: '123', accessToken: 'token' });
+    await service.enable(settings);
+
+    const savedMetadata = JSON.stringify({
+      fields: { 'settings.theme': { modifiedAt: previousClock, deviceId } },
+    });
+    localStorage.setItem(metadataKey, savedMetadata);
+    localStorage.setItem(otherMetadataKey, savedMetadata);
+    service.settingChanged('theme', { ...settings, theme: Theme.default });
+    await service.syncNow();
+
+    const updated = JSON.parse(localStorage.getItem(metadataKey) ?? '{}');
+    assert.deepEqual(updated.fields?.['settings.theme'], {
+      modifiedAt: previousClock + 1,
+      deviceId,
+    });
+
+    await service.forgetThisDevice();
+    assert.strictEqual(localStorage.getItem(metadataKey), null);
+    assert.strictEqual(localStorage.getItem(otherMetadataKey), savedMetadata);
+    assert.strictEqual(localStorage.getItem(deviceKey), deviceId);
+  });
+
   test('merges and retries after a concurrent update', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
