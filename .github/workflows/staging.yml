@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   lint:
@@ -16,15 +15,6 @@ jobs:
 
   test:
     uses: potber/.github/.github/workflows/npm_test-coverage.yml@v2
-
-  release_image:
-    needs:
-    - lint
-    - test
-    permissions:
-      contents: read
-      packages: write
-    uses: potber/.github/.github/workflows/release_image.yml@v1
 
   deploy_static:
     needs:

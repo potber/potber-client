@@ -1,24 +1,3 @@
+# The dev container image (.devcontainer/Dockerfile) copies nothing from the
+# repository, so the build context can stay empty.
 *
-!.dockerignore
-!Dockerfile
-!package.json
-!package-lock.json
-!.ember-cli
-!babel.config.mjs
-!ember-cli-build.js
-!index.html
-!jsconfig.json
-!tsconfig.json
-!vite.config.mjs
-!app
-!app/**
-!config
-!config/**
-!public
-!public/**
-!translations
-!translations/**
-!types
-!types/**
-!.nginx
-!.nginx/nginx.conf
