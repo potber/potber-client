@@ -9,12 +9,7 @@ module.exports = function (defaults) {
   const app = new EmberApp(defaults, {
     babel: {
       sourceMaps: isProduction ? false : 'inline',
-      plugins: [
-        ...require('ember-cli-code-coverage').buildBabelPlugin({
-          embroider: true,
-        }),
-        '@babel/plugin-proposal-export-namespace-from',
-      ],
+      plugins: ['@babel/plugin-proposal-export-namespace-from'],
     },
     'ember-cli-babel': { enableTypeScriptTransform: true },
     'ember-cli-htmlbars': {

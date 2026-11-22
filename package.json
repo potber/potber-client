@@ -20,7 +20,8 @@
     "prettier:check": "prettier --check . --plugin prettier-plugin-ember-template-tag",
     "prettier:format": "prettier --write . --plugin prettier-plugin-ember-template-tag",
     "test": "vite build --mode development && ember test --path dist",
-    "test:coverage": "COVERAGE=true vite build --mode development && ember test --path dist",
+    "test:coverage": "node scripts/test-coverage.mjs",
+    "test:tooling": "node --test scripts/tests/*.test.mjs",
     "update": "npx npm-check-updates -u",
     "test:ember": "vite build --mode development && ember test --path dist"
   },

@@ -1,5 +1,6 @@
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import coverage from 'ember-cli-code-coverage';
 import {
   babelCompatSupport,
   templateCompatSupport,
@@ -45,6 +46,7 @@ export default {
       },
     ],
     ...babelCompatSupport(),
+    ...coverage.buildBabelPlugin(),
   ],
 
   generatorOpts: {

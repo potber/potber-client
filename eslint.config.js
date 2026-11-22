@@ -33,7 +33,7 @@ const nodeScriptFiles = [
   'lib/*/index.js',
   'server/**/*.js',
 ];
-const nodeModuleFiles = ['*.mjs'];
+const nodeModuleFiles = ['*.mjs', 'scripts/**/*.mjs'];
 
 const tsRecommended = tsPlugin.configs['flat/recommended'];
 const tsCompatibilityRules = tsRecommended[1].rules;
