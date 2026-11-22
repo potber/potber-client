@@ -45,7 +45,9 @@ The root HTML entrypoint attempts to load optional `/injected-config.js` before 
 
 `authConfig.redirectUri` is the browser origin plus `/auth/callback`. Issuer/client settings and allowed redirects belong to the separate auth service as well as client configuration; changes must keep those contracts aligned.
 
-Ordinary forum requests flow from routes, controllers, components, or model wrappers through endpoint methods exposed on `ApiService`. That service adds bearer credentials, serializes query parameters, applies timeout behavior, maps failures to notifications, and invalidates the session on HTTP 401. Endpoint return types describe expected JSON; the transport currently returns `any` and does not perform comprehensive runtime schema validation.
+Ordinary forum requests flow from routes, controllers, components, or model wrappers through endpoint methods exposed on `ApiService`. That service adds bearer credentials, serializes query parameters, applies timeout behavior, maps failures to notifications, and invalidates the session on HTTP 401.
+
+Successful JSON responses pass through a Valibot schema when the endpoint supplies the `schema` option. The enabled paths cover thread detail, board detail, board categories, post lookup, quoting, creation and editing, and bookmark listing and creation. Validation errors use the existing API error handling and report field paths without payload values. The transport returns `Promise<any>`, and empty successful responses take an early return before parsing.
 
 ### Content rendering
 
@@ -68,7 +70,6 @@ Persisted field names, payload versions, clocks, and remote revisions form compa
 - Ember services hold shared state; routes/controllers coordinate navigation and view actions; components render and handle interaction. These are existing conventions, not mechanically enforced import boundaries.
 - API endpoint modules and API model wrappers use the central forum transport. Settings sync, deployment-version checks, and other specialized integrations have their own requests; there is no universal single HTTP gateway.
 - Browser storage, encrypted remote configuration, and backend-owned forum data have different owners and lifecycles. A local settings write is not necessarily a server-side forum mutation.
-- There is no project-wide runtime schema validator, structural regression baseline, or product rollout-flag system configured. Do not infer those guarantees from a successful type check or build.
 
 ## Cross-cutting concerns
 
@@ -78,12 +79,14 @@ Persisted field names, payload versions, clocks, and remote revisions form compa
 
 ### Types and tests
 
-TypeScript inherits strict settings from `@tsconfig/ember`, with local exceptions in `tsconfig.json`. Glint checks templates as well as TypeScript. ESLint applies Ember/QUnit conventions and code formatting; the separate Prettier script covers other file types.
+TypeScript inherits strict settings from `@tsconfig/ember`, with local exceptions in `tsconfig.json`. Glint checks templates as well as TypeScript. ESLint applies Ember and QUnit conventions. PR lint also runs the configured Prettier check across supported project files.
 
-Tests use QUnit and Ember helpers in the browser, with service substitutions and fixtures under `tests/`. Testem launches the browser after a Vite build. The dated readiness assessment records a coverage-output gap; coverage configuration alone does not prove instrumentation is working. See [AGENTS.md](AGENTS.md) for validation commands and [the assessment](AGENT_READY_ASSESSMENT.md) for the historical evidence.
+Tests use QUnit and Ember helpers in the browser, with service substitutions and fixtures under `tests/`. Testem launches the browser after a Vite build. See [AGENTS.md](AGENTS.md) for local verification commands.
 
 ### Deployment
 
-GitHub Actions calls shared lint/test workflows. Staging and production releases depend on those checks. Static delivery uses Bunny Storage/Pull Zones with generated browser configuration; hashed assets are retained and entry/configuration files are uploaded last before cache purging.
+Pull requests run shared lint and the repository's [browser coverage workflow](.github/workflows/pr-coverage.yml). The coverage job runs the suite on the exact base SHA and proposed merge, reports percentage-point changes and configured floors in the Actions summary, and uploads the complete `coverage-report` artifact. GitHub requires the separate [structural check](docs/guides/quality-gates.md) for merges into `main`. Staging and production releases use the shared lint and coverage workflows.
+
+Static delivery uses Bunny Storage/Pull Zones with generated browser configuration; hashed assets are retained and entry/configuration files are uploaded last before cache purging.
 
 Same-repository PR previews are uploaded to a folder per PR in a shared preview Storage Zone, and an Edge Script maps `pr-<number>.preview.potber.de` to that folder; previews use distinct hostnames but shared staging API/auth services. Preview deployment and test verification are separate workflows. Deployment settings, required variables, and secrets are documented in [README.md](README.md#deploying).
