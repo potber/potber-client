@@ -8,11 +8,14 @@ import {
 } from '@ember/test-helpers';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
+import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
 const boardLink = 'a[href^="/board?"][href*="BID=14"]';
+const bookmarksPath = '/bookmarks/threads';
+const bookmarkLink = '.bookmark-link[href*="TID=42"][href*="PID=101"]';
 const threadLink = 'a[href^="/thread?"][href*="TID=42"]';
 
 const openingPost: Posts.Read = {
@@ -61,6 +64,23 @@ const board: Boards.Read = {
   },
 };
 
+const bookmark: IBookmark = {
+  id: '55',
+  postId: '101',
+  newPostsCount: 1,
+  thread: { id: '42', title: 'Weekend plans', isClosed: false, pagesCount: 2 },
+  board: { id: '14', name: 'General discussion' },
+};
+
+async function clickMenuAction(menu: string, label: string) {
+  await click(menu);
+  const action = findAll('menu[data-visible="true"] button.menu-item').find(
+    (button) => button.textContent?.trim() === label,
+  );
+  if (!action) throw new Error(`Missing menu action: ${label}`);
+  await click(action);
+}
+
 module('Acceptance | Reading the forum', function (hooks) {
   setupApplicationTest(hooks);
 
@@ -69,11 +89,11 @@ module('Acceptance | Reading the forum', function (hooks) {
   let storedValues: Map<string, string | null>;
 
   let startupRefreshed: boolean;
-  let bookmarked: boolean;
+  let bookmarks: IBookmark[];
 
   hooks.beforeEach(async function () {
     startupRefreshed = false;
-    bookmarked = false;
+    bookmarks = [];
     this.owner.register('session-store:application', EphemeralSessionStore);
     originalOnError = window.onerror;
     storedValues = new Map(
@@ -109,24 +129,15 @@ module('Acceptance | Reading the forum', function (hooks) {
             exp: 0,
           });
         case 'GET /bookmarks':
-          return Response.json(
-            bookmarked
-              ? [
-                  {
-                    id: '55',
-                    postId: '101',
-                    newPostsCount: 1,
-                    thread: {
-                      id: '42',
-                      title: 'Weekend plans',
-                      isClosed: false,
-                      pagesCount: 2,
-                    },
-                    board: { id: '14', name: 'General discussion' },
-                  },
-                ]
-              : [],
-          );
+          return Response.json(bookmarks);
+        case 'POST /bookmarks': {
+          const payload = await request.json();
+          if (payload.threadId !== '42' || payload.postId !== '101') {
+            throw new Error('Bookmark request targeted a different post');
+          }
+          bookmarks = [bookmark];
+          return Response.json(bookmark, { status: 201 });
+        }
         case 'GET /privateMessages':
           startupRefreshed = true;
           return Response.json([]);
@@ -212,7 +223,7 @@ module('Acceptance | Reading the forum', function (hooks) {
   });
 
   test('resumes a bookmarked thread at the last-read post and links to the unread page', async function (assert) {
-    bookmarked = true;
+    bookmarks = [bookmark];
     await visit('/board?BID=14');
     await waitUntil(() => startupRefreshed);
     const resumeLink = `${threadLink}[href*="lastReadPost=101"]`;
@@ -230,5 +241,17 @@ module('Acceptance | Reading the forum', function (hooks) {
     await click(unreadLink);
     await waitFor('#post-102');
     assert.dom('#post-102').includesText('A post on page two');
+  });
+
+  test('bookmarking a post adds the thread at that post to bookmarks', async function (assert) {
+    await visit(bookmarksPath);
+    await waitUntil(() => startupRefreshed);
+    assert.dom(bookmarkLink).doesNotExist();
+
+    await visit('/thread?TID=42&page=1');
+    await clickMenuAction('#post-101 .menu-button', 'Lesezeichen setzen');
+    await visit(bookmarksPath);
+
+    assert.dom(bookmarkLink).includesText('Weekend plans');
   });
 });
