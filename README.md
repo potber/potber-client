@@ -167,11 +167,6 @@ To check the deploy scripts locally:
 - `API_URL=https://test-api.potber.de deploy/render-injected-config.sh /tmp/injected-config.js`
 - `DRY_RUN=1 BUNNY_STORAGE_ZONE=x deploy/upload-to-bunny-storage.sh dist` (prints the upload order)
 
-The [Dockerfile](Dockerfile) still builds an nginx image for the Kubernetes cluster:
-
-- Build the image with `docker build -t potber-client .`
-- Run it locally with `docker run --rm -p 8080:8080 potber-client`
-
 #### PR Previews
 
 Each same-repository PR is deployed to its own hostname like `https://pr-123.preview.potber.de` by the [pull-request-preview](.github/workflows/pull-request-preview.yml) workflow. It runs [deploy_static](.github/workflows/deploy_static.yml) with the GitHub Environment `preview` and uploads the build into the folder `pr-123/` of one shared Storage Zone. When the PR is closed, the folder is deleted. Dependabot and fork PRs get no preview, since they have no access to the secrets.
@@ -190,7 +185,6 @@ The `preview` environment takes the same settings as `test` and `production`, wi
 - [Architecture](ARCHITECTURE.md) - Module map, data flow, and system boundaries.
 - [ember.js](https://emberjs.com/) - The framework.
 - [potber-api](https://github.com/potber/potber-api) - The web server that potber-client utilizes.
-- [GitHub Container Registry](https://github.com/potber/potber-client/pkgs/container/potber-client) - The published container image.
 
 ## Credit
 

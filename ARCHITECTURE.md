@@ -24,7 +24,7 @@ Potber provides a mobile-first interface to forum.mods.de: browsing boards and t
 | `types/`                                       | Ambient declarations, Glint registrations, and integration type shims.                                                     |
 | `tests/`                                       | QUnit unit, integration, and acceptance tests, helpers, and fixtures.                                                      |
 | `public/`                                      | Static images, icons, and other files served with the app.                                                                 |
-| `deploy/`, `.nginx/`, `Dockerfile`             | Runtime configuration generation, static upload scripts, and the alternative nginx container deployment.                   |
+| `deploy/`                                      | Runtime configuration generation, static upload scripts, and the PR preview Edge Script.                                   |
 | `.github/`, `.devcontainer/`                   | CI/release/preview workflows, dependency updates, and local container tooling.                                             |
 
 `app/session-stores/application.js` configures the cookie-backed session store; `app/exceptions/` defines application exception types. `app/styles/` contains the conventional Ember stylesheet entrypoint alongside the shared styles in `app/assets/`. The instance-initializer directory is currently empty.
@@ -84,6 +84,6 @@ Tests use QUnit and Ember helpers in the browser, with service substitutions and
 
 ### Deployment
 
-GitHub Actions calls shared lint/test workflows. Staging and production releases depend on those checks. Static delivery uses Bunny Storage/Pull Zones with generated browser configuration; hashed assets are retained and entry/configuration files are uploaded last before cache purging. The nginx container is used by the Kubernetes preview path and remains an alternative deployment artifact.
+GitHub Actions calls shared lint/test workflows. Staging and production releases depend on those checks. Static delivery uses Bunny Storage/Pull Zones with generated browser configuration; hashed assets are retained and entry/configuration files are uploaded last before cache purging.
 
-Same-repository PR previews publish generated manifests to the separate infrastructure repository for Flux reconciliation; previews use distinct hostnames but shared staging API/auth services. Preview deployment and test verification are separate workflows. Deployment settings, required variables, and secrets are documented in [README.md](README.md#deploying).
+Same-repository PR previews are uploaded to a folder per PR in a shared preview Storage Zone, and an Edge Script maps `pr-<number>.preview.potber.de` to that folder; previews use distinct hostnames but shared staging API/auth services. Preview deployment and test verification are separate workflows. Deployment settings, required variables, and secrets are documented in [README.md](README.md#deploying).

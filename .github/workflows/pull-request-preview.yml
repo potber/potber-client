@@ -55,10 +55,8 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find(
-              (comment) =>
-                comment.body?.includes(marker) ||
-                comment.body?.includes('<!-- flux-preview -->'),
+            const existing = comments.find((comment) =>
+              comment.body?.includes(marker),
             );
 
             if (existing) {
@@ -128,10 +126,8 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find(
-              (comment) =>
-                comment.body?.includes(marker) ||
-                comment.body?.includes('<!-- flux-preview -->'),
+            const existing = comments.find((comment) =>
+              comment.body?.includes(marker),
             );
 
             if (existing) {
