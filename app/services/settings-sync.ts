@@ -1,21 +1,32 @@
 import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
-import { appConfig } from 'potber-client/config/app.config';
 import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
 import {
   createRecoveryKey,
   decryptSettings,
   encryptSettings,
   importRecoveryKey,
-  type SettingsSyncEnvelope,
 } from 'potber-client/utils/settings-sync-crypto';
 import {
   deleteDeviceKey,
   readDeviceKey,
   writeDeviceKey,
 } from 'potber-client/utils/settings-sync-key-storage';
+import {
+  deleteRemoteSettings,
+  fetchRemoteSettings,
+  SettingsSyncRequestError,
+  writeRemoteSettings,
+  type RemoteUserConfiguration,
+  type WriteUserConfiguration,
+} from 'potber-client/utils/settings-sync-transport';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
+
+export {
+  SettingsSyncRequestError,
+  type RemoteUserConfiguration,
+} from 'potber-client/utils/settings-sync-transport';
 
 const METADATA_PREFIX = 'potber-settingsSyncMetadata-';
 const DEVICE_ID_KEY = 'potber-settingsSyncDeviceId';
@@ -47,15 +58,6 @@ interface SettingsSyncMetadata {
   fields: Record<string, FieldClock>;
 }
 
-export interface RemoteUserConfiguration extends SettingsSyncEnvelope {
-  revision: number;
-  updatedAt: string;
-}
-
-interface WriteUserConfiguration extends SettingsSyncEnvelope {
-  expectedRevision?: number;
-}
-
 interface MergeResult {
   values: Record<string, unknown>;
   shouldUpload: boolean;
@@ -79,15 +81,6 @@ export interface SyncedCollections {
   blockedUsers: BlockedUser[];
   boardFavoriteIds: string[];
   savedPosts: PersistedSavedPost[];
-}
-
-export class SettingsSyncRequestError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-  }
 }
 
 export default class SettingsSyncService extends Service {
@@ -352,26 +345,17 @@ export default class SettingsSyncService extends Service {
   }
 
   protected async fetchRemote(): Promise<RemoteUserConfiguration | null> {
-    const response = await this.request('/user-configuration');
-    if (response.status === 404) return null;
-    return this.readResponse<RemoteUserConfiguration>(response);
+    return fetchRemoteSettings(this.ensureAuthenticated());
   }
 
   protected async writeRemote(
     value: WriteUserConfiguration,
   ): Promise<RemoteUserConfiguration> {
-    const response = await this.request('/user-configuration', {
-      method: 'PUT',
-      body: JSON.stringify(value),
-    });
-    return this.readResponse<RemoteUserConfiguration>(response);
+    return writeRemoteSettings(this.ensureAuthenticated(), value);
   }
 
   protected async deleteRemote(): Promise<void> {
-    const response = await this.request('/user-configuration', {
-      method: 'DELETE',
-    });
-    if (!response.ok) await this.throwResponseError(response);
+    await deleteRemoteSettings(this.ensureAuthenticated());
   }
 
   protected async loadKey(): Promise<CryptoKey | undefined> {
@@ -384,32 +368,6 @@ export default class SettingsSyncService extends Service {
 
   protected async removeKey(): Promise<void> {
     if (this.userId) await deleteDeviceKey(this.userId);
-  }
-
-  private async request(path: string, init: RequestInit = {}) {
-    this.ensureAuthenticated();
-    return fetch(new URL(path, appConfig.apiUrl), {
-      ...init,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.accessToken}`,
-        ...init.headers,
-      },
-    });
-  }
-
-  private async readResponse<T>(response: Response): Promise<T> {
-    if (!response.ok) await this.throwResponseError(response);
-    return (await response.json()) as T;
-  }
-
-  private async throwResponseError(response: Response): Promise<never> {
-    const body = await response.json().catch(() => undefined);
-    throw new SettingsSyncRequestError(
-      response.status,
-      body?.message ?? response.statusText,
-    );
   }
 
   private async decryptAndMerge(
@@ -725,6 +683,7 @@ export default class SettingsSyncService extends Service {
     if (!this.accessToken || !this.userId) {
       throw new Error('Encrypted settings sync requires authentication.');
     }
+    return this.accessToken;
   }
 
   private requireUserId() {

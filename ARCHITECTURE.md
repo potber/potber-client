@@ -59,9 +59,9 @@ The rendering boundary remains distinct from parsing: post and private-message c
 
 `SettingsService`, `LocalStorageService`, and `SocialsService` own preferences and local collections such as saved posts, favorite boards, and blocked users. `AppService` applies synchronized values to those services and refreshes affected UI/device behavior.
 
-`SettingsSyncService` coordinates per-user encrypted payloads, recovery/unlock behavior, field clocks, revision conflicts, and collection merging. It uses Web Crypto for encryption, IndexedDB for key persistence, and localStorage for synchronization metadata/device identity. Its authenticated requests use a separate transport inside the service, not `ApiService.fetch`.
+`SettingsSyncService` coordinates per-user encrypted payloads, recovery/unlock behavior, field clocks, revision conflicts, and collection merging. It uses Web Crypto for encryption, IndexedDB for key persistence, and localStorage for synchronization metadata/device identity. The [settings sync transport](app/utils/settings-sync-transport.ts) handles authenticated requests to `/user-configuration`.
 
-Persisted field names, payload versions, clocks, and remote revisions form compatibility boundaries. Keep validation, merge behavior, and unlock semantics consistent when changing them. The service currently contains several responsibilities in one module; this document describes that implementation rather than claiming an already-separated storage/crypto architecture.
+Persisted field names, payload versions, clocks, and remote revisions form compatibility boundaries. Keep validation, merge behavior, and unlock semantics consistent when changing them.
 
 ## Boundaries and invariants
 
