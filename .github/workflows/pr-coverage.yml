@@ -3,6 +3,9 @@ name: PR browser coverage
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test
