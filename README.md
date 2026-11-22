@@ -94,7 +94,7 @@ If you feel skilled enough, you can also create a PR of course. Themes are locat
 You will need the following things properly installed on your computer.
 
 - [Git](https://git-scm.com/)
-- [Node.js 20](https://nodejs.org/) (with npm)
+- [Node.js 24](https://nodejs.org/) (with npm; see `.nvmrc`)
 - [Ember CLI](https://cli.emberjs.com/release/)
 - [potber-api](https://github.com/potber/potber-api) - Without this web server, potber-client does not function.
 
@@ -130,9 +130,8 @@ You need to have Docker installed on your system and have the [Dev Containers ex
 
 #### Building
 
-- `ember build` (development)
-- `ember build --environment staging` (staging)
-- `ember build --environment production` (production)
+- `npx vite build --mode development` (local development configuration)
+- `npm run build` (production build; deployment workflows inject environment-specific configuration)
 
 #### Deploying
 
@@ -194,6 +193,8 @@ The cluster-side preview setup lives in the infrastructure repository under [`ku
 
 ## Further Reading / Useful Links
 
+- [Agent instructions](AGENTS.md) - Project conventions and verification commands.
+- [Architecture](ARCHITECTURE.md) - Module map, data flow, and system boundaries.
 - [ember.js](https://emberjs.com/) - The framework.
 - [potber-api](https://github.com/potber/potber-api) - The web server that potber-client utilizes.
 - [GitHub Container Registry](https://github.com/potber/potber-client/pkgs/container/potber-client) - The published container image.
