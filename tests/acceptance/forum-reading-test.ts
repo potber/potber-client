@@ -10,6 +10,7 @@ import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
+import { LandingPage } from 'potber-client/services/settings';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -110,6 +111,7 @@ module('Acceptance | Reading the forum', function (hooks) {
     localStorage.setItem(
       'potber-settings',
       JSON.stringify({
+        landingPage: LandingPage.home,
         autoRefreshSidebar: false,
         appsignalErrorReporting: false,
       }),
@@ -298,5 +300,51 @@ module('Acceptance | Reading the forum', function (hooks) {
     await click(`a[href="${savedPostsPath}"]`);
     assert.strictEqual(currentURL(), savedPostsPath);
     assert.dom(bookmarkLink).includesText('The opening post');
+  });
+
+  test('removing a saved post keeps it out of the saved posts list', async function (assert) {
+    localStorage.setItem(
+      'potber-savedPosts',
+      JSON.stringify([{ id: '101', threadId: '42' }]),
+    );
+    const savedPostsPath = '/bookmarks/saved-posts';
+    await visit(bookmarksPath);
+    await waitUntil(() => startupRefreshed);
+    await click(`a[href="${savedPostsPath}"]`);
+    assert.dom(bookmarkLink).includesText('The opening post');
+
+    await clickMenuAction(
+      '.bookmark .menu-button',
+      'Gespeicherten Post entfernen',
+    );
+    await visit(bookmarksPath);
+    await visit(savedPostsPath);
+
+    assert.dom(bookmarkLink).doesNotExist();
+    assert.dom().includesText('Du hast keine Posts gespeichert.');
+    assert.strictEqual(localStorage.getItem('potber-savedPosts'), '[]');
+  });
+
+  test('adding and removing a board favorite updates Home and persisted favorites', async function (assert) {
+    const favorite = `.home .quickstart-item ${boardLink}`;
+    await visit('/board?BID=14');
+    await waitUntil(() => startupRefreshed);
+    await clickMenuAction(
+      '.nav-element-center .menu-button',
+      'Zu Favoriten hinzufügen',
+    );
+    await visit('/home');
+    await waitFor(favorite);
+    assert.dom(favorite).includesText('General discussion');
+    assert.strictEqual(localStorage.getItem('potber-boardFavorites'), '14');
+
+    await clickMenuAction(
+      '.home .quickstart-item .menu-button',
+      'Favorit entfernen',
+    );
+    await visit('/board-overview');
+    await visit('/home');
+    assert.dom(favorite).doesNotExist();
+    assert.strictEqual(localStorage.getItem('potber-boardFavorites'), '');
   });
 });
