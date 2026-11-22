@@ -496,6 +496,25 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.notOk(service.persistedKey, 'the incorrect key is not persisted');
   });
 
+  test('a recovery key cannot decrypt an envelope for a different account', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    await service.initialize(settings, { userId: '123', accessToken: 'token' });
+    const recoveryKey = await service.enable(settings);
+    await service.forgetThisDevice();
+    await service.initialize(settings, { userId: '456', accessToken: 'token' });
+
+    await assert.rejects(service.unlock(recoveryKey, settings, 'remote'));
+    assert.strictEqual(service.state, 'locked');
+    assert.strictEqual(service.persistedKey, undefined);
+    assert.strictEqual(
+      service.writes.length,
+      1,
+      'only the original enable wrote a payload',
+    );
+  });
+
   test('preserves the device key when the remote payload cannot be decrypted', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',

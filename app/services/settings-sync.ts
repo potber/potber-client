@@ -4,14 +4,14 @@ import { appConfig } from 'potber-client/config/app.config';
 import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
 import {
   createRecoveryKey,
-  fromBase64,
+  decryptSettings,
+  encryptSettings,
   importRecoveryKey,
-  toBase64,
+  type SettingsSyncEnvelope,
 } from 'potber-client/utils/settings-sync-crypto';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
 
-const ENVELOPE_VERSION = 1;
 const KEY_DATABASE = 'potber-settings-sync';
 const KEY_STORE = 'keys';
 const METADATA_PREFIX = 'potber-settingsSyncMetadata-';
@@ -44,18 +44,12 @@ interface SettingsSyncMetadata {
   fields: Record<string, FieldClock>;
 }
 
-export interface RemoteUserConfiguration {
-  version: number;
-  iv: string;
-  ciphertext: string;
+export interface RemoteUserConfiguration extends SettingsSyncEnvelope {
   revision: number;
   updatedAt: string;
 }
 
-interface WriteUserConfiguration {
-  version: number;
-  iv: string;
-  ciphertext: string;
+interface WriteUserConfiguration extends SettingsSyncEnvelope {
   expectedRevision?: number;
 }
 
@@ -478,19 +472,8 @@ export default class SettingsSyncService extends Service {
     remote: RemoteUserConfiguration,
     key: CryptoKey,
   ): Promise<EncryptedSettingsPayload> {
-    if (remote.version !== ENVELOPE_VERSION) {
-      throw new Error('Unsupported encrypted settings version.');
-    }
-    const plaintext = await crypto.subtle.decrypt(
-      {
-        name: 'AES-GCM',
-        iv: fromBase64(remote.iv),
-        additionalData: this.additionalData,
-      },
-      key,
-      fromBase64(remote.ciphertext),
-    );
-    const payload = JSON.parse(new TextDecoder().decode(plaintext)) as unknown;
+    const plaintext = await decryptSettings(remote, key, this.requireUserId());
+    const payload = JSON.parse(plaintext) as unknown;
     if (!isEncryptedSettingsPayload(payload)) {
       throw new Error('Invalid encrypted settings payload.');
     }
@@ -606,17 +589,7 @@ export default class SettingsSyncService extends Service {
       schemaVersion: 1,
       fields,
     };
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ciphertext = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv, additionalData: this.additionalData },
-      key,
-      new TextEncoder().encode(JSON.stringify(payload)),
-    );
-    return {
-      version: ENVELOPE_VERSION,
-      iv: toBase64(iv),
-      ciphertext: toBase64(ciphertext),
-    };
+    return encryptSettings(JSON.stringify(payload), key, this.requireUserId());
   }
 
   private async resolveConflict(localValues: Record<string, unknown>) {
@@ -793,12 +766,6 @@ export default class SettingsSyncService extends Service {
       localStorage.setItem(DEVICE_ID_KEY, deviceId);
     }
     return deviceId;
-  }
-
-  private get additionalData() {
-    return new TextEncoder().encode(
-      `potber-user-configuration:v${ENVELOPE_VERSION}:${this.requireUserId()}`,
-    );
   }
 
   private ensureAuthenticated() {

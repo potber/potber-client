@@ -1,4 +1,55 @@
+const ENVELOPE_VERSION = 1;
 const RECOVERY_KEY_PREFIX = 'potber-sync-v1-';
+
+export interface SettingsSyncEnvelope {
+  version: number;
+  iv: string;
+  ciphertext: string;
+}
+
+export async function encryptSettings(
+  plaintext: string,
+  key: CryptoKey,
+  userId: string,
+): Promise<SettingsSyncEnvelope> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: additionalData(userId) },
+    key,
+    new TextEncoder().encode(plaintext),
+  );
+  return {
+    version: ENVELOPE_VERSION,
+    iv: toBase64(iv),
+    ciphertext: toBase64(ciphertext),
+  };
+}
+
+export async function decryptSettings(
+  envelope: SettingsSyncEnvelope,
+  key: CryptoKey,
+  userId: string,
+): Promise<string> {
+  if (envelope.version !== ENVELOPE_VERSION) {
+    throw new Error('Unsupported encrypted settings version.');
+  }
+  const plaintext = await crypto.subtle.decrypt(
+    {
+      name: 'AES-GCM',
+      iv: fromBase64(envelope.iv),
+      additionalData: additionalData(userId),
+    },
+    key,
+    fromBase64(envelope.ciphertext),
+  );
+  return new TextDecoder().decode(plaintext);
+}
+
+function additionalData(userId: string) {
+  return new TextEncoder().encode(
+    `potber-user-configuration:v${ENVELOPE_VERSION}:${userId}`,
+  );
+}
 
 export async function createRecoveryKey() {
   const generatedKey = await crypto.subtle.generateKey(
@@ -42,7 +93,7 @@ function parseRecoveryKey(recoveryKey: string): ArrayBuffer {
   return rawKey.buffer as ArrayBuffer;
 }
 
-export function toBase64(value: ArrayBuffer | ArrayBufferView) {
+function toBase64(value: ArrayBuffer | ArrayBufferView) {
   const bytes =
     value instanceof ArrayBuffer
       ? new Uint8Array(value)
@@ -52,7 +103,7 @@ export function toBase64(value: ArrayBuffer | ArrayBufferView) {
   return btoa(binary);
 }
 
-export function fromBase64(value: string) {
+function fromBase64(value: string) {
   const binary = atob(value);
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
