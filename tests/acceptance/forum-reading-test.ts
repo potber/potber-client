@@ -4,6 +4,7 @@ import {
   findAll,
   visit,
   waitFor,
+  waitUntil,
 } from '@ember/test-helpers';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
@@ -67,7 +68,10 @@ module('Acceptance | Reading the forum', function (hooks) {
   let originalOnError: typeof window.onerror;
   let storedValues: Map<string, string | null>;
 
+  let startupRefreshed: boolean;
+
   hooks.beforeEach(async function () {
+    startupRefreshed = false;
     this.owner.register('session-store:application', EphemeralSessionStore);
     originalOnError = window.onerror;
     storedValues = new Map(
@@ -103,7 +107,9 @@ module('Acceptance | Reading the forum', function (hooks) {
             exp: 0,
           });
         case 'GET /bookmarks':
+          return Response.json([]);
         case 'GET /privateMessages':
+          startupRefreshed = true;
           return Response.json([]);
         case 'GET /version.json':
         case 'GET /user-configuration':
@@ -142,6 +148,7 @@ module('Acceptance | Reading the forum', function (hooks) {
 
   test('opens a board and reads a thread from the board overview', async function (assert) {
     await visit('/board-overview');
+    await waitUntil(() => startupRefreshed);
     const category = findAll('button').find(
       (button) => button.textContent?.trim() === 'Community',
     );
@@ -155,5 +162,25 @@ module('Acceptance | Reading the forum', function (hooks) {
     await waitFor('#post-102');
     assert.true(currentURL().startsWith('/thread?'));
     assert.dom('#post-102').includesText('A post on page two');
+  });
+
+  test('moves between thread pages and shows the posts for each page', async function (assert) {
+    await visit('/thread?TID=42&page=1');
+    await waitUntil(() => startupRefreshed);
+    assert.dom('#post-101').includesText('The opening post');
+
+    const pageControls = '.nav-element-center > a[href^="/thread?"]';
+    await click(`${pageControls}[href*="page=2"]`);
+    await waitFor('#post-102');
+
+    const page = new URL(currentURL(), window.location.origin);
+    assert.strictEqual(page.searchParams.get('page'), '2');
+    assert.dom('#post-102').includesText('A post on page two');
+    assert.dom('#post-101').doesNotExist();
+
+    await click(`${pageControls}[href*="page=1"]`);
+    await waitFor('#post-101');
+    assert.dom('#post-101').includesText('The opening post');
+    assert.dom('#post-102').doesNotExist();
   });
 });
