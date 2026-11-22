@@ -26,7 +26,8 @@
     "test:ember": "vite build --mode development && ember test --path dist",
     "quality:check": "node scripts/structural-check.mjs check",
     "quality:report": "node scripts/structural-check.mjs report",
-    "quality:test": "node --test scripts/structural-check.test.mjs"
+    "quality:test": "node --test scripts/structural-check.test.mjs",
+    "lint:format": "npm run prettier:check"
   },
   "devDependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",

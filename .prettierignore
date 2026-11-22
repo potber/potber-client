@@ -5,3 +5,7 @@ dist/
 .github/
 .release-please/manifest.json
 CHANGELOG.md
+
+# Keep vendored upstream skills verbatim.
+.agents/skills/frontend-design/
+.agents/skills/web-design-guidelines/
