@@ -8,7 +8,7 @@ import { Boards } from 'potber-client/services/api/types';
 
 export interface Signature {
   Args: {
-    board: Boards.Read;
+    board: Boards.Summary;
   };
 }
 

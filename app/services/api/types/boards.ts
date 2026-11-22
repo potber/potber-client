@@ -1,6 +1,6 @@
 import { Posts, Threads } from '.';
 
-export interface Read {
+export interface Summary {
   id: string;
   categoryId: string;
   name: string;
@@ -8,6 +8,9 @@ export interface Read {
   threadsCount: number;
   repliesCount: number;
   lastPost?: Posts.Preview;
+}
+
+export interface Read extends Summary {
   page: Page;
 }
 

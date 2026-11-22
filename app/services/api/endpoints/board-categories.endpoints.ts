@@ -1,5 +1,6 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
+import { boardCategoriesSchema } from '../schemas/board-categories';
 import { BoardCategories } from '../types';
 
 /**
@@ -11,6 +12,7 @@ export async function _findAll(
 ): Promise<BoardCategories.Read[]> {
   return this.fetch(`boardCategories`, {
     ...options,
+    schema: boardCategoriesSchema,
     statusNotifications: [
       {
         statusCode: '*',
