@@ -1,7 +1,7 @@
 import { click, fillIn, visit, waitFor, waitUntil } from '@ember/test-helpers';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
-import { Theme } from 'potber-client/services/settings';
+import { LandingPage, Theme } from 'potber-client/services/settings';
 import type SettingsSyncService from 'potber-client/services/settings-sync';
 import type { RemoteUserConfiguration } from 'potber-client/services/settings-sync';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
@@ -53,6 +53,7 @@ module('Acceptance | Settings sync', function (hooks) {
     localStorage.setItem(
       'potber-settings',
       JSON.stringify({
+        landingPage: LandingPage.home,
         theme: Theme['tokyo-night'],
         autoRefreshSidebar: false,
         appsignalErrorReporting: false,
@@ -83,6 +84,9 @@ module('Acceptance | Settings sync', function (hooks) {
           return remote
             ? Response.json(remote)
             : new Response(null, { status: 404 });
+        case 'DELETE /user-configuration':
+          remote = undefined;
+          return new Response(null, { status: 204 });
         case 'PUT /user-configuration': {
           const body = await request.json();
           remote = {
@@ -195,5 +199,26 @@ module('Acceptance | Settings sync', function (hooks) {
     assert
       .dom()
       .doesNotIncludeText('Deine Einstellungen bleiben lokal gespeichert.');
+  });
+
+  test('disabling sync deletes the remote copy and keeps local preferences', async function (assert) {
+    await visit('/settings');
+    await setUpSync();
+    assert.ok(remote?.ciphertext);
+
+    await click('[data-test-settings-sync-delete]');
+    await click(confirm);
+    await waitFor(enable);
+    assert.strictEqual(remote, undefined);
+    assert.dom(forget).doesNotExist();
+
+    await visit('/home');
+    await visit('/settings');
+    assert.dom(enable).exists();
+    assert.dom('.dropdown-toggle').hasText('Tokyo Night');
+    assert.strictEqual(
+      JSON.parse(localStorage.getItem('potber-settings') ?? '{}').theme,
+      Theme['tokyo-night'],
+    );
   });
 });
