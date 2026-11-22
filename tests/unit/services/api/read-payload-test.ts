@@ -310,4 +310,17 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
     );
     assert.strictEqual(notifications.length, 1, 'shows one fallback error');
   });
+
+  test('quoting a post rejects a malformed success response', async function (assert) {
+    body = JSON.stringify({ message: ['invalid'] });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.quotePost('101'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('message: expected string'),
+    );
+    assert.strictEqual(notifications.length, 1, 'shows one fallback error');
+  });
 });

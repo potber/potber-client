@@ -1,6 +1,6 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
-import { postReadSchema } from '../schemas/posts';
+import { postQuoteSchema, postReadSchema } from '../schemas/posts';
 import { Posts } from '../types';
 
 /**
@@ -121,6 +121,7 @@ export async function quote(
 ): Promise<Posts.Quote> {
   const quotedPost: Posts.Quote = await this.fetch(`posts/${id}/quote`, {
     ...options,
+    schema: postQuoteSchema,
     statusNotifications: [
       {
         statusCode: 403,
