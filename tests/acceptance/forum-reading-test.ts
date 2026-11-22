@@ -69,9 +69,11 @@ module('Acceptance | Reading the forum', function (hooks) {
   let storedValues: Map<string, string | null>;
 
   let startupRefreshed: boolean;
+  let bookmarked: boolean;
 
   hooks.beforeEach(async function () {
     startupRefreshed = false;
+    bookmarked = false;
     this.owner.register('session-store:application', EphemeralSessionStore);
     originalOnError = window.onerror;
     storedValues = new Map(
@@ -107,7 +109,24 @@ module('Acceptance | Reading the forum', function (hooks) {
             exp: 0,
           });
         case 'GET /bookmarks':
-          return Response.json([]);
+          return Response.json(
+            bookmarked
+              ? [
+                  {
+                    id: '55',
+                    postId: '101',
+                    newPostsCount: 1,
+                    thread: {
+                      id: '42',
+                      title: 'Weekend plans',
+                      isClosed: false,
+                      pagesCount: 2,
+                    },
+                    board: { id: '14', name: 'General discussion' },
+                  },
+                ]
+              : [],
+          );
         case 'GET /privateMessages':
           startupRefreshed = true;
           return Response.json([]);
@@ -121,7 +140,11 @@ module('Acceptance | Reading the forum', function (hooks) {
         case 'GET /boards/14':
           return Response.json(board);
         case 'GET /threads/42': {
-          const number = searchParams.get('page') === '2' ? 2 : 1;
+          const number =
+            searchParams.get('postId') === '101' ||
+            searchParams.get('page') === '1'
+              ? 1
+              : 2;
           const post = number === 2 ? latestPost : openingPost;
           return Response.json({
             ...thread,
@@ -137,7 +160,11 @@ module('Acceptance | Reading the forum', function (hooks) {
     await authenticateSession({ access_token: 'reading-test-token' });
   });
 
-  hooks.afterEach(function () {
+  hooks.afterEach(async function () {
+    // Let the thread's scroll positioning frame run before Ember destroys its owner.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
     window.fetch = originalFetch;
     window.onerror = originalOnError;
     for (const [key, value] of storedValues) {
@@ -182,5 +209,26 @@ module('Acceptance | Reading the forum', function (hooks) {
     await waitFor('#post-101');
     assert.dom('#post-101').includesText('The opening post');
     assert.dom('#post-102').doesNotExist();
+  });
+
+  test('resumes a bookmarked thread at the last-read post and links to the unread page', async function (assert) {
+    bookmarked = true;
+    await visit('/board?BID=14');
+    await waitUntil(() => startupRefreshed);
+    const resumeLink = `${threadLink}[href*="lastReadPost=101"]`;
+    await waitFor(resumeLink);
+    await click(resumeLink);
+
+    const unreadLink = '#post-101 + span a[title="Zur nächsten Seite"]';
+    await waitFor(unreadLink);
+    const page = new URL(currentURL(), window.location.origin);
+    assert.strictEqual(page.searchParams.get('PID'), '101');
+    assert.strictEqual(page.searchParams.get('lastReadPost'), '101');
+    assert.dom(unreadLink).hasText('Neue Posts auf der nächsten Seite');
+    assert.dom('#post-102').doesNotExist();
+
+    await click(unreadLink);
+    await waitFor('#post-102');
+    assert.dom('#post-102').includesText('A post on page two');
   });
 });
