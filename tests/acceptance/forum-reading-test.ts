@@ -138,6 +138,9 @@ module('Acceptance | Reading the forum', function (hooks) {
           bookmarks = [bookmark];
           return Response.json(bookmark, { status: 201 });
         }
+        case 'DELETE /bookmarks/55':
+          bookmarks = bookmarks.filter(({ id }) => id !== '55');
+          return new Response(null, { status: 204 });
         case 'GET /privateMessages':
           startupRefreshed = true;
           return Response.json([]);
@@ -253,5 +256,20 @@ module('Acceptance | Reading the forum', function (hooks) {
     await visit(bookmarksPath);
 
     assert.dom(bookmarkLink).includesText('Weekend plans');
+  });
+
+  test('removing a bookmark clears it from the list and keeps it removed', async function (assert) {
+    bookmarks = [bookmark];
+    await visit(bookmarksPath);
+    await waitUntil(() => startupRefreshed);
+    assert.dom(bookmarkLink).includesText('Weekend plans');
+
+    await clickMenuAction('.bookmark .menu-button', 'Lesezeichen entfernen');
+    assert.dom(bookmarkLink).doesNotExist();
+
+    await visit('/board-overview');
+    await visit(bookmarksPath);
+    assert.dom(bookmarkLink).doesNotExist();
+    assert.dom().includesText('Du hast keine Lesezeichen gespeichert.');
   });
 });
