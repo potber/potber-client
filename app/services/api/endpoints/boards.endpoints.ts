@@ -1,5 +1,6 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
+import { boardReadSchema } from '../schemas/boards';
 import { Boards } from '../types';
 
 interface FindByIdOptions extends PublicFetchOptions {
@@ -15,8 +16,9 @@ export async function _findById(
   id: string,
   options?: FindByIdOptions,
 ): Promise<Boards.Read> {
-  const thread = await this.fetch(`boards/${id}`, {
+  const board: Boards.Read = await this.fetch(`boards/${id}`, {
     ...options,
+    schema: boardReadSchema,
     statusNotifications: [
       {
         statusCode: 403,
@@ -33,5 +35,5 @@ export async function _findById(
     ],
     request: { method: 'GET' },
   });
-  return thread;
+  return board;
 }

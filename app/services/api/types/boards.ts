@@ -7,7 +7,7 @@ export interface Read {
   description: string;
   threadsCount: number;
   repliesCount: number;
-  lastPost: Posts.Preview;
+  lastPost?: Posts.Preview;
   page: Page;
 }
 
