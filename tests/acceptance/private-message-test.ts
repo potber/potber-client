@@ -28,6 +28,29 @@ const inboundMessage: PrivateMessages.Read = {
   content: 'Shall we meet on Saturday?',
 };
 
+const recipientInput =
+  '#private-message-form input[aria-placeholder="Empfänger:in"]';
+const subjectInput = '#private-message-form input[aria-placeholder="Betreff"]';
+const bodyInput = '#private-message-form textarea';
+const submitButton = 'button[type="submit"][form="private-message-form"]';
+
+async function sendMessage(assert: Assert) {
+  // Ember's test router does not create browser history entries. Seed one at
+  // the current URL so the form's history.back() stays inside the runner.
+  const originalState: unknown = window.history.state;
+  window.history.pushState({ privateMessageForm: true }, '');
+  try {
+    const submission = click(submitButton);
+    const notice = '[data-test-notification-message="success"]';
+    await waitFor(notice);
+    assert.dom(notice).includesText('Die Nachricht wurde gesendet.');
+    await submission;
+    await waitUntil(() => !window.history.state?.privateMessageForm);
+  } finally {
+    window.history.replaceState(originalState, '');
+  }
+}
+
 module('Acceptance | Private messages', function (hooks) {
   setupApplicationTest(hooks);
 
@@ -36,6 +59,7 @@ module('Acceptance | Private messages', function (hooks) {
   let storedValues: Map<string, string | null>;
   let sentMessages: PrivateMessages.Create[];
   let startupRefreshed: boolean;
+  let failNextSend: boolean;
 
   hooks.beforeEach(async function () {
     this.owner.register('session-store:application', EphemeralSessionStore);
@@ -59,6 +83,8 @@ module('Acceptance | Private messages', function (hooks) {
 
     const message = { ...inboundMessage };
     sentMessages = [];
+    failNextSend = false;
+    let sentMessage: PrivateMessages.Read | undefined;
     startupRefreshed = false;
     originalFetch = window.fetch;
     window.fetch = async (input, init) => {
@@ -83,6 +109,9 @@ module('Acceptance | Private messages', function (hooks) {
           return new Response(null, { status: 404 });
         case 'GET /privateMessages': {
           const folder = searchParams.get('folder');
+          if (folder === 'outbound') {
+            return Response.json(sentMessage ? [sentMessage] : []);
+          }
           const unreadOnly = searchParams.get('unread') === 'true';
           return Response.json(
             (!folder || folder === message.folder) &&
@@ -101,9 +130,37 @@ module('Acceptance | Private messages', function (hooks) {
             content: '',
             saveCopy: true,
           } satisfies PrivateMessages.Create);
-        case 'POST /privateMessages':
-          sentMessages.push(await request.json());
+        case 'GET /usernames':
+          return Response.json(['Another Member']);
+        case 'GET /privateMessages/43':
+          return Response.json(sentMessage);
+        case 'GET /privateMessages/42/forward':
+          return Response.json({
+            recipientName: '',
+            title: 'Fw: Forum meetup',
+            content: '> Shall we meet on Saturday?',
+            saveCopy: true,
+          } satisfies PrivateMessages.Create);
+        case 'POST /privateMessages': {
+          const payload: PrivateMessages.Create = await request.json();
+          if (failNextSend) {
+            failNextSend = false;
+            return Response.json({ message: 'Try again' }, { status: 500 });
+          }
+          sentMessages.push(payload);
+          if (payload.saveCopy) {
+            sentMessage = {
+              ...inboundMessage,
+              id: '43',
+              title: payload.title,
+              content: payload.content,
+              folder: 'outbound',
+              unread: false,
+              recipient: { id: '8', name: payload.recipientName },
+            };
+          }
           return new Response(null, { status: 204 });
+        }
         default:
           throw new Error(
             `Unexpected private-message test request: ${request.method} ${pathname}`,
@@ -157,22 +214,7 @@ module('Acceptance | Private messages', function (hooks) {
       .hasValue('Re: Forum meetup');
     await fillIn('#private-message-form textarea', 'Saturday works for me.');
 
-    // Ember's test router does not create browser history entries. Seed one at
-    // the current URL so the form's history.back() stays inside the runner.
-    const originalState: unknown = window.history.state;
-    window.history.pushState({ privateMessageForm: true }, '');
-    try {
-      const submission = click(
-        'button[type="submit"][form="private-message-form"]',
-      );
-      const notice = '[data-test-notification-message="success"]';
-      await waitFor(notice);
-      assert.dom(notice).includesText('Die Nachricht wurde gesendet.');
-      await submission;
-      await waitUntil(() => !window.history.state?.privateMessageForm);
-    } finally {
-      window.history.replaceState(originalState, '');
-    }
+    await sendMessage(assert);
 
     assert.deepEqual(
       sentMessages.map(({ recipientName, title, content, saveCopy }) => ({
@@ -190,5 +232,66 @@ module('Acceptance | Private messages', function (hooks) {
         },
       ],
     );
+  });
+
+  test('composing a message sends it and makes a copy available in Sent', async function (assert) {
+    await visit(inboxPath);
+    await waitUntil(() => startupRefreshed);
+    await click('a[href="/private-messages/create"]');
+    await fillIn(recipientInput, 'Another Member');
+    await fillIn(subjectInput, 'Meetup details');
+    await fillIn(bodyInput, 'The café opens at ten.');
+    await sendMessage(assert);
+
+    await visit('/private-messages/outbound');
+    assert.dom('a[href="/private-messages/43"]').includesText('Meetup details');
+    await click('a[href="/private-messages/43"]');
+    assert.dom('.private-message-view-header').includesText('Another Member');
+    assert
+      .dom('.private-message-view-content')
+      .hasText('The café opens at ten.');
+  });
+
+  test('forwarding includes the original message and sends to the new recipient', async function (assert) {
+    await visit(inboxPath);
+    await waitUntil(() => startupRefreshed);
+    await click(messageLink);
+    await click('.nav-element-center .menu-button');
+    await click(`menu[data-visible="true"] a[href="${messagePath}/forward"]`);
+
+    assert.dom(subjectInput).hasValue('Fw: Forum meetup');
+    assert.dom(bodyInput).hasValue('> Shall we meet on Saturday?');
+    await fillIn(recipientInput, 'Another Member');
+    await sendMessage(assert);
+
+    assert.strictEqual(sentMessages[0]?.recipientName, 'Another Member');
+    assert.strictEqual(
+      sentMessages[0]?.content,
+      '> Shall we meet on Saturday?',
+    );
+  });
+
+  test('a failed send preserves all compose fields for a successful retry', async function (assert) {
+    failNextSend = true;
+    await visit(inboxPath);
+    await waitUntil(() => startupRefreshed);
+    await click('a[href="/private-messages/create"]');
+    await fillIn(recipientInput, 'Another Member');
+    await fillIn(subjectInput, 'Meetup details');
+    await fillIn(bodyInput, 'The café opens at ten.');
+
+    const submission = click(submitButton);
+    const notice = '[data-test-notification-message="error"]';
+    await waitFor(notice);
+    assert.dom(notice).exists();
+    await submission;
+
+    assert.strictEqual(currentURL(), '/private-messages/create');
+    assert.dom(recipientInput).hasValue('Another Member');
+    assert.dom(subjectInput).hasValue('Meetup details');
+    assert.dom(bodyInput).hasValue('The café opens at ten.');
+    await sendMessage(assert);
+    assert.strictEqual(sentMessages.length, 1);
+    assert.strictEqual(sentMessages[0]?.content, 'The café opens at ten.');
   });
 });
