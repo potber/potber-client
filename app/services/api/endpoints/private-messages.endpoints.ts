@@ -2,6 +2,7 @@ import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
 import { NewPrivateMessage, PrivateMessage } from '../models/private-message';
 import {
+  privateMessageDraftSchema,
   privateMessageListSchema,
   privateMessageSchema,
 } from '../schemas/private-messages';
@@ -207,6 +208,7 @@ async function replyOfForward(
 ): Promise<NewPrivateMessage> {
   const body = await api.fetch(`privateMessages/${id}/${endpoint}`, {
     ...options,
+    schema: privateMessageDraftSchema,
     statusNotifications: [
       {
         statusCode: 404,

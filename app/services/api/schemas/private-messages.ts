@@ -20,3 +20,10 @@ export const privateMessageSchema = v.object({
 });
 
 export const privateMessageListSchema = v.array(privateMessageSchema);
+
+export const privateMessageDraftSchema = v.object({
+  title: v.string(),
+  content: v.string(),
+  recipientName: v.string(),
+  saveCopy: v.optional(v.boolean()),
+});

@@ -554,4 +554,45 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
         error.issues.includes('content: expected string'),
     );
   });
+
+  test('preserves defaults for a draft without a copy preference and explicit false', async function (assert) {
+    const draft = {
+      title: 'Re: Meetup',
+      content: '',
+      recipientName: 'Forum member',
+    };
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    body = JSON.stringify(draft);
+    const reply = await api.replyToPrivateMessage('42');
+    assert.strictEqual(reply.recipientName, 'Forum member');
+    assert.true(reply.saveCopy);
+
+    body = JSON.stringify({ ...draft, recipientName: '', saveCopy: false });
+    const forward = await api.forwardPrivateMessage('42');
+    assert.strictEqual(forward.recipientName, '');
+    assert.false(forward.saveCopy);
+  });
+
+  test('rejects malformed reply and forward drafts', async function (assert) {
+    body = JSON.stringify({
+      title: 'Re: Meetup',
+      content: 42,
+      recipientName: '',
+    });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    for (const fetchDraft of [
+      () => api.replyToPrivateMessage('42'),
+      () => api.forwardPrivateMessage('42'),
+    ]) {
+      await assert.rejects(
+        fetchDraft(),
+        (error: unknown) =>
+          error instanceof PayloadValidationError &&
+          error.issues.includes('content: expected string'),
+      );
+    }
+    assert.strictEqual(notifications.length, 2);
+  });
 });
