@@ -85,7 +85,7 @@ Tests use QUnit and Ember helpers in the browser, with service substitutions and
 
 ### Deployment
 
-Pull requests run shared lint and the repository's [browser coverage workflow](.github/workflows/pr-coverage.yml). The coverage job runs the suite on the exact base SHA and proposed merge, reports percentage-point changes and configured floors in the Actions summary, and uploads the complete `coverage-report` artifact. GitHub requires the separate [structural check](docs/guides/quality-gates.md) for merges into `main`. Staging and production releases use the shared lint and coverage workflows.
+Pull requests run shared lint and the repository's [browser coverage workflow](.github/workflows/pr-coverage.yml). The coverage job runs the suite on the exact base SHA and proposed merge in parallel, reports percentage-point changes and configured floors in the Actions summary, and uploads the complete `coverage-report` artifact. GitHub requires the separate [structural check](docs/guides/quality-gates.md) for merges into `main`. Staging and production releases use the shared lint and coverage workflows.
 
 Static delivery uses Bunny Storage/Pull Zones with generated browser configuration; hashed assets are retained and entry/configuration files are uploaded last before cache purging.
 
