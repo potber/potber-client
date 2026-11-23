@@ -34,11 +34,7 @@ export default class QuickstartBoardFavoriteComponent extends Component<Signatur
   }
 
   @action remove() {
-    const boards = [...(this.localStorage.boardFavorites || [])];
-    const index = boards.indexOf(this.args.board);
-    boards.splice(index, 1);
-    const remainingIds = boards.map((board) => board.id);
-    this.localStorage.setBoardFavorites(remainingIds);
+    void this.localStorage.removeBoardFavorite(this.args.board.id);
   }
 
   <template>

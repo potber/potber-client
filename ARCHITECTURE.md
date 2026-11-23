@@ -57,7 +57,7 @@ The rendering boundary remains distinct from parsing: post and private-message c
 
 ### Preferences and encrypted synchronization
 
-`SettingsService`, `LocalStorageService`, and `SocialsService` own preferences and local collections such as saved posts, favorite boards, and blocked users. `AppService` applies synchronized values to those services and refreshes affected UI/device behavior.
+`SettingsService`, `LocalStorageService`, and `SocialsService` own preferences and local collections such as saved posts, favorite boards, and blocked users. Board views ask `LocalStorageService` to add or remove favorites by ID. The service reads the persisted IDs, sends changes to settings sync, and loads board details for display. `AppService` applies synchronized values to those services and refreshes affected UI/device behavior.
 
 `SettingsSyncService` coordinates per-user encrypted payloads, recovery/unlock behavior, field clocks, revision conflicts, and collection merging. It uses Web Crypto for encryption, IndexedDB for key persistence, and localStorage for synchronization metadata/device identity. The [settings sync transport](app/utils/settings-sync-transport.ts) handles authenticated requests to `/user-configuration`.
 
