@@ -12,11 +12,13 @@ module('Acceptance | Authenticated | Settings', function (hooks) {
 
   hooks.beforeEach(function () {
     class AppStub extends Service {
-      refreshCalls = 0;
-
       initialize = async () => {
         return;
       };
+    }
+
+    class DeploymentVersionStub extends Service {
+      refreshCalls = 0;
 
       refreshApp = () => {
         this.refreshCalls += 1;
@@ -57,6 +59,7 @@ module('Acceptance | Authenticated | Settings', function (hooks) {
     }
 
     this.owner.register('service:app', AppStub);
+    this.owner.register('service:deployment-version', DeploymentVersionStub);
     this.owner.register('service:session', SessionStub);
     this.owner.register('service:settings-sync', SettingsSyncStub);
   });
@@ -109,13 +112,15 @@ module('Acceptance | Authenticated | Settings', function (hooks) {
 
   test('refreshing the app', async function (assert) {
     await visit('/settings');
-    const app = this.owner.lookup('service:app') as Service & {
+    const deployment = this.owner.lookup(
+      'service:deployment-version',
+    ) as Service & {
       refreshCalls: number;
     };
 
     assert.dom('[data-test-refresh-app]').hasText('App neu laden');
     await click('[data-test-refresh-app]');
 
-    assert.strictEqual(app.refreshCalls, 1);
+    assert.strictEqual(deployment.refreshCalls, 1);
   });
 });
