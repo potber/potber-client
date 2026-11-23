@@ -44,8 +44,8 @@ export default class DeploymentVersionService extends Service {
 
   /**
    * Checks the uncached deployment marker for a version that differs from the
-   * currently running bundle. This is deliberately separate from
-   * checkForNewVersion(), which announces a version only after it has loaded.
+   * currently running bundle. ReleaseNoticeService announces upgrades based on
+   * the version already running.
    */
   async checkForDeployedVersion(options?: { force?: boolean }) {
     const now = Date.now();
