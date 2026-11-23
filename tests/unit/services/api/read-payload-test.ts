@@ -595,4 +595,60 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
     }
     assert.strictEqual(notifications.length, 2);
   });
+
+  test('accepts a user profile without optional avatar or activity details', async function (assert) {
+    const user = { id: '7', name: 'Forum member' };
+    body = JSON.stringify(user);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.deepEqual(await api.findUserById('7'), user);
+  });
+
+  test('rejects malformed user profile values', async function (assert) {
+    body = JSON.stringify({ id: '7', name: 'Forum member', locked: 'false' });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findUserById('7'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('locked: expected boolean'),
+    );
+  });
+
+  test('accepts an empty username search result', async function (assert) {
+    body = '[]';
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.deepEqual(await api.findManyUsernames('Forum'), []);
+  });
+
+  test('rejects non-string username suggestions', async function (assert) {
+    body = JSON.stringify(['Forum member', { name: 'Another member' }]);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findManyUsernames('Forum'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('1: expected string'),
+    );
+  });
+
+  test('rejects a thread creation response without the new thread ID', async function (assert) {
+    body = JSON.stringify(threadPayload({ id: undefined }));
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.createThread({
+        boardId: '14',
+        title: 'Forum meetup',
+        openingPost: { message: 'Let’s meet on Saturday.' },
+      }),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('id: missing'),
+    );
+    assert.strictEqual(notifications.length, 1);
+  });
 });

@@ -1,10 +1,11 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
+import { usernameListSchema, userReadSchema } from '../schemas/users';
 import { Users } from '../types';
 
 /**
  * Finds a user by their id.
- * @param post The user.
+ * @param id The user id.
  */
 export async function findById(
   this: ApiService,
@@ -13,6 +14,7 @@ export async function findById(
 ): Promise<Users.Read> {
   return await this.fetch(`users/${id}`, {
     ...options,
+    schema: userReadSchema,
     statusNotifications: [
       {
         statusCode: 404,
@@ -39,6 +41,7 @@ export async function findManyUsernames(
   if (!startsWith) return [];
   return await this.fetch(`usernames?startsWith=${startsWith}`, {
     ...options,
+    schema: usernameListSchema,
     statusNotifications: [
       {
         statusCode: '*',
