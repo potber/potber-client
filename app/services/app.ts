@@ -12,6 +12,7 @@ import SettingsService from './settings';
 import ExceptionHandler from './exception-handler';
 import SocialsService from './socials';
 import { gt, valid } from 'semver';
+import * as v from 'valibot';
 import { appConfig } from 'potber-client/config/app.config';
 import SettingsSyncService from './settings-sync';
 import type { SyncedCollections } from './settings-sync';
@@ -21,9 +22,7 @@ const DEPLOYMENT_VERSION_URL = '/version.json';
 const VERSION_QUERY_PARAMETER = '_potber_version';
 const RELOAD_QUERY_PARAMETER = '_potber_reload';
 
-interface DeploymentVersionResponse {
-  version?: unknown;
-}
+const deploymentVersionSchema = v.object({ version: v.string() });
 
 export default class AppService extends Service {
   @service declare settings: SettingsService;
@@ -123,8 +122,9 @@ export default class AppService extends Service {
       });
       if (!response.ok) return;
 
-      const payload = (await response.json()) as DeploymentVersionResponse;
-      const deployedVersion = valid(String(payload.version ?? ''));
+      const payload: unknown = await response.json();
+      if (!v.is(deploymentVersionSchema, payload)) return;
+      const deployedVersion = valid(payload.version);
       const currentVersion = valid(appConfig.version);
       if (
         !deployedVersion ||
