@@ -12,3 +12,5 @@ export const userReadSchema = v.object({
   groupId: v.optional(v.string()),
   locked: v.optional(v.boolean()),
 });
+
+export const usernameListSchema = v.array(v.string());

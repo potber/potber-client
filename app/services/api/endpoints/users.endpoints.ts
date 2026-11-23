@@ -1,6 +1,6 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
-import { userReadSchema } from '../schemas/users';
+import { usernameListSchema, userReadSchema } from '../schemas/users';
 import { Users } from '../types';
 
 /**
@@ -41,6 +41,7 @@ export async function findManyUsernames(
   if (!startsWith) return [];
   return await this.fetch(`usernames?startsWith=${startsWith}`, {
     ...options,
+    schema: usernameListSchema,
     statusNotifications: [
       {
         statusCode: '*',

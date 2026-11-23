@@ -615,4 +615,23 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
         error.issues.includes('locked: expected boolean'),
     );
   });
+
+  test('accepts an empty username search result', async function (assert) {
+    body = '[]';
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.deepEqual(await api.findManyUsernames('Forum'), []);
+  });
+
+  test('rejects non-string username suggestions', async function (assert) {
+    body = JSON.stringify(['Forum member', { name: 'Another member' }]);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findManyUsernames('Forum'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('1: expected string'),
+    );
+  });
 });
