@@ -1,26 +1,32 @@
 import Service, { service } from '@ember/service';
+import * as v from 'valibot';
 import { appConfig } from 'potber-client/config/app.config';
 import CustomSession from './custom-session';
 
-export interface ImgpotImageVariation {
-  variationType: 'large' | 'medium' | 'small';
-  cdnUrl: string;
-}
+const imageVariationSchema = v.object({
+  variationType: v.picklist(['large', 'medium', 'small']),
+  cdnUrl: v.string(),
+});
 
-export interface ImgpotImage {
-  id: number;
-  originalFilename: string;
-  variations: ImgpotImageVariation[];
-}
+const imageSchema = v.object({
+  id: v.number(),
+  originalFilename: v.string(),
+  variations: v.array(imageVariationSchema),
+});
 
+const imageListSchema = v.object({
+  images: v.array(imageSchema),
+  page: v.number(),
+  limit: v.number(),
+  total: v.number(),
+});
+
+const errorMessageSchema = v.object({ message: v.string() });
+
+export type ImgpotImageVariation = v.InferOutput<typeof imageVariationSchema>;
+export type ImgpotImage = v.InferOutput<typeof imageSchema>;
 export type ImgpotImageUploadResponse = ImgpotImage;
-
-export interface ImgpotImageListResponse {
-  images: ImgpotImage[];
-  page: number;
-  limit: number;
-  total: number;
-}
+export type ImgpotImageListResponse = v.InferOutput<typeof imageListSchema>;
 
 export interface ImgpotInsertValues {
   src: string;
@@ -62,7 +68,11 @@ export default class ImgpotService extends Service {
     return accessToken;
   }
 
-  private async request<T>(url: URL, init: RequestInit = {}): Promise<T> {
+  private async request<Schema extends v.GenericSchema>(
+    url: URL,
+    schema: Schema,
+    init: RequestInit = {},
+  ): Promise<v.InferOutput<Schema>> {
     const response = await fetch(url, {
       ...init,
       headers: {
@@ -72,21 +82,29 @@ export default class ImgpotService extends Service {
       },
     });
 
-    const data = await response.json().catch(() => undefined);
+    const data: unknown = await response.json().catch(() => undefined);
 
     if (!response.ok) {
-      throw new Error(data?.message ?? 'Imgpot-Anfrage fehlgeschlagen.');
+      const error = v.safeParse(errorMessageSchema, data);
+      throw new Error(
+        error.success ? error.output.message : 'Imgpot-Anfrage fehlgeschlagen.',
+      );
     }
 
-    return data as T;
+    const result = v.safeParse(schema, data);
+    if (!result.success) {
+      throw new Error('Imgpot hat eine ungültige Antwort zurückgegeben.');
+    }
+    return result.output;
   }
 
   async uploadImage(file: File): Promise<ImgpotImageUploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.request<ImgpotImageUploadResponse>(
+    return this.request(
       new URL('/api/images', appConfig.imgpotUrl),
+      imageSchema,
       {
         method: 'POST',
         body: formData,
@@ -99,6 +117,6 @@ export default class ImgpotService extends Service {
     url.searchParams.set('page', String(page));
     url.searchParams.set('limit', String(limit));
 
-    return this.request<ImgpotImageListResponse>(url);
+    return this.request(url, imageListSchema);
   }
 }
