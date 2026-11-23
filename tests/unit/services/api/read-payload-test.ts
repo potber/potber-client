@@ -7,12 +7,16 @@ import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import { bookmarkSchema } from 'potber-client/services/api/schemas/bookmarks';
 import { boardCategoriesSchema } from 'potber-client/services/api/schemas/board-categories';
 import { boardReadSchema } from 'potber-client/services/api/schemas/boards';
+import { privateMessageSchema } from 'potber-client/services/api/schemas/private-messages';
+import { sessionSchema } from 'potber-client/services/api/schemas/session';
 import { threadReadSchema } from 'potber-client/services/api/schemas/threads';
 import type {
   BoardCategories,
   Boards,
+  PrivateMessages,
   Threads,
 } from 'potber-client/services/api/types';
+import type { Session } from 'potber-client/services/api/types/session';
 import { setupTest } from 'potber-client/tests/helpers';
 
 // Compile-time guard: the schema output and the hand-written type must stay identical.
@@ -39,6 +43,33 @@ const bookmarkSchemaMatchesType: Equals<
   v.InferOutput<typeof bookmarkSchema>,
   IBookmark
 > = true;
+
+const sessionSchemaMatchesType: Equals<
+  v.InferOutput<typeof sessionSchema>,
+  Session
+> = true;
+
+const session = {
+  userId: '101',
+  username: 'Forum member',
+  cookie: 'test-cookie',
+  iat: 1,
+  exp: 2,
+};
+
+const privateMessageSchemaMatchesType: Equals<
+  v.InferOutput<typeof privateMessageSchema>,
+  PrivateMessages.Read
+> = true;
+
+const privateMessage: PrivateMessages.Read = {
+  id: '42',
+  title: 'Forum meetup',
+  date: '2026-01-01T12:00:00Z',
+  folder: 'system',
+  unread: true,
+  important: false,
+};
 
 const bookmark: IBookmark = {
   id: '55',
@@ -465,5 +496,103 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
 
     assert.strictEqual(await api.deleteBookmark('55'), undefined);
     assert.deepEqual(notifications, []);
+  });
+
+  test('accepts sessions without an avatar', async function (assert) {
+    body = JSON.stringify(session);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.true(sessionSchemaMatchesType);
+    assert.deepEqual(await api.getSession(), session);
+  });
+
+  test('rejects malformed sessions without including cookie values in errors', async function (assert) {
+    body = JSON.stringify({ ...session, exp: '2' });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.getSession(),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('exp: expected number') &&
+        !error.message.includes(session.cookie),
+    );
+    assert.strictEqual(notifications.length, 1);
+  });
+
+  test('accepts a system message list item without participants or content', async function (assert) {
+    body = JSON.stringify([privateMessage]);
+    const api = this.owner.lookup('service:api') as ApiService;
+    const [message] = await api.findManyPrivateMessages();
+
+    assert.true(privateMessageSchemaMatchesType);
+    assert.strictEqual(message?.id, privateMessage.id);
+    assert.strictEqual(message?.sender, undefined);
+    assert.strictEqual(message?.content, undefined);
+  });
+
+  test('rejects an invalid folder in a private message list', async function (assert) {
+    body = JSON.stringify([{ ...privateMessage, folder: 'archive' }]);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findManyPrivateMessages(),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.some((issue) => issue.startsWith('0.folder:')),
+    );
+  });
+
+  test('rejects a malformed private message detail', async function (assert) {
+    body = JSON.stringify({ ...privateMessage, content: ['invalid'] });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findPrivateMessageById('42'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('content: expected string'),
+    );
+  });
+
+  test('preserves defaults for a draft without a copy preference and explicit false', async function (assert) {
+    const draft = {
+      title: 'Re: Meetup',
+      content: '',
+      recipientName: 'Forum member',
+    };
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    body = JSON.stringify(draft);
+    const reply = await api.replyToPrivateMessage('42');
+    assert.strictEqual(reply.recipientName, 'Forum member');
+    assert.true(reply.saveCopy);
+
+    body = JSON.stringify({ ...draft, recipientName: '', saveCopy: false });
+    const forward = await api.forwardPrivateMessage('42');
+    assert.strictEqual(forward.recipientName, '');
+    assert.false(forward.saveCopy);
+  });
+
+  test('rejects malformed reply and forward drafts', async function (assert) {
+    body = JSON.stringify({
+      title: 'Re: Meetup',
+      content: 42,
+      recipientName: '',
+    });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    for (const fetchDraft of [
+      () => api.replyToPrivateMessage('42'),
+      () => api.forwardPrivateMessage('42'),
+    ]) {
+      await assert.rejects(
+        fetchDraft(),
+        (error: unknown) =>
+          error instanceof PayloadValidationError &&
+          error.issues.includes('content: expected string'),
+      );
+    }
+    assert.strictEqual(notifications.length, 2);
   });
 });
