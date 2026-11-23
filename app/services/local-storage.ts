@@ -22,6 +22,7 @@ export default class LocalStorageService extends Service {
 
   @tracked boardFavorites: Boards.Read[] | null = [];
   @tracked savedPosts: Post[] | null = [];
+  private boardFavoritesLoad = 0;
   private savedPostsInitialized = false;
 
   async initialize() {
@@ -83,35 +84,42 @@ export default class LocalStorageService extends Service {
    * @returns {Promise<Board[]>} A promise of the board favorites.
    */
   @action async getBoardFavorites() {
+    const load = ++this.boardFavoritesLoad;
+    let boards: Boards.Read[] | null;
     try {
       const ids = this.readBoardFavoriteIds();
-      const boards = await Promise.all(
-        ids.map((id) => this.api.findBoardById(id)),
-      );
-      this.boardFavorites = boards;
+      boards = await Promise.all(ids.map((id) => this.api.findBoardById(id)));
     } catch (error) {
       this.messages.log(
         `Error while attempting to fetch board-favorites: ${error}`,
         { type: 'error', context: this.constructor.name },
       );
-      this.boardFavorites = null;
+      boards = null;
+    }
+    if (load === this.boardFavoritesLoad) {
+      this.boardFavorites = boards;
     }
     return this.boardFavorites;
   }
 
-  /**
-   * Saves the board favorite IDs to localStorage and triggers an async update of
-   * the board favorites.
-   */
-  @action setBoardFavorites(ids: string[]) {
-    // Remove duplicates
+  addBoardFavorite(id: string) {
+    return this.setBoardFavorites([...this.readBoardFavoriteIds(), id]);
+  }
+
+  removeBoardFavorite(id: string) {
+    return this.setBoardFavorites(
+      this.readBoardFavoriteIds().filter((favoriteId) => favoriteId !== id),
+    );
+  }
+
+  private setBoardFavorites(ids: string[]) {
     const uniqueIds = [...new Set(ids)];
     this.writeBoardFavoriteIds(uniqueIds);
     this.settingsSync.boardFavoritesChanged(uniqueIds);
     this.messages.log(`${PREFIX}boardFavorites set to: '${uniqueIds}'.`, {
       context: this.constructor.name,
     });
-    void this.getBoardFavorites();
+    return this.getBoardFavorites();
   }
 
   readBoardFavoriteIds(): string[] {

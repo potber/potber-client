@@ -64,10 +64,7 @@ export default class NavBoardComponent extends Component<Signature> {
   }
 
   @action addToFavorites() {
-    const boards = [...(this.localStorage.boardFavorites || [])];
-    const ids = boards.map((board) => board.id);
-    ids.push(this.args.board.id);
-    this.localStorage.setBoardFavorites(ids);
+    void this.localStorage.addBoardFavorite(this.args.board.id);
     this.messages.showNotification(
       this.intl.t('route.board.add-to-favorites.success'),
       'success',

@@ -5,6 +5,7 @@ import { module, test } from 'qunit';
 
 const VERSION_KEY = 'potber-lastEncountedVersion';
 const SAVED_POSTS_KEY = 'potber-savedPosts';
+const BOARD_FAVORITES_KEY = 'potber-boardFavorites';
 
 class MessagesStub extends Service {
   log(): void {
@@ -18,12 +19,14 @@ module('Unit | Service | LocalStorage', function (hooks) {
   hooks.beforeEach(function () {
     localStorage.removeItem(VERSION_KEY);
     localStorage.removeItem(SAVED_POSTS_KEY);
+    localStorage.removeItem(BOARD_FAVORITES_KEY);
     this.owner.register('service:messages', MessagesStub);
   });
 
   hooks.afterEach(function () {
     localStorage.removeItem(VERSION_KEY);
     localStorage.removeItem(SAVED_POSTS_KEY);
+    localStorage.removeItem(BOARD_FAVORITES_KEY);
   });
 
   test('fetches at most four saved posts concurrently and preserves their order', async function (assert) {
@@ -61,6 +64,85 @@ module('Unit | Service | LocalStorage', function (hooks) {
     assert.deepEqual(
       posts?.map(({ id, threadId }) => ({ id, threadId })),
       persistedPosts,
+    );
+  });
+
+  test('updates persisted favorites by ID before board details have loaded', async function (assert) {
+    const syncedIds: string[][] = [];
+    this.owner.register(
+      'service:settings-sync',
+      class extends Service {
+        boardFavoritesChanged(ids: string[]) {
+          syncedIds.push(ids);
+        }
+      },
+    );
+    this.owner.register(
+      'service:api',
+      class extends Service {
+        async findBoardById(id: string) {
+          return { id };
+        }
+      },
+    );
+
+    localStorage.setItem(BOARD_FAVORITES_KEY, '14,15');
+    const service = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+
+    await Promise.all([
+      service.addBoardFavorite('16'),
+      service.removeBoardFavorite('14'),
+      service.addBoardFavorite('16'),
+      service.removeBoardFavorite('missing'),
+    ]);
+
+    assert.strictEqual(localStorage.getItem(BOARD_FAVORITES_KEY), '15,16');
+    assert.deepEqual(syncedIds, [
+      ['14', '15', '16'],
+      ['15', '16'],
+      ['15', '16'],
+      ['15', '16'],
+    ]);
+    assert.deepEqual(
+      service.boardFavorites?.map(({ id }) => id),
+      ['15', '16'],
+    );
+  });
+
+  test('an earlier board load cannot restore a removed favorite', async function (assert) {
+    let finishBoardLoad: (() => void) | undefined;
+    const pendingBoard = new Promise<{ id: string }>((resolve) => {
+      finishBoardLoad = () => resolve({ id: '14' });
+    });
+    this.owner.register(
+      'service:settings-sync',
+      class extends Service {
+        boardFavoritesChanged() {}
+      },
+    );
+    this.owner.register(
+      'service:api',
+      class extends Service {
+        findBoardById(id: string) {
+          return id === '14' ? pendingBoard : Promise.resolve({ id });
+        }
+      },
+    );
+    localStorage.setItem(BOARD_FAVORITES_KEY, '14,15');
+    const service = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+
+    const initialLoad = service.getBoardFavorites();
+    await service.removeBoardFavorite('14');
+    finishBoardLoad?.();
+    await initialLoad;
+
+    assert.deepEqual(
+      service.boardFavorites?.map(({ id }) => id),
+      ['15'],
     );
   });
 
