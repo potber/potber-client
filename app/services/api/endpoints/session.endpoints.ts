@@ -1,16 +1,17 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
+import { sessionSchema } from '../schemas/session';
 import type { Session } from '../types/session';
 /**
  * Returns the current session.
- * @param id The id of the board.
  */
 export async function _get(
   this: ApiService,
   options?: PublicFetchOptions,
 ): Promise<Session> {
-  const thread = await this.fetch(`auth/session`, {
+  return this.fetch(`auth/session`, {
     ...options,
+    schema: sessionSchema,
     statusNotifications: [
       {
         statusCode: '*',
@@ -19,5 +20,4 @@ export async function _get(
     ],
     request: { method: 'GET' },
   });
-  return thread;
 }

@@ -7,12 +7,14 @@ import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import { bookmarkSchema } from 'potber-client/services/api/schemas/bookmarks';
 import { boardCategoriesSchema } from 'potber-client/services/api/schemas/board-categories';
 import { boardReadSchema } from 'potber-client/services/api/schemas/boards';
+import { sessionSchema } from 'potber-client/services/api/schemas/session';
 import { threadReadSchema } from 'potber-client/services/api/schemas/threads';
 import type {
   BoardCategories,
   Boards,
   Threads,
 } from 'potber-client/services/api/types';
+import type { Session } from 'potber-client/services/api/types/session';
 import { setupTest } from 'potber-client/tests/helpers';
 
 // Compile-time guard: the schema output and the hand-written type must stay identical.
@@ -39,6 +41,19 @@ const bookmarkSchemaMatchesType: Equals<
   v.InferOutput<typeof bookmarkSchema>,
   IBookmark
 > = true;
+
+const sessionSchemaMatchesType: Equals<
+  v.InferOutput<typeof sessionSchema>,
+  Session
+> = true;
+
+const session = {
+  userId: '101',
+  username: 'Forum member',
+  cookie: 'test-cookie',
+  iat: 1,
+  exp: 2,
+};
 
 const bookmark: IBookmark = {
   id: '55',
@@ -465,5 +480,27 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
 
     assert.strictEqual(await api.deleteBookmark('55'), undefined);
     assert.deepEqual(notifications, []);
+  });
+
+  test('accepts sessions without an avatar', async function (assert) {
+    body = JSON.stringify(session);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.true(sessionSchemaMatchesType);
+    assert.deepEqual(await api.getSession(), session);
+  });
+
+  test('rejects malformed sessions without including cookie values in errors', async function (assert) {
+    body = JSON.stringify({ ...session, exp: '2' });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.getSession(),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('exp: expected number') &&
+        !error.message.includes(session.cookie),
+    );
+    assert.strictEqual(notifications.length, 1);
   });
 });
