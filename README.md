@@ -167,6 +167,8 @@ To check the deploy scripts locally:
 - `API_URL=https://test-api.potber.de deploy/render-injected-config.sh /tmp/injected-config.js`
 - `DRY_RUN=1 BUNNY_STORAGE_ZONE=x deploy/upload-to-bunny-storage.sh dist` (prints the upload order)
 
+For release recovery, follow the [client rollback runbook](docs/guides/client-release-rollback.md).
+
 #### PR Previews
 
 Each same-repository PR is deployed to its own hostname like `https://pr-123.preview.potber.de` by the [pull-request-preview](.github/workflows/pull-request-preview.yml) workflow. It runs [deploy_static](.github/workflows/deploy_static.yml) with the GitHub Environment `preview` and uploads the build into the folder `pr-123/` of one shared Storage Zone. When the PR is closed, the folder is deleted. Dependabot and fork PRs get no preview, since they have no access to the secrets.
