@@ -1,3 +1,4 @@
+import { isDestroying } from '@ember/destroyable';
 import Service, { service } from '@ember/service';
 import type CustomSession from './custom-session';
 import type DeviceManagerService from './device-manager';
@@ -22,9 +23,10 @@ export default class SessionSetupService extends Service {
 
   async setup() {
     await this.session.setup();
-    if (!this.session.isAuthenticated) return;
+    if (isDestroying(this) || !this.session.isAuthenticated) return;
 
     await this.session.update();
+    if (isDestroying(this)) return;
     const session = this.session.sessionData;
     const accessToken = this.session.data.authenticated.access_token;
     const socials = this.socials.load();
@@ -40,6 +42,7 @@ export default class SessionSetupService extends Service {
         },
         this.applySyncedCollections,
       );
+      if (isDestroying(this)) return;
       this.applySyncedSettings(syncedSettings);
     }
     void this.localStorage.initialize();
@@ -47,6 +50,7 @@ export default class SessionSetupService extends Service {
   }
 
   private applySyncedSettings = (settings: Settings) => {
+    if (isDestroying(this)) return;
     this.settings.replaceSettings(settings);
     this.renderer.updateTheme();
     this.renderer.updateSidebarLayout();
@@ -56,6 +60,7 @@ export default class SessionSetupService extends Service {
   };
 
   private applySyncedCollections = (collections: SyncedCollections) => {
+    if (isDestroying(this)) return;
     this.socials.applySyncedBlockedUsers(collections.blockedUsers);
     this.localStorage.applySyncedBoardFavorites(collections.boardFavoriteIds);
     this.localStorage.applySyncedSavedPosts(collections.savedPosts);
