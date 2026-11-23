@@ -7,16 +7,12 @@ import LocalStorageService from './local-storage';
 import ModalService from './modal';
 import NewsfeedService from './newsfeed';
 import RendererService from './renderer';
-import CustomSession from './custom-session';
 import SettingsService from './settings';
 import ExceptionHandler from './exception-handler';
-import SocialsService from './socials';
 import { gt, valid } from 'semver';
 import * as v from 'valibot';
 import { appConfig } from 'potber-client/config/app.config';
-import SettingsSyncService from './settings-sync';
-import type { SyncedCollections } from './settings-sync';
-import type { Settings } from './settings';
+import SessionSetupService from './session-setup';
 
 const DEPLOYMENT_VERSION_URL = '/version.json';
 const VERSION_QUERY_PARAMETER = '_potber_version';
@@ -32,10 +28,8 @@ export default class AppService extends Service {
   @service declare modal: ModalService;
   @service declare localStorage: LocalStorageService;
   @service declare newsfeed: NewsfeedService;
-  @service declare session: CustomSession;
   @service declare exceptionHandler: ExceptionHandler;
-  @service declare socials: SocialsService;
-  @service declare settingsSync: SettingsSyncService;
+  @service declare sessionSetup: SessionSetupService;
   initialized = false;
   versionModalDelayMs = 1000;
   deploymentVersionCheckIntervalMs = 60_000;
@@ -51,7 +45,7 @@ export default class AppService extends Service {
     this.newsfeed.initialize();
     this.renderer.initialize();
     this.deviceManager.initialize();
-    void this.setupSession();
+    void this.sessionSetup.setup();
     this.checkForNewVersion();
     this.setupDeploymentVersionChecks();
     this.renderer.removeAppSkeleton(3000);
@@ -155,47 +149,6 @@ export default class AppService extends Service {
   refreshApp() {
     this.navigateToDeployedVersion(valid(appConfig.version) ?? 'refresh');
   }
-
-  async setupSession() {
-    await this.session.setup();
-    if (this.session.isAuthenticated) {
-      await this.session.update();
-      const session = this.session.sessionData;
-      const accessToken = this.session.data.authenticated.access_token;
-      const socials = this.socials.load();
-      if (session && accessToken) {
-        const syncedSettings = await this.settingsSync.initialize(
-          this.settings.getSettings(),
-          { userId: session.userId, accessToken },
-          this.applySyncedSettings,
-          {
-            blockedUsers: socials.blockedUsers,
-            boardFavoriteIds: this.localStorage.readBoardFavoriteIds(),
-            savedPosts: this.localStorage.readPersistedSavedPosts(),
-          },
-          this.applySyncedCollections,
-        );
-        this.applySyncedSettings(syncedSettings);
-      }
-      void this.localStorage.initialize();
-      this.newsfeed.refresh();
-    }
-  }
-
-  private applySyncedSettings = (settings: Settings) => {
-    this.settings.replaceSettings(settings);
-    this.renderer.updateTheme();
-    this.renderer.updateSidebarLayout();
-    this.renderer.updateFontSize();
-    this.deviceManager.toggleGesturesSupport();
-    this.settings.toggleDebugMode(this.settings.getSetting('debug'));
-  };
-
-  private applySyncedCollections = (collections: SyncedCollections) => {
-    this.socials.applySyncedBlockedUsers(collections.blockedUsers);
-    this.localStorage.applySyncedBoardFavorites(collections.boardFavoriteIds);
-    this.localStorage.applySyncedSavedPosts(collections.savedPosts);
-  };
 
   async checkForNewVersion() {
     try {

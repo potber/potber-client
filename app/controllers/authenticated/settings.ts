@@ -4,6 +4,7 @@ import type { DropdownOption } from 'potber-client/components/common/control/dro
 import RendererService from 'potber-client/services/renderer';
 import MessagesService from 'potber-client/services/messages';
 import AppService from 'potber-client/services/app';
+import SessionSetupService from 'potber-client/services/session-setup';
 import ModalService from 'potber-client/services/modal';
 import type { SettingsRouteModel } from 'potber-client/routes/authenticated/settings';
 import type { Settings } from 'potber-client/services/settings';
@@ -29,6 +30,7 @@ export default class SettingsController extends Controller {
   @service declare messages: MessagesService;
   @service declare modal: ModalService;
   @service declare app: AppService;
+  @service declare sessionSetup: SessionSetupService;
   @service declare deviceManager: DeviceManagerService;
   @service declare settingsSync: SettingsSyncService;
   @service declare intl: IntlService;
@@ -285,7 +287,7 @@ export default class SettingsController extends Controller {
   handleRetrySync = async () => {
     this.syncActionBusy = true;
     try {
-      await this.app.setupSession();
+      await this.sessionSetup.setup();
     } finally {
       this.syncActionBusy = false;
     }

@@ -102,7 +102,7 @@ module('Unit | Service | App | Initialization', function (hooks) {
     app.renderer.removeAppSkeleton = async () => undefined;
     app.checkForNewVersion = async () => undefined;
     app.checkForDeployedVersion = async () => undefined;
-    app.setupSession = async () =>
+    app.sessionSetup.setup = async () =>
       new Promise<void>((resolve) => {
         finishSessionSetup = resolve;
       });

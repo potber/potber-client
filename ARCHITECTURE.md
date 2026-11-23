@@ -37,7 +37,7 @@ Potber provides a mobile-first interface to forum.mods.de: browsing boards and t
 
 The root HTML entrypoint attempts to load optional `/injected-config.js` before the vendor script, and creates the Ember application. `config/environment.js` supplies build-time defaults; `app/config/app.config.ts` and `auth.config.ts` prefer corresponding `window.APP` overrides. Configuration delivered to the browser is public, including any injected values.
 
-`ApplicationRoute` loads German translations and calls `AppService.initialize()`. That service initializes settings, notifications/error handling, rendering, device behavior, session setup, and deployment-version checks. Session setup connects authenticated settings synchronization and user collections. `AppService` also checks `/version.json` when the app starts or returns to the foreground and navigates to load a changed deployed version.
+`ApplicationRoute` loads German translations and calls `AppService.initialize()`. That service initializes settings, notifications/error handling, rendering, device behavior, session setup, and deployment-version checks. Startup calls [SessionSetupService](app/services/session-setup.ts) without waiting for remote settings. The settings screen uses the same service when the user retries sync. `AppService` also checks `/version.json` when the app starts or returns to the foreground and navigates to load a changed deployed version.
 
 ### Authentication and forum requests
 
@@ -57,7 +57,7 @@ The rendering boundary remains distinct from parsing: post and private-message c
 
 ### Preferences and encrypted synchronization
 
-`SettingsService`, `LocalStorageService`, and `SocialsService` own preferences and local collections such as saved posts, favorite boards, and blocked users. Board views ask `LocalStorageService` to add or remove favorites by ID. Saved-post views use the same service to edit persisted post references. The service is the source for both collections, sends local edits to settings sync, and loads forum details for display. `AppService` applies synchronized values to those services and refreshes affected UI/device behavior.
+`SettingsService`, `LocalStorageService`, and `SocialsService` own preferences and local collections such as saved posts, favorite boards, and blocked users. Board views ask `LocalStorageService` to add or remove favorites by ID. Saved-post views use the same service to edit persisted post references. The service is the source for both collections, sends local edits to settings sync, and loads forum details for display. `SessionSetupService` gathers those collections for sync, applies synchronized values, and refreshes affected UI and device behavior.
 
 `SettingsSyncService` coordinates per-user encrypted payloads, recovery/unlock behavior, field clocks, revision conflicts, and collection merging. It uses Web Crypto for encryption, IndexedDB for key persistence, and localStorage for synchronization metadata/device identity. The [settings sync transport](app/utils/settings-sync-transport.ts) handles authenticated requests to `/user-configuration`.
 
