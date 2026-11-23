@@ -198,4 +198,26 @@ module('Unit | Service | App | Deployment version check', function (hooks) {
     assert.strictEqual(modal.confirmCalls.length, 0);
     assert.strictEqual(navigatedVersion, '1.30.0');
   });
+
+  test('ignores malformed markers and retries on the next check', async function (assert) {
+    const app = this.owner.lookup('service:app') as AppService;
+    const navigations: string[] = [];
+    app.navigateToDeployedVersion = (version: string) => {
+      navigations.push(version);
+    };
+
+    for (const body of [
+      JSON.stringify({ version: ['1.30.0'] }),
+      JSON.stringify({ version: 'invalid' }),
+      '<html>Unavailable</html>',
+    ]) {
+      globalThis.fetch = async () => new Response(body);
+      await app.checkForDeployedVersion({ force: true });
+    }
+    assert.deepEqual(navigations, []);
+
+    globalThis.fetch = async () => Response.json({ version: '1.30.0' });
+    await app.checkForDeployedVersion({ force: true });
+    assert.deepEqual(navigations, ['1.30.0']);
+  });
 });

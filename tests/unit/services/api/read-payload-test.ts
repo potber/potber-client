@@ -2,7 +2,11 @@ import Service from '@ember/service';
 import { module, test } from 'qunit';
 import * as v from 'valibot';
 import type ApiService from 'potber-client/services/api';
-import { PayloadValidationError } from 'potber-client/services/api/error';
+import {
+  ApiError,
+  PayloadValidationError,
+} from 'potber-client/services/api/error';
+import { NewPrivateMessage } from 'potber-client/services/api/models/private-message';
 import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import { bookmarkSchema } from 'potber-client/services/api/schemas/bookmarks';
 import { boardCategoriesSchema } from 'potber-client/services/api/schemas/board-categories';
@@ -650,5 +654,69 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
         error.issues.includes('id: missing'),
     );
     assert.strictEqual(notifications.length, 1);
+  });
+
+  test('accepts the empty success forms used by forum mutations', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    window.fetch = async () => new Response(null, { status: 204 });
+    assert.strictEqual(await api.deleteBookmark('55'), undefined);
+    assert.strictEqual(await api.deletePrivateMessage('42'), undefined);
+
+    window.fetch = async () => new Response(null, { status: 200 });
+    assert.strictEqual(await api.markPrivateMessageAsUnread('42'), undefined);
+    assert.strictEqual(
+      await api.movePrivateMessageToFolder('42', 'outbound'),
+      undefined,
+    );
+
+    window.fetch = async () => new Response(null, { status: 201 });
+    assert.strictEqual(
+      await api.createPrivateMessage(new NewPrivateMessage(api)),
+      undefined,
+    );
+    assert.strictEqual(
+      await api.reportPost('101', { cause: 'Reason' }),
+      undefined,
+    );
+  });
+
+  test('rejects an unexpected success payload from a bodyless mutation', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    body = JSON.stringify({ unexpected: true });
+
+    await assert.rejects(api.deleteBookmark('55'), PayloadValidationError);
+  });
+
+  test('keeps valid error messages and falls back to the HTTP status for invalid fields', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    window.fetch = async () =>
+      Response.json(
+        { statusCode: 'wrong', error: false, message: ['First', 'Second'] },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    await assert.rejects(api.deleteBookmark('55'), (error: unknown) => {
+      return (
+        error instanceof ApiError &&
+        error.statusCode === 400 &&
+        error.error === 'Bad Request' &&
+        error.messages.join('; ') === 'First; Second'
+      );
+    });
+  });
+
+  test('uses the HTTP error when a gateway returns a non-JSON body', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    window.fetch = async () =>
+      new Response('Unavailable', { status: 502, statusText: 'Bad Gateway' });
+
+    await assert.rejects(api.deleteBookmark('55'), (error: unknown) => {
+      return (
+        error instanceof ApiError &&
+        error.statusCode === 502 &&
+        error.messages[0] === 'Bad Gateway'
+      );
+    });
   });
 });

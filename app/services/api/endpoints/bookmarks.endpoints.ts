@@ -1,3 +1,4 @@
+import * as v from 'valibot';
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
 import { Bookmark } from '../models/bookmark';
@@ -76,6 +77,7 @@ export async function _delete(
 ): Promise<void> {
   return this.fetch(`bookmarks/${id}`, {
     ...options,
+    schema: v.undefined(),
     request: { method: 'DELETE' },
   });
 }

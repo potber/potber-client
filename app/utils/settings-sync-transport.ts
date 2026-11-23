@@ -1,10 +1,20 @@
+import * as v from 'valibot';
 import { appConfig } from 'potber-client/config/app.config';
 import type { SettingsSyncEnvelope } from './settings-sync-crypto';
 
-export interface RemoteUserConfiguration extends SettingsSyncEnvelope {
-  revision: number;
-  updatedAt: string;
-}
+const remoteUserConfigurationSchema = v.object({
+  version: v.pipe(v.number(), v.safeInteger()),
+  iv: v.string(),
+  ciphertext: v.string(),
+  revision: v.pipe(v.number(), v.safeInteger(), v.minValue(1)),
+  updatedAt: v.string(),
+});
+
+const errorMessageSchema = v.object({ message: v.string() });
+
+export type RemoteUserConfiguration = v.InferOutput<
+  typeof remoteUserConfigurationSchema
+>;
 
 export interface WriteUserConfiguration extends SettingsSyncEnvelope {
   expectedRevision?: number;
@@ -58,13 +68,22 @@ async function readConfiguration(
   response: Response,
 ): Promise<RemoteUserConfiguration> {
   if (!response.ok) await throwResponseError(response);
-  return (await response.json()) as RemoteUserConfiguration;
+  const body: unknown = await response.json().catch(() => undefined);
+  const result = v.safeParse(remoteUserConfigurationSchema, body);
+  if (!result.success) {
+    throw new SettingsSyncRequestError(
+      response.status,
+      'Unexpected settings sync response',
+    );
+  }
+  return result.output;
 }
 
 async function throwResponseError(response: Response): Promise<never> {
-  const body = await response.json().catch(() => undefined);
+  const body: unknown = await response.json().catch(() => undefined);
+  const result = v.safeParse(errorMessageSchema, body);
   throw new SettingsSyncRequestError(
     response.status,
-    body?.message ?? response.statusText,
+    result.success ? result.output.message : response.statusText,
   );
 }
