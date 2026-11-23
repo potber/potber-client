@@ -22,11 +22,8 @@ import {
 } from 'potber-client/utils/settings-sync-transport';
 import {
   mergeSettings,
-  type EncryptedSettingsPayload,
-  type FieldClock,
   type MergeResult,
   type SettingsSyncMetadata,
-  type SyncedField,
 } from 'potber-client/utils/settings-sync-merge';
 import {
   clearSyncMetadata,
@@ -34,6 +31,14 @@ import {
   readSyncMetadata,
   writeSyncMetadata,
 } from 'potber-client/utils/settings-sync-metadata-storage';
+import {
+  parseSettingsPayload,
+  serializeSettingsPayload,
+  valuesFromPayload,
+  type EncryptedSettingsPayload,
+  type FieldClock,
+  type SyncedField,
+} from 'potber-client/utils/settings-sync-payload';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
 
@@ -382,11 +387,7 @@ export default class SettingsSyncService extends Service {
     key: CryptoKey,
   ): Promise<EncryptedSettingsPayload> {
     const plaintext = await decryptSettings(remote, key, this.requireUserId());
-    const payload = JSON.parse(plaintext) as unknown;
-    if (!isEncryptedSettingsPayload(payload)) {
-      throw new Error('Invalid encrypted settings payload.');
-    }
-    return payload;
+    return parseSettingsPayload(plaintext);
   }
 
   private async decryptForUnlock(
@@ -460,11 +461,11 @@ export default class SettingsSyncService extends Service {
           } satisfies FieldClock),
       };
     }
-    const payload: EncryptedSettingsPayload = {
-      schemaVersion: 1,
-      fields,
-    };
-    return encryptSettings(JSON.stringify(payload), key, this.requireUserId());
+    return encryptSettings(
+      serializeSettingsPayload(fields),
+      key,
+      this.requireUserId(),
+    );
   }
 
   private async resolveConflict(localValues: Record<string, unknown>) {
@@ -640,23 +641,6 @@ export default class SettingsSyncService extends Service {
   }
 }
 
-function isEncryptedSettingsPayload(
-  value: unknown,
-): value is EncryptedSettingsPayload {
-  if (!value || typeof value !== 'object') return false;
-  const payload = value as Partial<EncryptedSettingsPayload>;
-  if (payload.schemaVersion !== 1 || !payload.fields) return false;
-  return Object.values(payload.fields).every((field) => {
-    if (!field || typeof field !== 'object') return false;
-    const candidate = field as Partial<SyncedField>;
-    return (
-      Boolean(candidate.clock) &&
-      typeof candidate.clock?.modifiedAt === 'number' &&
-      typeof candidate.clock.deviceId === 'string'
-    );
-  });
-}
-
 function emptyCollections(): SyncedCollections {
   return { blockedUsers: [], boardFavoriteIds: [], savedPosts: [] };
 }
@@ -667,15 +651,6 @@ function cloneCollections(collections: SyncedCollections): SyncedCollections {
     boardFavoriteIds: [...collections.boardFavoriteIds],
     savedPosts: collections.savedPosts.map((post) => ({ ...post })),
   };
-}
-
-function valuesFromPayload(payload: EncryptedSettingsPayload) {
-  return Object.fromEntries(
-    Object.entries(payload.fields).map(([fieldKey, field]) => [
-      fieldKey,
-      field.value,
-    ]),
-  );
 }
 
 function mergeUnlockValues(

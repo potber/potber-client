@@ -1,17 +1,7 @@
-export interface FieldClock {
-  modifiedAt: number;
-  deviceId: string;
-}
-
-export interface SyncedField {
-  value: unknown;
-  clock: FieldClock;
-}
-
-export interface EncryptedSettingsPayload {
-  schemaVersion: 1;
-  fields: Record<string, SyncedField>;
-}
+import type {
+  EncryptedSettingsPayload,
+  FieldClock,
+} from './settings-sync-payload';
 
 export interface SettingsSyncMetadata {
   fields: Record<string, FieldClock>;
