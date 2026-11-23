@@ -1,6 +1,10 @@
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
 import { NewPrivateMessage, PrivateMessage } from '../models/private-message';
+import {
+  privateMessageListSchema,
+  privateMessageSchema,
+} from '../schemas/private-messages';
 import type { PrivateMessageFolder } from '../types/private-messages';
 
 export interface FindManyPrivateMessagesOptions extends PublicFetchOptions {
@@ -26,6 +30,7 @@ export async function _findMany(
 ): Promise<PrivateMessage[]> {
   const data = await this.fetch(`privateMessages`, {
     ...options,
+    schema: privateMessageListSchema,
     statusNotifications: [
       {
         statusCode: '*',
@@ -35,7 +40,7 @@ export async function _findMany(
     request: { method: 'GET' },
   });
   return data.map(
-    (body: any) =>
+    (body) =>
       new PrivateMessage(body, {
         api: this,
         refreshUnread: modelOptions?.refreshUnread,
@@ -54,6 +59,7 @@ export async function _findById(
 ): Promise<PrivateMessage> {
   const body = await this.fetch(`privateMessages/${id}`, {
     ...options,
+    schema: privateMessageSchema,
     statusNotifications: [
       {
         statusCode: 404,
