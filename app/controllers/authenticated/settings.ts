@@ -3,7 +3,7 @@ import { service } from '@ember/service';
 import type { DropdownOption } from 'potber-client/components/common/control/dropdown/types';
 import RendererService from 'potber-client/services/renderer';
 import MessagesService from 'potber-client/services/messages';
-import AppService from 'potber-client/services/app';
+import type DeploymentVersionService from 'potber-client/services/deployment-version';
 import SessionSetupService from 'potber-client/services/session-setup';
 import ModalService from 'potber-client/services/modal';
 import type { SettingsRouteModel } from 'potber-client/routes/authenticated/settings';
@@ -29,7 +29,7 @@ export default class SettingsController extends Controller {
   @service declare renderer: RendererService;
   @service declare messages: MessagesService;
   @service declare modal: ModalService;
-  @service declare app: AppService;
+  @service declare deploymentVersion: DeploymentVersionService;
   @service declare sessionSetup: SessionSetupService;
   @service declare deviceManager: DeviceManagerService;
   @service declare settingsSync: SettingsSyncService;
@@ -96,7 +96,7 @@ export default class SettingsController extends Controller {
   };
 
   handleRefreshApp = () => {
-    this.app.refreshApp();
+    this.deploymentVersion.refreshApp();
   };
 
   get syncStatusLabel() {

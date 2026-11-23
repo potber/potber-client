@@ -101,7 +101,7 @@ module('Unit | Service | App | Initialization', function (hooks) {
     app.deviceManager.initialize = () => undefined;
     app.renderer.removeAppSkeleton = async () => undefined;
     app.checkForNewVersion = async () => undefined;
-    app.checkForDeployedVersion = async () => undefined;
+    app.deploymentVersion.initialize = () => undefined;
     app.sessionSetup.setup = async () =>
       new Promise<void>((resolve) => {
         finishSessionSetup = resolve;
@@ -115,109 +115,5 @@ module('Unit | Service | App | Initialization', function (hooks) {
     );
     assert.ok(finishSessionSetup, 'settings synchronization started');
     finishSessionSetup?.();
-  });
-});
-
-module('Unit | Service | App | Deployment version check', function (hooks) {
-  setupTest(hooks);
-
-  let originalFetch: typeof fetch;
-  let originalVersion: string;
-
-  hooks.beforeEach(function () {
-    originalFetch = globalThis.fetch;
-    originalVersion = appConfig.version;
-    appConfig.version = '1.29.0';
-    this.owner.register('service:local-storage', LocalStorageStub);
-    this.owner.register('service:modal', ModalStub);
-  });
-
-  hooks.afterEach(function () {
-    globalThis.fetch = originalFetch;
-    appConfig.version = originalVersion;
-  });
-
-  test('does not prompt when the deployed version is already running', async function (assert) {
-    globalThis.fetch = (async () =>
-      new Response(JSON.stringify({ version: '1.29.0' }), {
-        headers: { 'Content-Type': 'application/json' },
-      })) as typeof fetch;
-    const app = this.owner.lookup('service:app') as AppService;
-    const modal = this.owner.lookup('service:modal') as ModalStub;
-
-    await app.checkForDeployedVersion({ force: true });
-
-    assert.strictEqual(modal.confirmCalls.length, 0);
-  });
-
-  test('builds a unique reload URL without discarding the current location', function (assert) {
-    const app = this.owner.lookup('service:app') as AppService;
-
-    const reloadUrl = app.getDeployedVersionUrl('1.30.0', 12345);
-
-    assert.strictEqual(reloadUrl.origin, window.location.origin);
-    assert.strictEqual(reloadUrl.pathname, window.location.pathname);
-    assert.strictEqual(reloadUrl.searchParams.get('_potber_version'), '1.30.0');
-    assert.strictEqual(reloadUrl.searchParams.get('_potber_reload'), '12345');
-  });
-
-  test('manually refreshes the currently running version', function (assert) {
-    const app = this.owner.lookup('service:app') as AppService;
-    let navigatedVersion: string | undefined;
-    app.navigateToDeployedVersion = (version: string) => {
-      navigatedVersion = version;
-    };
-
-    app.refreshApp();
-
-    assert.strictEqual(navigatedVersion, '1.29.0');
-  });
-
-  test('immediately navigates to a different deployment', async function (assert) {
-    let requestedUrl: URL | undefined;
-    let requestedOptions: RequestInit | undefined;
-    globalThis.fetch = (async (input, options) => {
-      requestedUrl = new URL(String(input));
-      requestedOptions = options;
-      return new Response(JSON.stringify({ version: '1.30.0' }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }) as typeof fetch;
-    const app = this.owner.lookup('service:app') as AppService;
-    const modal = this.owner.lookup('service:modal') as ModalStub;
-    let navigatedVersion: string | undefined;
-    app.navigateToDeployedVersion = (version: string) => {
-      navigatedVersion = version;
-    };
-
-    await app.checkForDeployedVersion({ force: true });
-
-    assert.strictEqual(requestedUrl?.pathname, '/version.json');
-    assert.true(requestedUrl?.searchParams.has('_'));
-    assert.strictEqual(requestedOptions?.cache, 'no-store');
-    assert.strictEqual(modal.confirmCalls.length, 0);
-    assert.strictEqual(navigatedVersion, '1.30.0');
-  });
-
-  test('ignores malformed markers and retries on the next check', async function (assert) {
-    const app = this.owner.lookup('service:app') as AppService;
-    const navigations: string[] = [];
-    app.navigateToDeployedVersion = (version: string) => {
-      navigations.push(version);
-    };
-
-    for (const body of [
-      JSON.stringify({ version: ['1.30.0'] }),
-      JSON.stringify({ version: 'invalid' }),
-      '<html>Unavailable</html>',
-    ]) {
-      globalThis.fetch = async () => new Response(body);
-      await app.checkForDeployedVersion({ force: true });
-    }
-    assert.deepEqual(navigations, []);
-
-    globalThis.fetch = async () => Response.json({ version: '1.30.0' });
-    await app.checkForDeployedVersion({ force: true });
-    assert.deepEqual(navigations, ['1.30.0']);
   });
 });
