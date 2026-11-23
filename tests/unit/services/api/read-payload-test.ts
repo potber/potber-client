@@ -634,4 +634,21 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
         error.issues.includes('1: expected string'),
     );
   });
+
+  test('rejects a thread creation response without the new thread ID', async function (assert) {
+    body = JSON.stringify(threadPayload({ id: undefined }));
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.createThread({
+        boardId: '14',
+        title: 'Forum meetup',
+        openingPost: { message: 'Let’s meet on Saturday.' },
+      }),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('id: missing'),
+    );
+    assert.strictEqual(notifications.length, 1);
+  });
 });

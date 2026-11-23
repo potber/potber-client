@@ -50,6 +50,7 @@ export async function _create(
 ): Promise<Threads.Read> {
   const createdThread = await this.fetch('threads', {
     ...options,
+    schema: threadReadSchema,
     statusNotifications: [
       {
         statusCode: 403,
