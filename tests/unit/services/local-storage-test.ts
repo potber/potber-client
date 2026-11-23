@@ -146,6 +146,42 @@ module('Unit | Service | LocalStorage', function (hooks) {
     );
   });
 
+  test('uses persisted post references when an older load completes after removal', async function (assert) {
+    let finishPostLoad: (() => void) | undefined;
+    const pendingPost = new Promise<{ id: string; threadId: string }>(
+      (resolve) => {
+        finishPostLoad = () => resolve({ id: '101', threadId: '42' });
+      },
+    );
+    this.owner.register(
+      'service:settings-sync',
+      class extends Service {
+        savedPostsChanged() {}
+      },
+    );
+    this.owner.register(
+      'service:api',
+      class extends Service {
+        findPostById() {
+          return pendingPost;
+        }
+      },
+    );
+    localStorage.setItem(SAVED_POSTS_KEY, '[{"id":"101","threadId":"42"}]');
+    const service = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+
+    const initialLoad = service.getSavedPosts();
+    assert.false(service.addSavedPost({ id: '101', threadId: '42' }));
+    service.removeSavedPost('101');
+    finishPostLoad?.();
+    await initialLoad;
+
+    assert.deepEqual(service.savedPosts, []);
+    assert.deepEqual(service.readPersistedSavedPosts(), []);
+  });
+
   test('treats a missing or invalid encountered version as unknown', function (assert) {
     const service = this.owner.lookup(
       'service:local-storage',

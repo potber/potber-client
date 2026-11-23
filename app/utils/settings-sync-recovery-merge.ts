@@ -1,4 +1,4 @@
-import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
+import type { PersistedSavedPost } from 'potber-client/models/post';
 import type { BlockedUser } from 'potber-client/services/socials';
 
 export const BLOCKED_USERS_FIELD = 'blockedUsers';

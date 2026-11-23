@@ -1,6 +1,6 @@
 import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
-import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
+import type { PersistedSavedPost } from 'potber-client/models/post';
 import {
   createRecoveryKey,
   decryptSettings,

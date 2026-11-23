@@ -2,20 +2,13 @@ import eq from 'ember-truth-helpers/helpers/eq';
 import { service } from '@ember/service';
 import Component from '@glimmer/component';
 import SavedPost from './post';
-import type Post from 'potber-client/models/post';
 import LocalStorageService from 'potber-client/services/local-storage';
 
-interface Signature {
-  Args: {
-    savedPosts: Post[] | null | undefined;
-  };
-}
-
-export default class BookmarksSavedPostsComponent extends Component<Signature> {
+export default class BookmarksSavedPostsComponent extends Component {
   @service declare localStorage: LocalStorageService;
 
   get rawSavedPosts() {
-    return this.args.savedPosts;
+    return this.localStorage.savedPosts;
   }
 
   get savedPosts() {
