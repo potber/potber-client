@@ -39,6 +39,16 @@ import {
   type FieldClock,
   type SyncedField,
 } from 'potber-client/utils/settings-sync-payload';
+import {
+  BLOCKED_USERS_FIELD,
+  BOARD_FAVORITES_FIELD,
+  collectionsFromValues,
+  mergeUnlockValues,
+  SAVED_POSTS_FIELD,
+  syncedValuesDiffer,
+  type SettingsSyncUnlockSource,
+  type SyncedCollections,
+} from 'potber-client/utils/settings-sync-recovery-merge';
 import type { Settings } from './settings';
 import type { BlockedUser } from './socials';
 
@@ -47,11 +57,13 @@ export {
   type RemoteUserConfiguration,
 } from 'potber-client/utils/settings-sync-transport';
 
+export type {
+  SettingsSyncUnlockSource,
+  SyncedCollections,
+} from 'potber-client/utils/settings-sync-recovery-merge';
+
 const SYNC_DEBOUNCE_MS = 750;
 const SETTINGS_FIELD_PREFIX = 'settings.';
-const BLOCKED_USERS_FIELD = 'blockedUsers';
-const BOARD_FAVORITES_FIELD = 'boardFavoriteIds';
-const SAVED_POSTS_FIELD = 'savedPosts';
 
 export type SettingsSyncState =
   'busy' | 'disabled' | 'locked' | 'enabled' | 'unavailable';
@@ -66,14 +78,6 @@ interface DecryptedRemote {
 interface OverwriteResult {
   metadata: SettingsSyncMetadata;
   remote: RemoteUserConfiguration;
-}
-
-export type SettingsSyncUnlockSource = 'local' | 'remote';
-
-export interface SyncedCollections {
-  blockedUsers: BlockedUser[];
-  boardFavoriteIds: string[];
-  savedPosts: PersistedSavedPost[];
 }
 
 export default class SettingsSyncService extends Service {
@@ -222,7 +226,7 @@ export default class SettingsSyncService extends Service {
       }
 
       const settings = this.settingsForValues(values);
-      const collections = this.collectionsFromValues(values);
+      const collections = collectionsFromValues(values);
       await this.storeKey(decrypted.key);
       writeSyncMetadata(this.requireUserId(), metadata);
       this.key = decrypted.key;
@@ -572,31 +576,13 @@ export default class SettingsSyncService extends Service {
     return this.currentSettings;
   }
 
-  private collectionsFromValues(
-    values: Record<string, unknown>,
-  ): SyncedCollections {
-    const blockedUsers = values[BLOCKED_USERS_FIELD];
-    const boardFavoriteIds = values[BOARD_FAVORITES_FIELD];
-    const savedPosts = values[SAVED_POSTS_FIELD];
-    if (!isBlockedUsers(blockedUsers)) {
-      throw new Error('Invalid encrypted blocklist.');
-    }
-    if (!isStringArray(boardFavoriteIds)) {
-      throw new Error('Invalid encrypted board favorites.');
-    }
-    if (!isPersistedSavedPosts(savedPosts)) {
-      throw new Error('Invalid encrypted saved posts.');
-    }
-    return { blockedUsers, boardFavoriteIds, savedPosts };
-  }
-
   private validateValues(values: Record<string, unknown>) {
     this.settingsForValues(values);
-    this.collectionsFromValues(values);
+    collectionsFromValues(values);
   }
 
   private applyCollectionsFromValues(values: Record<string, unknown>) {
-    const collections = this.collectionsFromValues(values);
+    const collections = collectionsFromValues(values);
     this.collections = cloneCollections(collections);
     this.onRemoteCollections?.(cloneCollections(collections));
   }
@@ -651,147 +637,6 @@ function cloneCollections(collections: SyncedCollections): SyncedCollections {
     boardFavoriteIds: [...collections.boardFavoriteIds],
     savedPosts: collections.savedPosts.map((post) => ({ ...post })),
   };
-}
-
-function mergeUnlockValues(
-  source: SettingsSyncUnlockSource,
-  localValues: Record<string, unknown>,
-  remoteValues: Record<string, unknown>,
-) {
-  const primary = source === 'local' ? localValues : remoteValues;
-  const secondary = source === 'local' ? remoteValues : localValues;
-  const primaryBlockedUsers = primary[BLOCKED_USERS_FIELD];
-  const secondaryBlockedUsers = secondary[BLOCKED_USERS_FIELD];
-  const primaryBoardFavorites = primary[BOARD_FAVORITES_FIELD];
-  const secondaryBoardFavorites = secondary[BOARD_FAVORITES_FIELD];
-  const primarySavedPosts = primary[SAVED_POSTS_FIELD];
-  const secondarySavedPosts = secondary[SAVED_POSTS_FIELD];
-
-  if (
-    !isBlockedUsers(primaryBlockedUsers) ||
-    !isBlockedUsers(secondaryBlockedUsers) ||
-    !isStringArray(primaryBoardFavorites) ||
-    !isStringArray(secondaryBoardFavorites) ||
-    !isPersistedSavedPosts(primarySavedPosts) ||
-    !isPersistedSavedPosts(secondarySavedPosts)
-  ) {
-    throw new Error('Invalid collections while unlocking settings sync.');
-  }
-
-  return {
-    ...primary,
-    [BLOCKED_USERS_FIELD]: unionById(
-      primaryBlockedUsers,
-      secondaryBlockedUsers,
-    ),
-    [BOARD_FAVORITES_FIELD]: unionBy(
-      primaryBoardFavorites,
-      secondaryBoardFavorites,
-      (id) => id,
-    ),
-    [SAVED_POSTS_FIELD]: unionById(primarySavedPosts, secondarySavedPosts),
-  };
-}
-
-function unionById<T extends { id: string }>(primary: T[], secondary: T[]) {
-  return unionBy(primary, secondary, ({ id }) => id);
-}
-
-function unionBy<T>(
-  primary: T[],
-  secondary: T[],
-  identity: (value: T) => string,
-) {
-  const ids = new Set(primary.map(identity));
-  return [
-    ...primary,
-    ...secondary.filter((value) => {
-      const id = identity(value);
-      if (ids.has(id)) return false;
-      ids.add(id);
-      return true;
-    }),
-  ];
-}
-
-function syncedValuesDiffer(
-  localValues: Record<string, unknown>,
-  remoteValues: Record<string, unknown>,
-) {
-  const localKeys = Object.keys(localValues);
-  const remoteKeys = Object.keys(remoteValues);
-  return (
-    localKeys.length !== remoteKeys.length ||
-    localKeys.some(
-      (fieldKey) =>
-        !jsonValuesEqual(localValues[fieldKey], remoteValues[fieldKey]),
-    )
-  );
-}
-
-function jsonValuesEqual(first: unknown, second: unknown): boolean {
-  if (Object.is(first, second)) return true;
-  if (Array.isArray(first) || Array.isArray(second)) {
-    return (
-      Array.isArray(first) &&
-      Array.isArray(second) &&
-      first.length === second.length &&
-      first.every((entry, index) => jsonValuesEqual(entry, second[index]))
-    );
-  }
-  if (
-    !first ||
-    !second ||
-    typeof first !== 'object' ||
-    typeof second !== 'object'
-  ) {
-    return false;
-  }
-
-  const firstRecord = first as Record<string, unknown>;
-  const secondRecord = second as Record<string, unknown>;
-  const firstKeys = Object.keys(firstRecord);
-  const secondKeys = Object.keys(secondRecord);
-  return (
-    firstKeys.length === secondKeys.length &&
-    firstKeys.every(
-      (key) =>
-        Object.hasOwn(secondRecord, key) &&
-        jsonValuesEqual(firstRecord[key], secondRecord[key]),
-    )
-  );
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-  );
-}
-
-function isBlockedUsers(value: unknown): value is BlockedUser[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (entry) =>
-        Boolean(entry) &&
-        typeof entry === 'object' &&
-        typeof (entry as BlockedUser).id === 'string' &&
-        typeof (entry as BlockedUser).name === 'string',
-    )
-  );
-}
-
-function isPersistedSavedPosts(value: unknown): value is PersistedSavedPost[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (entry) =>
-        Boolean(entry) &&
-        typeof entry === 'object' &&
-        typeof (entry as PersistedSavedPost).id === 'string' &&
-        typeof (entry as PersistedSavedPost).threadId === 'string',
-    )
-  );
 }
 
 function errorMessage(error: unknown) {
