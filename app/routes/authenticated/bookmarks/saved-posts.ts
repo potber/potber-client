@@ -6,7 +6,6 @@ export default class BookmarksSavedPostsRoute extends SlowRoute {
   @service declare localStorage: LocalStorageService;
 
   async model() {
-    const savedPosts = await this.localStorage.getSavedPosts({ reload: true });
-    return { savedPosts };
+    await this.localStorage.getSavedPosts({ reload: true });
   }
 }

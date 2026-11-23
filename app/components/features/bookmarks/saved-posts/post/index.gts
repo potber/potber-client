@@ -10,11 +10,6 @@ import LocalStorageService from 'potber-client/services/local-storage';
 import MessagesService from 'potber-client/services/messages';
 import { formatDateTime } from 'potber-client/utils/date';
 
-export interface PersistedSavedPost {
-  id: string;
-  threadId: string;
-}
-
 interface Signature {
   Args: {
     post: Post;
@@ -41,20 +36,9 @@ export default class BookmarksSavedPostComponent extends Component<Signature> {
     )}`;
   }
 
-  get savedPosts() {
-    return this.localStorage.savedPosts;
-  }
-
-  @action async handleDelete() {
+  @action handleDelete() {
     try {
-      const savedPosts = [...(this.localStorage.savedPosts as Post[])];
-      savedPosts.forEach((post, index) => {
-        if (post.id === this.args.post.id) {
-          savedPosts.splice(index, 1);
-          return;
-        }
-      });
-      this.localStorage.setSavedPosts(savedPosts);
+      this.localStorage.removeSavedPost(this.args.post.id);
       this.messages.showNotification('Post wurde entfernt.', 'success');
     } catch (error) {
       this.messages.logErrorAndNotify(

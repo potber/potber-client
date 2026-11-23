@@ -327,6 +327,7 @@ module('Acceptance | Reading the forum', function (hooks) {
       '.bookmark .menu-button',
       'Gespeicherten Post entfernen',
     );
+    assert.dom(bookmarkLink).doesNotExist('removed without leaving the list');
     await visit(bookmarksPath);
     await visit(savedPostsPath);
 

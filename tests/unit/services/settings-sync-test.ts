@@ -1,3 +1,4 @@
+import type LocalStorageService from 'potber-client/services/local-storage';
 import SettingsSyncService, {
   SettingsSyncRequestError,
   type RemoteUserConfiguration,
@@ -262,6 +263,58 @@ module('Unit | Service | SettingsSync', function (hooks) {
     await service.unlock(recoveryKey, settings, 'remote');
 
     assert.deepEqual(restoredCollections, collections);
+  });
+
+  test('syncs saved-post edits and restores the persisted references', async function (assert) {
+    const sync = this.owner.lookup('service:settings-sync') as SettingsSyncStub;
+    const storage = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+    const authentication = { userId: '123', accessToken: 'token' };
+    const storageKey = 'potber-savedPosts';
+    const previousPosts = localStorage.getItem(storageKey);
+    const removedPost = { id: '101', threadId: '42' };
+    const keptPost = { id: '102', threadId: '43' };
+
+    localStorage.setItem(storageKey, JSON.stringify([removedPost]));
+    try {
+      await sync.initialize(settings, authentication, undefined, {
+        ...collections,
+        savedPosts: storage.readPersistedSavedPosts(),
+      });
+      const recoveryKey = await sync.enable(settings);
+
+      assert.true(storage.addSavedPost(keptPost));
+      assert.deepEqual(storage.readPersistedSavedPosts(), [
+        removedPost,
+        keptPost,
+      ]);
+      storage.removeSavedPost(removedPost.id);
+      await sync.syncNow();
+      assert.strictEqual(sync.writes.length, 2);
+
+      await sync.forgetThisDevice();
+      localStorage.removeItem(storageKey);
+      await sync.initialize(
+        settings,
+        authentication,
+        undefined,
+        { ...collections, savedPosts: [] },
+        (value) => storage.applySyncedSavedPosts(value.savedPosts),
+      );
+      await sync.unlock(recoveryKey, settings, 'remote');
+
+      assert.deepEqual(storage.readPersistedSavedPosts(), [keptPost]);
+      await sync.syncNow();
+      assert.strictEqual(
+        sync.writes.length,
+        2,
+        'remote apply does not queue a write',
+      );
+    } finally {
+      if (previousPosts === null) localStorage.removeItem(storageKey);
+      else localStorage.setItem(storageKey, previousPosts);
+    }
   });
 
   test('does not change either copy before the user chooses an unlock source', async function (assert) {

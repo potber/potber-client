@@ -3,8 +3,10 @@ import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import MessagesService from './messages';
 import { gt, valid } from 'semver';
-import type Post from 'potber-client/models/post';
-import type { PersistedSavedPost } from 'potber-client/components/features/bookmarks/saved-posts/post';
+import type {
+  default as Post,
+  PersistedSavedPost,
+} from 'potber-client/models/post';
 import { appConfig } from 'potber-client/config/app.config';
 import { Boards } from './api/types';
 import ApiService from './api';
@@ -23,7 +25,7 @@ export default class LocalStorageService extends Service {
   @tracked boardFavorites: Boards.Read[] | null = [];
   @tracked savedPosts: Post[] | null = [];
   private boardFavoritesLoad = 0;
-  private savedPostsInitialized = false;
+  private savedPostsLoad = 0;
 
   async initialize() {
     await this.getBoardFavorites();
@@ -143,10 +145,10 @@ export default class LocalStorageService extends Service {
    */
   @action async getSavedPosts(options?: { reload?: boolean }) {
     if (!this.savedPosts || this.savedPosts.length === 0 || options?.reload) {
-      this.savedPostsInitialized = true;
+      const load = ++this.savedPostsLoad;
+      let posts: Post[] | null = [];
       try {
         const persistedPosts = this.readPersistedSavedPosts();
-        const posts: Post[] = [];
         for (
           let start = 0;
           start < persistedPosts.length;
@@ -164,36 +166,41 @@ export default class LocalStorageService extends Service {
             )),
           );
         }
-        this.savedPosts = posts;
       } catch (error) {
         this.messages.log(
           `Error while attempting to fetch saved posts: ${error}`,
           { type: 'error', context: this.constructor.name },
         );
-        this.savedPosts = null;
+        posts = null;
+      }
+      if (load === this.savedPostsLoad) {
+        this.savedPosts = posts;
       }
     }
     return this.savedPosts;
   }
 
-  /**
-   * Saves the given posts to localStorage and updates the savedPosts property.
-   * @param posts The posts to save.
-   */
-  @action setSavedPosts(posts: Post[]) {
-    const keys: PersistedSavedPost[] = [];
-    for (const post of posts) {
-      keys.push({ id: post.id, threadId: post.threadId });
-    }
-    this.writePersistedSavedPosts(keys);
-    this.settingsSync.savedPostsChanged(keys);
+  addSavedPost({ id, threadId }: PersistedSavedPost): boolean {
+    const posts = this.readPersistedSavedPosts();
+    if (posts.some((post) => post.id === id)) return false;
+
+    this.changeSavedPosts([...posts, { id, threadId }]);
+    return true;
+  }
+
+  removeSavedPost(id: string) {
+    const posts = this.readPersistedSavedPosts();
+    const remaining = posts.filter((post) => post.id !== id);
+    if (remaining.length !== posts.length) this.changeSavedPosts(remaining);
+  }
+
+  private changeSavedPosts(posts: PersistedSavedPost[]) {
+    this.persistSavedPosts(posts);
+    this.settingsSync.savedPostsChanged(posts);
     this.messages.log(
-      `${PREFIX}savedPosts set to: '${JSON.stringify(keys)}'.`,
-      {
-        context: this.constructor.name,
-      },
+      `${PREFIX}savedPosts set to: '${JSON.stringify(posts)}'.`,
+      { context: this.constructor.name },
     );
-    this.savedPosts = [...posts];
   }
 
   readPersistedSavedPosts(): PersistedSavedPost[] {
@@ -215,14 +222,14 @@ export default class LocalStorageService extends Service {
   }
 
   applySyncedSavedPosts(posts: PersistedSavedPost[]) {
-    this.writePersistedSavedPosts(posts);
-    if (this.savedPostsInitialized) {
-      void this.getSavedPosts({ reload: true });
-    }
+    this.persistSavedPosts(posts);
   }
 
-  private writePersistedSavedPosts(posts: PersistedSavedPost[]) {
+  private persistSavedPosts(posts: PersistedSavedPost[]) {
     localStorage.setItem(`${PREFIX}savedPosts`, JSON.stringify(posts));
+    if (this.savedPostsLoad > 0) {
+      void this.getSavedPosts({ reload: true });
+    }
   }
 
   /**

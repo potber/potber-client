@@ -155,20 +155,15 @@ export default class PostComponent extends Component<Signature> {
     this.bookmarkStore.reload();
   };
 
-  savePost = async () => {
+  savePost = () => {
     try {
-      const savedPosts = [
-        ...((await this.localStorage.getSavedPosts()) as Post[]),
-      ];
-      if (savedPosts.find((post) => post.id === this.post.id)) {
+      if (!this.localStorage.addSavedPost(this.post)) {
         this.messages.showNotification(
           'Du hast diesen Post bereits gespeichert.',
           'error',
         );
         return;
       }
-      savedPosts.push(this.post);
-      this.localStorage.setSavedPosts(savedPosts);
       this.messages.showNotification('Post gespeichert', 'success');
     } catch (error) {
       this.messages.logErrorAndNotify(
