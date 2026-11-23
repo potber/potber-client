@@ -1,3 +1,4 @@
+import * as v from 'valibot';
 import ApiService from 'potber-client/services/api';
 import type { PublicFetchOptions } from 'potber-client/services/api';
 import { postQuoteSchema, postReadSchema } from '../schemas/posts';
@@ -155,6 +156,7 @@ export async function report(
 ) {
   await this.fetch(`posts/${id}/report`, {
     ...options,
+    schema: v.undefined(),
     statusNotifications: [
       {
         statusCode: 409,

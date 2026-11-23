@@ -17,6 +17,18 @@ import * as Bookmarks from './api/endpoints/bookmarks.endpoints';
 import * as PrivateMessages from './api/endpoints/private-messages.endpoints';
 import SettingsService from './settings';
 
+const errorResponseSchema = v.fallback(
+  v.object({
+    statusCode: v.fallback(v.optional(v.number()), undefined),
+    error: v.fallback(v.optional(v.string()), undefined),
+    message: v.fallback(
+      v.optional(v.union([v.string(), v.array(v.string())])),
+      undefined,
+    ),
+  }),
+  {},
+);
+
 export interface FetchStatusNotification {
   /**
    * The status code that will trigger the notification. A wildcard will be used
@@ -112,8 +124,11 @@ export default class ApiService extends Service {
       path: string,
       options: ProtectedFetchOptions & { schema: Schema },
     ): Promise<v.InferOutput<Schema>>;
-    (path: string, options?: ProtectedFetchOptions): Promise<any>;
-  } = async (path: string, options?: ProtectedFetchOptions): Promise<any> => {
+    (path: string, options?: ProtectedFetchOptions): Promise<unknown>;
+  } = async (
+    path: string,
+    options?: ProtectedFetchOptions,
+  ): Promise<unknown> => {
     const { request, query, timeoutWarning, schema } = {
       timeoutWarning: false,
       ...options,
@@ -160,20 +175,17 @@ export default class ApiService extends Service {
         headers: { ...headers, ...request?.headers },
         signal,
       });
-      if (
-        response.ok &&
-        (response.status === 204 ||
-          response.headers.get('content-length') === '0')
-      )
-        return this.parsePayload(schema, undefined, path);
-      const data = await this.readResponseBody(response, schema);
       if (!response.ok) {
+        const body: unknown = await response.json().catch(() => undefined);
+        const data = v.parse(errorResponseSchema, body);
         throw new ApiError(
           data.statusCode ?? response.status,
           data.error ?? response.statusText,
           data.message ?? response.statusText,
         );
       }
+      const body = response.status === 204 ? '' : await response.text();
+      const data: unknown = body === '' ? undefined : JSON.parse(body);
       return this.parsePayload(schema, data, path);
     } catch (error: unknown) {
       await this.handleErrors(error, options, {
@@ -185,13 +197,6 @@ export default class ApiService extends Service {
       window.clearTimeout(timeoutId);
     }
   };
-
-  private async readResponseBody(response: Response, schema?: v.GenericSchema) {
-    if (!schema || !response.ok) return response.json();
-
-    const body = await response.text();
-    return body === '' ? undefined : JSON.parse(body);
-  }
 
   private parsePayload(
     schema: v.GenericSchema | undefined,

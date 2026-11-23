@@ -1,5 +1,9 @@
+import * as v from 'valibot';
 import ApiService from 'potber-client/services/api';
-import type { PublicFetchOptions } from 'potber-client/services/api';
+import type {
+  FetchStatusNotification,
+  PublicFetchOptions,
+} from 'potber-client/services/api';
 import { NewPrivateMessage, PrivateMessage } from '../models/private-message';
 import {
   privateMessageDraftSchema,
@@ -61,16 +65,7 @@ export async function _findById(
   const body = await this.fetch(`privateMessages/${id}`, {
     ...options,
     schema: privateMessageSchema,
-    statusNotifications: [
-      {
-        statusCode: 404,
-        message: this.intl.t('error.private-messages.find-by-id.not-found'),
-      },
-      {
-        statusCode: '*',
-        message: this.intl.t('error.unknown'),
-      },
-    ],
+    statusNotifications: privateMessageNotifications(this),
     request: { method: 'GET' },
   });
   return new PrivateMessage(body, { api: this });
@@ -87,6 +82,7 @@ export async function _create(
 ): Promise<void> {
   await this.fetch(`privateMessages`, {
     ...options,
+    schema: v.undefined(),
     statusNotifications: [
       {
         statusCode: 400,
@@ -112,6 +108,7 @@ export async function _delete(
 ): Promise<void> {
   await this.fetch(`privateMessages/${id}`, {
     ...options,
+    schema: v.undefined(),
     statusNotifications: [
       {
         statusCode: '*',
@@ -146,16 +143,8 @@ export async function _markAsUnread(
 ): Promise<void> {
   await this.fetch(`privateMessages/${id}/markAsUnread`, {
     ...options,
-    statusNotifications: [
-      {
-        statusCode: 404,
-        message: this.intl.t('error.private-messages.find-by-id.not-found'),
-      },
-      {
-        statusCode: '*',
-        message: this.intl.t('error.unknown'),
-      },
-    ],
+    schema: v.undefined(),
+    statusNotifications: privateMessageNotifications(this),
     request: { method: 'PUT' },
   });
 }
@@ -173,16 +162,8 @@ export async function _moveToFolder(
 ): Promise<void> {
   return await this.fetch(`privateMessages/${id}/moveToFolder`, {
     ...options,
-    statusNotifications: [
-      {
-        statusCode: 404,
-        message: this.intl.t('error.private-messages.find-by-id.not-found'),
-      },
-      {
-        statusCode: '*',
-        message: this.intl.t('error.unknown'),
-      },
-    ],
+    schema: v.undefined(),
+    statusNotifications: privateMessageNotifications(this),
     request: { method: 'PUT', body: JSON.stringify({ folder }) },
   });
 }
@@ -209,18 +190,21 @@ async function replyOfForward(
   const body = await api.fetch(`privateMessages/${id}/${endpoint}`, {
     ...options,
     schema: privateMessageDraftSchema,
-    statusNotifications: [
-      {
-        statusCode: 404,
-        message: api.intl.t('error.private-messages.find-by-id.not-found'),
-      },
-      {
-        statusCode: '*',
-        message: api.intl.t('error.unknown'),
-      },
-    ],
+    statusNotifications: privateMessageNotifications(api),
     request: { method: 'GET' },
   });
   const message = new NewPrivateMessage(api, body);
   return message;
+}
+
+function privateMessageNotifications(
+  api: ApiService,
+): FetchStatusNotification[] {
+  return [
+    {
+      statusCode: 404,
+      message: api.intl.t('error.private-messages.find-by-id.not-found'),
+    },
+    { statusCode: '*', message: api.intl.t('error.unknown') },
+  ];
 }
