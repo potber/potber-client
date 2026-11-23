@@ -31,7 +31,7 @@ Check the production version marker using a cache-busting query:
 curl -fsS "https://www.potber.de/version.json?_=$(date +%s)"
 ```
 
-Compare its `version` with the selected build's package version. Open a normal browser session and an already-open tab if available. Check that the app shell and hashed assets load, then verify sign-in, a direct board or thread URL, and the flow that prompted the rollback. For a same-version rebuild, also compare the served entry HTML and asset references with the target build. Record the redeployment run and verification results in the incident record.
+Compare its `version` with the selected build's package version. Open a normal browser session and an already-open tab if available. Check that the app shell and hashed assets load, then verify sign-in, a direct board or thread URL, and the flow that prompted the rollback. For a same-version rebuild, compare the served entry HTML and asset references with the target build. Ask users with already-open tabs to refresh, since the version marker stays the same. Record the redeployment run and verification results in the incident record.
 
 ## Rehearse safely
 
@@ -42,3 +42,5 @@ DRY_RUN=1 BUNNY_STORAGE_ZONE=rehearsal deploy/upload-to-bunny-storage.sh dist
 ```
 
 Expect hashed assets before the three entry files. The dry run checks ordering only. The staging rehearsal checks the deployment, cache purge, and browser behavior.
+
+See the [23 November 2026 staging rehearsal](staging-rollback-rehearsal-2026-11-23.md) for a verified rollback and restore.
