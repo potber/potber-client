@@ -595,4 +595,24 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
     }
     assert.strictEqual(notifications.length, 2);
   });
+
+  test('accepts a user profile without optional avatar or activity details', async function (assert) {
+    const user = { id: '7', name: 'Forum member' };
+    body = JSON.stringify(user);
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    assert.deepEqual(await api.findUserById('7'), user);
+  });
+
+  test('rejects malformed user profile values', async function (assert) {
+    body = JSON.stringify({ id: '7', name: 'Forum member', locked: 'false' });
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(
+      api.findUserById('7'),
+      (error: unknown) =>
+        error instanceof PayloadValidationError &&
+        error.issues.includes('locked: expected boolean'),
+    );
+  });
 });
