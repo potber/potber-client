@@ -64,7 +64,9 @@ export interface PublicFetchOptions {
   query?: Record<string, string | boolean | number>;
 }
 
-export interface ProtectedFetchOptions extends PublicFetchOptions {
+interface ProtectedFetchOptions<
+  Schema extends v.GenericSchema,
+> extends PublicFetchOptions {
   /**
    * The `RequestInit` object.
    */
@@ -72,7 +74,7 @@ export interface ProtectedFetchOptions extends PublicFetchOptions {
   /**
    * Validates a successful response body. Mismatches are reported and thrown like request errors.
    */
-  schema?: v.GenericSchema;
+  schema: Schema;
 }
 
 export default class ApiService extends Service {
@@ -119,16 +121,10 @@ export default class ApiService extends Service {
    * Triggers a `fetch` to the API server and returns the data. Any errors will be logged automatically.
    * @returns The data.
    */
-  fetch: {
-    <Schema extends v.GenericSchema>(
-      path: string,
-      options: ProtectedFetchOptions & { schema: Schema },
-    ): Promise<v.InferOutput<Schema>>;
-    (path: string, options?: ProtectedFetchOptions): Promise<unknown>;
-  } = async (
+  fetch = async <Schema extends v.GenericSchema>(
     path: string,
-    options?: ProtectedFetchOptions,
-  ): Promise<unknown> => {
+    options: ProtectedFetchOptions<Schema>,
+  ): Promise<v.InferOutput<Schema>> => {
     const { request, query, timeoutWarning, schema } = {
       timeoutWarning: false,
       ...options,
@@ -198,12 +194,11 @@ export default class ApiService extends Service {
     }
   };
 
-  private parsePayload(
-    schema: v.GenericSchema | undefined,
+  private parsePayload<Schema extends v.GenericSchema>(
+    schema: Schema,
     data: unknown,
     path: string,
-  ) {
-    if (!schema) return data;
+  ): v.InferOutput<Schema> {
     const result = v.safeParse(schema, data);
     if (result.success) return result.output;
     throw new PayloadValidationError(
@@ -222,7 +217,7 @@ export default class ApiService extends Service {
 
   private async handleErrors(
     error: unknown,
-    options?: ProtectedFetchOptions,
+    options?: PublicFetchOptions,
     requestContext?: {
       method: string;
       url: string;
