@@ -1,9 +1,12 @@
+import * as v from 'valibot';
 import type { Posts } from 'potber-client/services/api/types';
 
-export interface PersistedSavedPost {
-  id: string;
-  threadId: string;
-}
+export const persistedSavedPostSchema = v.object({
+  id: v.string(),
+  threadId: v.string(),
+});
+
+export type PersistedSavedPost = v.InferOutput<typeof persistedSavedPostSchema>;
 
 type Post = Posts.Read;
 type LastEdit = Posts.LastEdit;

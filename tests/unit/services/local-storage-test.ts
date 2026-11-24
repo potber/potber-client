@@ -182,6 +182,24 @@ module('Unit | Service | LocalStorage', function (hooks) {
     assert.deepEqual(service.readPersistedSavedPosts(), []);
   });
 
+  test('keeps valid saved-post references when other records are malformed', function (assert) {
+    const storage = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+    const validPost = { id: '101', threadId: '42' };
+    localStorage.setItem(
+      SAVED_POSTS_KEY,
+      JSON.stringify([
+        validPost,
+        null,
+        { id: '102' },
+        { id: '103', threadId: 42 },
+      ]),
+    );
+
+    assert.deepEqual(storage.readPersistedSavedPosts(), [validPost]);
+  });
+
   test('keeps valid users when stored blocklist entries are malformed', function (assert) {
     const storage = this.owner.lookup(
       'service:local-storage',

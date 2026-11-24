@@ -3,9 +3,10 @@ import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import MessagesService from './messages';
 import { gt, valid } from 'semver';
-import type {
-  default as Post,
-  PersistedSavedPost,
+import {
+  persistedSavedPostSchema,
+  type default as Post,
+  type PersistedSavedPost,
 } from 'potber-client/models/post';
 import { appConfig } from 'potber-client/config/app.config';
 import { Boards } from './api/types';
@@ -216,14 +217,10 @@ export default class LocalStorageService extends Service {
     try {
       const value = localStorage.getItem(`${PREFIX}savedPosts`);
       if (!value) return [];
-      const posts = JSON.parse(value) as unknown;
+      const posts: unknown = JSON.parse(value);
       if (!Array.isArray(posts)) return [];
-      return posts.filter(
-        (post): post is PersistedSavedPost =>
-          Boolean(post) &&
-          typeof post === 'object' &&
-          typeof (post as PersistedSavedPost).id === 'string' &&
-          typeof (post as PersistedSavedPost).threadId === 'string',
+      return posts.filter((post: unknown) =>
+        v.is(persistedSavedPostSchema, post),
       );
     } catch {
       return [];
