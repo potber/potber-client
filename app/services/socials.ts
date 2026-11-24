@@ -4,14 +4,9 @@ import LocalStorageService from './local-storage';
 import { tracked } from '@glimmer/tracking';
 import SettingsSyncService from './settings-sync';
 
-export interface BlockedUser {
-  id: string;
-  name: string;
-}
+import type { BlockedUser, Socials } from 'potber-client/models/blocked-user';
 
-export interface Socials {
-  blockedUsers: BlockedUser[];
-}
+export type { BlockedUser, Socials } from 'potber-client/models/blocked-user';
 
 export default class SocialsService extends Service implements Socials {
   @service declare localStorage: LocalStorageService;

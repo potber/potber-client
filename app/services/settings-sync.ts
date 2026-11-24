@@ -55,7 +55,7 @@ import {
   preferencesToSyncValues,
 } from 'potber-client/utils/settings-sync-preferences';
 import type { Settings } from './settings/types';
-import type { BlockedUser } from './socials';
+import type { BlockedUser } from 'potber-client/models/blocked-user';
 
 export {
   SettingsSyncRequestError,
