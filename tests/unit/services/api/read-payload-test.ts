@@ -719,4 +719,71 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
       );
     });
   });
+
+  test('prefers a matching HTTP error notification over the wildcard', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    window.fetch = async () => new Response(null, { status: 404 });
+
+    await assert.rejects(
+      api.fetch('/test', {
+        schema: v.undefined(),
+        statusNotifications: [
+          { statusCode: '*', message: 'Fallback' },
+          { statusCode: 404, message: 'Item not found' },
+        ],
+      }),
+      ApiError,
+    );
+
+    assert.deepEqual(notifications, ['Item not found']);
+  });
+
+  test('uses the wildcard when no HTTP status notification matches', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    window.fetch = async () => new Response(null, { status: 503 });
+
+    await assert.rejects(
+      api.fetch('/test', {
+        schema: v.undefined(),
+        statusNotifications: [
+          { statusCode: 404, message: 'Item not found' },
+          { statusCode: '*', message: 'Fallback' },
+        ],
+      }),
+      ApiError,
+    );
+
+    assert.deepEqual(notifications, ['Fallback']);
+  });
+
+  test('silent requests reject HTTP and network errors without notifications', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    const options = { schema: v.undefined(), silent: true };
+    window.fetch = async () => new Response(null, { status: 503 });
+    await assert.rejects(api.fetch('/test', options), ApiError);
+
+    window.fetch = async () => {
+      throw new TypeError('Network unavailable');
+    };
+    await assert.rejects(api.fetch('/test', options), TypeError);
+
+    assert.deepEqual(notifications, []);
+  });
+
+  test('honors a caller abort signal alongside the request timeout', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    const reason = new DOMException('Request cancelled', 'AbortError');
+    window.fetch = async (_input, init) => {
+      init?.signal?.throwIfAborted();
+      throw new Error('Expected an aborted request signal');
+    };
+
+    await assert.rejects(
+      api.fetch('/test', {
+        schema: v.undefined(),
+        request: { signal: AbortSignal.abort(reason) },
+      }),
+      (error: unknown) => error === reason,
+    );
+  });
 });
