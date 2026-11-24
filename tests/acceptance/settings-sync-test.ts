@@ -162,6 +162,7 @@ module('Acceptance | Settings sync', function (hooks) {
     await click('.dropdown-toggle');
     await click('.dropdown-menu-visible .dropdown-item');
     assert.dom('.dropdown-toggle').hasText('potber');
+    assert.dom(document.documentElement).hasAttribute('data-theme', 'default');
 
     await click(unlock);
     await fillIn(keyInput, key);
@@ -193,6 +194,9 @@ module('Acceptance | Settings sync', function (hooks) {
     }
 
     assert.dom('.dropdown-toggle').hasText('Tokyo Night');
+    assert
+      .dom(document.documentElement)
+      .hasAttribute('data-theme', 'tokyo-night');
     assert.dom(forget).exists('the recovery key activates this device');
 
     const settings = this.owner.lookup('service:settings') as SettingsService;
