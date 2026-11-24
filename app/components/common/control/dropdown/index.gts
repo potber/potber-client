@@ -11,30 +11,32 @@ import eq from 'ember-truth-helpers/helpers/eq';
 import type { DropdownOption } from './types';
 import InfoButton from 'potber-client/components/common/control/info-button';
 
-interface Args {
+interface Args<Data> {
   label: string;
-  options: DropdownOption[];
-  default?: DropdownOption;
-  onSelect?: (element: DropdownOption) => void;
+  options: DropdownOption<Data>[];
+  default?: DropdownOption<Data>;
+  onSelect?: (element: DropdownOption<Data>) => void;
   size?: ControlSize;
 }
 
-interface Signature {
-  Args: Args;
+interface Signature<Data> {
+  Args: Args<Data>;
   Blocks: {
     info?: InfoButton[];
   };
 }
 
-export default class DropdownComponent extends Component<Signature> {
+export default class DropdownComponent<Data> extends Component<
+  Signature<Data>
+> {
   @service declare renderer: RendererService;
 
   componentId = 'dropdown-' + guidFor(this);
 
-  @tracked locallySelectedOption: DropdownOption | undefined;
+  @tracked locallySelectedOption: DropdownOption<Data> | undefined;
   @tracked expanded = false;
 
-  constructor(owner: Owner, args: Args) {
+  constructor(owner: Owner, args: Args<Data>) {
     super(owner, args);
     if (args.options.length > 0) {
       if (args.default) {
@@ -90,7 +92,7 @@ export default class DropdownComponent extends Component<Signature> {
     this.collapse();
   };
 
-  handleItemClick = (option: DropdownOption) => {
+  handleItemClick = (option: DropdownOption<Data>) => {
     this.locallySelectedOption = option;
     this.collapse();
     if (typeof this.args.onSelect === 'function') {

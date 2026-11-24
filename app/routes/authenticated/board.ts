@@ -37,7 +37,7 @@ export default class BoardRoute extends SlowRoute {
         query: { page },
       });
       return { board };
-    } catch (error: any) {
+    } catch {
       if (transition.from) {
         transition.abort();
       } else {

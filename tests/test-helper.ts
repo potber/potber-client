@@ -25,7 +25,7 @@ function shouldForceModulesToBeLoaded() {
 }
 
 export function start() {
-  setApplication(Application.create(ENV.APP as any));
+  setApplication(Application.create(ENV.APP));
 
   QUnit.config.maxDepth = 12;
   QUnit.dump.maxDepth = 12;

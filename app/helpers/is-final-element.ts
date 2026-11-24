@@ -1,6 +1,6 @@
 import { helper } from '@ember/component/helper';
 
-export function isFinalElement([element, array]: [any, any[]]) {
+export function isFinalElement([element, array]: [unknown, unknown[]]) {
   if (!element || !array || !Array.isArray(array)) {
     throw new Error(
       'is-final-element helper requires exactly two arguments with the second argument being an array.',

@@ -45,19 +45,21 @@ export default class SettingsController extends Controller {
 
   handleSettingSelect = (
     settingKey: keyof Settings,
-    option: DropdownOption,
+    option: DropdownOption<Settings[keyof Settings]>,
   ) => {
     if (this.settings.getSetting(settingKey) === undefined)
       throw new Error(`Unknown setting key: ${settingKey}`);
     this.settings.setSetting(settingKey, option.data);
   };
 
-  handleThemeSelect = (option: DropdownOption) => {
+  handleThemeSelect = (option: DropdownOption<Settings['theme']>) => {
     this.settings.setSetting('theme', option.data);
     this.settingsEffects.apply('theme');
   };
 
-  handleSidebarLayoutSelect = (option: DropdownOption) => {
+  handleSidebarLayoutSelect = (
+    option: DropdownOption<Settings['sidebarLayout']>,
+  ) => {
     if (this.renderer.isDesktop) {
       this.modal.confirm({
         title: 'Desktopmodus',
@@ -70,27 +72,31 @@ export default class SettingsController extends Controller {
     this.settingsEffects.apply('sidebarLayout');
   };
 
-  handleFontSizeSelect = (option: DropdownOption) => {
+  handleFontSizeSelect = (option: DropdownOption<Settings['fontSize']>) => {
     this.settings.setSetting('fontSize', option.data);
     this.settingsEffects.apply('fontSize');
   };
 
-  handleAutoRefreshSidebarSelect = (option: DropdownOption) => {
+  handleAutoRefreshSidebarSelect = (
+    option: DropdownOption<Settings['autoRefreshSidebar']>,
+  ) => {
     this.settings.setSetting('autoRefreshSidebar', option.data);
     window.location.reload();
   };
 
-  handleGesturesSelect = (option: DropdownOption) => {
+  handleGesturesSelect = (option: DropdownOption<Settings['gestures']>) => {
     this.settings.setSetting('gestures', option.data);
     this.settingsEffects.apply('gestures');
   };
 
-  handleDebugSelect = (option: DropdownOption) => {
+  handleDebugSelect = (option: DropdownOption<Settings['debug']>) => {
     this.settings.setSetting('debug', option.data);
     this.settingsEffects.apply('debug');
   };
 
-  handleAppsignalErrorReportingSelect = (option: DropdownOption) => {
+  handleAppsignalErrorReportingSelect = (
+    option: DropdownOption<Settings['appsignalErrorReporting']>,
+  ) => {
     this.settings.setSetting('appsignalErrorReporting', option.data);
     window.location.reload();
   };

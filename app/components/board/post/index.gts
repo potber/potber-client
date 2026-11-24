@@ -122,7 +122,7 @@ export default class PostComponent extends Component<Signature> {
     try {
       const user = await this.api.findUserById(this.post.author.id);
       this.modal.userProfile({ user });
-    } catch (error: any) {
+    } catch {
       // In case of an error, do not call the modal
       return;
     }

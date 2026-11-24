@@ -37,6 +37,11 @@ declare global {
     MEME_HOST_URL: string;
     DEBUG?: boolean;
     version?: string;
+    /** Ember application options that `config/environment.js` sets for tests. */
+    rootElement?: string;
+    autoboot?: boolean;
+    LOG_ACTIVE_GENERATION?: boolean;
+    LOG_VIEW_LOOKUPS?: boolean;
   }
   interface Window {
     APP?: AppEnvironmentOptions;

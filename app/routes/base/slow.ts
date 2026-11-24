@@ -1,5 +1,6 @@
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
+import type Transition from '@ember/routing/transition';
 import RendererService from 'potber-client/services/renderer';
 
 /**
@@ -10,9 +11,9 @@ import RendererService from 'potber-client/services/renderer';
 export default class SlowRoute extends Route {
   @service declare renderer: RendererService;
 
-  beforeModel(transition: any) {
+  beforeModel(transition: Transition) {
     this.renderer.showLoadingIndicator();
-    transition.promise.finally(() => {
+    void transition.promise?.finally(() => {
       this.renderer.hideLoadingIndicator();
     });
   }

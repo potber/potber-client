@@ -1,4 +1,4 @@
-export interface DropdownOption {
+export interface DropdownOption<Data = unknown> {
   label: string;
-  data: any;
+  data: Data;
 }

@@ -111,7 +111,6 @@ module.exports = [
     rules: {
       ...tsCompatibilityRules,
       ...tsRecommendedRules,
-      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { caughtErrors: 'none' }],
       'ember/no-at-ember-render-modifiers': 'off',
     },
@@ -152,7 +151,6 @@ module.exports = [
       ...emberPlugin.configs['recommended-gts'].rules,
       ...tsCompatibilityRules,
       ...tsRecommendedRules,
-      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { caughtErrors: 'none' }],
       'ember/no-at-ember-render-modifiers': 'off',
     },
