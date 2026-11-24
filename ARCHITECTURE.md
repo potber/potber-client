@@ -47,7 +47,7 @@ The root HTML entrypoint attempts to load optional `/injected-config.js` before 
 
 Ordinary forum requests flow from routes, controllers, components, or model wrappers through endpoint methods exposed on `ApiService`. That service adds bearer credentials, serializes query parameters, applies timeout behavior, maps failures to notifications, and invalidates the session on HTTP 401.
 
-The forum transport requires a Valibot response schema for every endpoint. Endpoints that return data require a matching body. Mutations that return no data validate an empty success response as `undefined`. Schema-backed calls infer the schema output type. Validation errors use the existing API error handling and report field paths without payload values. Error responses validate recognized fields before falling back to the HTTP status and status text. Settings sync, Imgpot, and the deployment version check validate responses at their own transport boundaries.
+The forum transport requires a Valibot response schema for every endpoint. Endpoints that return data require a matching body. Mutations that return no data validate an empty success response as `undefined`. Schema-backed calls infer the schema output type. Validation errors use the existing API error handling and report field paths without payload values. The [forum response decoder](app/services/api/response.ts) handles both success payloads and error responses. It validates recognized error fields before falling back to the HTTP status and status text. Settings sync, Imgpot, and the deployment version check validate responses at their own transport boundaries.
 
 ### Content rendering
 
