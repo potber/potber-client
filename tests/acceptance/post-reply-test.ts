@@ -2,6 +2,7 @@ import {
   click,
   currentURL,
   fillIn,
+  find,
   findAll,
   visit,
   waitFor,
@@ -269,6 +270,32 @@ module('Acceptance | Writing posts', function (hooks) {
       submittedReplies.map(({ threadId, message }) => ({ threadId, message })),
       [{ threadId, message: 'A reply from the browser' }],
     );
+  });
+
+  test('inserting a link updates the reply draft and restores the caret', async function (assert) {
+    await visit(`/thread?TID=${threadId}`);
+    await waitUntil(() => startupRefreshed);
+    await click(replyLink);
+    await fillIn(editor, 'Before after');
+    const textarea = find(editor);
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+      throw new Error('Reply textarea missing');
+    }
+    textarea.setSelectionRange(0, 7);
+    await click('button[title="Link"]');
+
+    const form = 'link-insert-modal-form';
+    await fillIn(`#${form} input[type="url"]`, 'https://example.com/');
+    await fillIn(`#${form} input[type="text"]`, 'Example');
+    await click(`button[form="${form}"]`);
+
+    const prefix = 'Before [url=https://example.com/]Example[/url]';
+    assert.dom(editor).hasValue(prefix + 'after');
+    assert.dom(editor).isFocused();
+    assert.strictEqual(textarea.selectionStart, prefix.length);
+    assert.strictEqual(textarea.selectionEnd, prefix.length);
+    await click(submit);
+    assert.strictEqual(submittedReplies[0]?.message, prefix + 'after');
   });
 
   test('a failed submission keeps the reply draft and lets the user retry', async function (assert) {

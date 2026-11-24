@@ -5,13 +5,11 @@ import type {
 } from '@fortawesome/fontawesome-common-types';
 import Component from '@glimmer/component';
 import Button from 'potber-client/components/common/control/button';
-import { Posts, Threads } from 'potber-client/services/api/types';
 import ModalService from 'potber-client/services/modal';
+import { insertMarkup, type MarkupControlSignature } from '../insert-markup';
 
 interface Signature {
-  Args: {
-    post: Posts.Write | Threads.OpeningPost;
-    textarea: HTMLTextAreaElement;
+  Args: MarkupControlSignature['Args'] & {
     opening: string;
     closing: string;
     title: string;
@@ -43,22 +41,8 @@ export default class PostFormMessageSimpleInput extends Component<Signature> {
   };
 
   handleSubmit = (value: string) => {
-    const message = this.args.post.message || '';
-    const selectionEnd = this.args.textarea.selectionEnd;
     const insertion = `${this.args.opening}${value}${this.args.closing}`;
-    this.args.post.message = `${message.substring(
-      0,
-      selectionEnd,
-    )}${insertion}${message.substring(selectionEnd, message.length)}`;
-    this.args.textarea.value = this.args.post.message;
-    // Close the dialog and...
-    this.modal.close(() => {
-      // ...reselect the textarea and update the caret position to match
-      // the inserted emoji so the user can continue typing
-      const newCaretPosition = selectionEnd + insertion.length;
-      this.args.textarea.select();
-      this.args.textarea.setSelectionRange(newCaretPosition, newCaretPosition);
-    });
+    insertMarkup(this.args.post, this.args.textarea, insertion, this.modal);
   };
 
   <template>
