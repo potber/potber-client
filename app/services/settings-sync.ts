@@ -1,3 +1,9 @@
+import {
+  createInitialMetadata,
+  createOverwriteMetadata,
+  metadataFromPayload,
+  nextModifiedAt,
+} from 'potber-client/utils/settings-sync-clocks';
 import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import type { PersistedSavedPost } from 'potber-client/models/post';
@@ -175,7 +181,7 @@ export default class SettingsSyncService extends Service {
       const { key, recoveryKey } = await createRecoveryKey();
       this.currentSettings = { ...localSettings };
       const values = this.currentValues;
-      const metadata = this.createInitialMetadata(values);
+      const metadata = createInitialMetadata(values, this.createClock);
       writeSyncMetadata(this.requireUserId(), metadata);
       const encrypted = await this.encrypt(values, key, metadata);
       const remote = await this.writeRemote(encrypted);
@@ -221,7 +227,7 @@ export default class SettingsSyncService extends Service {
       const localValues = this.currentValues;
       const decrypted = await this.decryptForUnlock(recoveryKey);
       const values = mergeUnlockValues(source, localValues, decrypted.values);
-      let metadata = this.metadataFromPayload(values, decrypted.payload);
+      let metadata = metadataFromPayload(values, decrypted.payload);
 
       if (syncedValuesDiffer(decrypted.values, values)) {
         const overwritten = await this.overwriteRemote(values, decrypted);
@@ -276,10 +282,7 @@ export default class SettingsSyncService extends Service {
   private valueChanged(key: string) {
     if (this.state === 'disabled' || this.state === 'locked') return;
     const metadata = readSyncMetadata(this.userId) ?? { fields: {} };
-    metadata.fields[key] = {
-      modifiedAt: this.nextModifiedAt(metadata),
-      deviceId: getOrCreateDeviceId(),
-    };
+    metadata.fields[key] = this.createClock(metadata);
     writeSyncMetadata(this.requireUserId(), metadata);
     const values = this.currentValues;
     this.pendingValues = values;
@@ -307,7 +310,8 @@ export default class SettingsSyncService extends Service {
 
     try {
       const metadata =
-        readSyncMetadata(this.userId) ?? this.createInitialMetadata(values);
+        readSyncMetadata(this.userId) ??
+        createInitialMetadata(values, this.createClock);
       writeSyncMetadata(this.requireUserId(), metadata);
       const encrypted = await this.encrypt(values, this.key, metadata);
       this.remote = await this.writeRemote({
@@ -381,10 +385,7 @@ export default class SettingsSyncService extends Service {
       localValues,
       payload,
       readSyncMetadata(this.userId),
-      (metadata) => ({
-        modifiedAt: this.nextModifiedAt(metadata),
-        deviceId: getOrCreateDeviceId(),
-      }),
+      this.createClock,
     );
     writeSyncMetadata(this.requireUserId(), merged.metadata);
     return merged;
@@ -421,7 +422,12 @@ export default class SettingsSyncService extends Service {
     let payload = decrypted.payload;
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const metadata = this.createOverwriteMetadata(values, payload);
+      const metadata = createOverwriteMetadata(
+        values,
+        payload,
+        Date.now(),
+        getOrCreateDeviceId,
+      );
       const encrypted = await this.encrypt(values, decrypted.key, metadata);
       try {
         const written = await this.writeRemote({
@@ -461,12 +467,7 @@ export default class SettingsSyncService extends Service {
     for (const [fieldKey, value] of Object.entries(values)) {
       fields[fieldKey] = {
         value,
-        clock:
-          metadata.fields[fieldKey] ??
-          ({
-            modifiedAt: this.nextModifiedAt(metadata),
-            deviceId: getOrCreateDeviceId(),
-          } satisfies FieldClock),
+        clock: metadata.fields[fieldKey] ?? this.createClock(metadata),
       };
     }
     return encryptSettings(
@@ -492,60 +493,12 @@ export default class SettingsSyncService extends Service {
     this.applyCollectionsFromValues(merged.values);
     const metadata =
       readSyncMetadata(this.userId) ??
-      this.createInitialMetadata(merged.values);
+      createInitialMetadata(merged.values, this.createClock);
     const encrypted = await this.encrypt(merged.values, this.key!, metadata);
     this.remote = await this.writeRemote({
       ...encrypted,
       expectedRevision: remote.revision,
     });
-  }
-
-  private createInitialMetadata(
-    values: Record<string, unknown>,
-  ): SettingsSyncMetadata {
-    const metadata: SettingsSyncMetadata = { fields: {} };
-    for (const key of Object.keys(values)) {
-      metadata.fields[key] = {
-        modifiedAt: this.nextModifiedAt(metadata),
-        deviceId: getOrCreateDeviceId(),
-      };
-    }
-    return metadata;
-  }
-
-  private createOverwriteMetadata(
-    values: Record<string, unknown>,
-    remote: EncryptedSettingsPayload,
-  ): SettingsSyncMetadata {
-    const latestRemoteClock = Object.values(remote.fields).reduce(
-      (latest, field) => Math.max(latest, field.clock.modifiedAt),
-      0,
-    );
-    const firstModifiedAt = Math.max(Date.now(), latestRemoteClock + 1);
-    const metadata: SettingsSyncMetadata = { fields: {} };
-
-    Object.keys(values).forEach((fieldKey, index) => {
-      metadata.fields[fieldKey] = {
-        modifiedAt: firstModifiedAt + index,
-        deviceId: getOrCreateDeviceId(),
-      };
-    });
-    return metadata;
-  }
-
-  private metadataFromPayload(
-    values: Record<string, unknown>,
-    payload: EncryptedSettingsPayload,
-  ): SettingsSyncMetadata {
-    const metadata: SettingsSyncMetadata = { fields: {} };
-    for (const fieldKey of Object.keys(values)) {
-      const remoteField = payload.fields[fieldKey];
-      if (!remoteField) {
-        throw new Error(`Missing encrypted configuration field: ${fieldKey}`);
-      }
-      metadata.fields[fieldKey] = remoteField.clock;
-    }
-    return metadata;
   }
 
   private get currentValues(): Record<string, unknown> {
@@ -583,13 +536,10 @@ export default class SettingsSyncService extends Service {
     }
   }
 
-  private nextModifiedAt(metadata: SettingsSyncMetadata) {
-    const latest = Object.values(metadata.fields).reduce(
-      (maximum, clock) => Math.max(maximum, clock.modifiedAt),
-      0,
-    );
-    return Math.max(Date.now(), latest + 1);
-  }
+  private createClock = (metadata: SettingsSyncMetadata): FieldClock => ({
+    modifiedAt: nextModifiedAt(metadata, Date.now()),
+    deviceId: getOrCreateDeviceId(),
+  });
 
   private ensureAuthenticated() {
     if (!this.accessToken || !this.userId) {
