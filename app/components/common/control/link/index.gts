@@ -1,80 +1,26 @@
-import { LinkTo } from '@ember/routing';
-import { service } from '@ember/service';
-import Component from '@glimmer/component';
-import { on } from '@ember/modifier';
-import RendererService from 'potber-client/services/renderer';
+import ButtonLink from 'potber-client/components/common/button-link';
+import type { Signature as ButtonLinkSignature } from 'potber-client/components/common/button-link';
+import type { TOC } from '@ember/component/template-only';
 
-export interface Signature {
-  Element: HTMLElement;
-  Args: {
-    route: string;
-    model?: string;
-    query?: Record<string, unknown>;
-    size?: ControlSize;
-    variant?: ControlVariant;
-    title?: string;
-    disabled?: boolean;
-    iconSize?: IconSize;
-    onClick?: () => void;
-  };
-  Blocks: {
-    default: [];
-  };
+interface Signature extends Omit<ButtonLinkSignature, 'Args'> {
+  Args: Omit<ButtonLinkSignature['Args'], 'disabledClass'>;
 }
 
-export default class CommonControlLinkComponent extends Component<Signature> {
-  @service declare renderer: RendererService;
-  declare args: Signature['Args'];
+const ControlLink: TOC<Signature> = <template>
+  <ButtonLink
+    @route={{@route}}
+    @model={{@model}}
+    @query={{@query}}
+    @size={{@size}}
+    @variant={{@variant}}
+    @disabled={{@disabled}}
+    @disabledClass='button-link-disabled'
+    @iconSize={{@iconSize}}
+    @onClick={{@onClick}}
+    ...attributes
+  >
+    {{yield}}
+  </ButtonLink>
+</template>;
 
-  handleClick = (event: MouseEvent) => {
-    this.renderer.createClickRipple(event);
-    if (this.args.onClick) {
-      this.args.onClick();
-    }
-  };
-
-  get variant() {
-    return this.args.variant || 'primary-transparent';
-  }
-
-  get iconSize() {
-    return this.args.iconSize || 'auto';
-  }
-
-  get query() {
-    return this.args.query || {};
-  }
-
-  <template>
-    {{#if @model}}
-      <LinkTo
-        class='button-link control-size-{{@size}}
-          icon-size-{{this.iconSize}}
-          control-variant-{{this.variant}}
-          {{if @disabled "button-link-disabled"}}'
-        @route={{@route}}
-        @query={{this.query}}
-        @model={{@model}}
-        @disabled={{@disabled}}
-        {{on 'click' this.handleClick}}
-        ...attributes
-      >
-        {{yield}}
-      </LinkTo>
-    {{else}}
-      <LinkTo
-        class='button-link control-size-{{@size}}
-          icon-size-{{this.iconSize}}
-          control-variant-{{this.variant}}
-          {{if @disabled "button-link-disabled"}}'
-        @route={{@route}}
-        @query={{this.query}}
-        @disabled={{@disabled}}
-        {{on 'click' this.handleClick}}
-        ...attributes
-      >
-        {{yield}}
-      </LinkTo>
-    {{/if}}
-  </template>
-}
+export default ControlLink;
