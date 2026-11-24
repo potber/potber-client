@@ -44,7 +44,7 @@ const collections: SyncedCollections = {
 class SettingsSyncStub extends SettingsSyncService {
   remoteValue: RemoteUserConfiguration | null = null;
   persistedKey?: CryptoKey;
-  conflictNextWrite = false;
+  conflictsRemaining = 0;
   writes: Array<{
     version: number;
     iv: string;
@@ -62,8 +62,8 @@ class SettingsSyncStub extends SettingsSyncService {
     ciphertext: string;
     expectedRevision?: number;
   }) {
-    if (this.conflictNextWrite) {
-      this.conflictNextWrite = false;
+    if (this.conflictsRemaining > 0) {
+      this.conflictsRemaining -= 1;
       throw new SettingsSyncRequestError(409, 'Conflict');
     }
     this.writes.push(value);
@@ -659,7 +659,7 @@ module('Unit | Service | SettingsSync', function (hooks) {
 
     const changedSettings = { ...settings, theme: Theme.default };
     service.settingChanged('theme', changedSettings);
-    service.conflictNextWrite = true;
+    service.conflictsRemaining = 1;
     await service.syncNow();
 
     assert.strictEqual(service.state, 'enabled');
@@ -670,5 +670,46 @@ module('Unit | Service | SettingsSync', function (hooks) {
       'the merged payload is retried',
     );
     assert.strictEqual(service.writes[1]!.expectedRevision, 1);
+  });
+
+  test('recovers with the local settings after an overwrite conflict', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    const key = await service.enable(settings);
+    await service.forgetThisDevice();
+
+    const local = { ...settings, theme: Theme.default };
+    await service.initialize(local, authentication);
+    service.conflictsRemaining = 1;
+
+    assert.deepEqual(await service.unlock(key, local, 'local'), local);
+    assert.strictEqual(service.state, 'enabled');
+    assert.strictEqual(service.remoteValue?.revision, 2);
+    assert.strictEqual(service.writes[1]?.expectedRevision, 1);
+  });
+
+  test('keeps the pending edit when the conflict retry also fails', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    await service.enable(settings);
+
+    const local = { ...settings, theme: Theme.default };
+    service.settingChanged('theme', local);
+    service.conflictsRemaining = 2;
+    await service.syncNow();
+
+    assert.strictEqual(service.lastError, 'Conflict');
+    assert.strictEqual(service.writes.length, 1);
+
+    await service.syncNow();
+    assert.strictEqual(service.lastError, null);
+    assert.strictEqual(service.remoteValue?.revision, 2);
+    assert.deepEqual(await service.initialize(settings, authentication), local);
   });
 });
