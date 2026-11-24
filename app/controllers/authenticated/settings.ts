@@ -9,7 +9,7 @@ import ModalService from 'potber-client/services/modal';
 import type { SettingsRouteModel } from 'potber-client/routes/authenticated/settings';
 import type { Settings } from 'potber-client/services/settings';
 import SettingsService from 'potber-client/services/settings';
-import DeviceManagerService from 'potber-client/services/device-manager';
+import type SettingsEffectsService from 'potber-client/services/settings-effects';
 import CustomSession from 'potber-client/services/custom-session';
 import {
   getCurrentSettingOptions,
@@ -31,7 +31,7 @@ export default class SettingsController extends Controller {
   @service declare modal: ModalService;
   @service declare deploymentVersion: DeploymentVersionService;
   @service declare sessionSetup: SessionSetupService;
-  @service declare deviceManager: DeviceManagerService;
+  @service declare settingsEffects: SettingsEffectsService;
   @service declare settingsSync: SettingsSyncService;
   @service declare intl: IntlService;
 
@@ -54,7 +54,7 @@ export default class SettingsController extends Controller {
 
   handleThemeSelect = (option: DropdownOption) => {
     this.settings.setSetting('theme', option.data);
-    this.renderer.updateTheme();
+    this.settingsEffects.apply('theme');
   };
 
   handleSidebarLayoutSelect = (option: DropdownOption) => {
@@ -67,12 +67,12 @@ export default class SettingsController extends Controller {
       });
     }
     this.settings.setSetting('sidebarLayout', option.data);
-    this.renderer.updateSidebarLayout();
+    this.settingsEffects.apply('sidebarLayout');
   };
 
   handleFontSizeSelect = (option: DropdownOption) => {
     this.settings.setSetting('fontSize', option.data);
-    this.renderer.updateFontSize();
+    this.settingsEffects.apply('fontSize');
   };
 
   handleAutoRefreshSidebarSelect = (option: DropdownOption) => {
@@ -82,12 +82,12 @@ export default class SettingsController extends Controller {
 
   handleGesturesSelect = (option: DropdownOption) => {
     this.settings.setSetting('gestures', option.data);
-    this.deviceManager.toggleGesturesSupport();
+    this.settingsEffects.apply('gestures');
   };
 
   handleDebugSelect = (option: DropdownOption) => {
     this.settings.setSetting('debug', option.data);
-    this.settings.toggleDebugMode(option.data);
+    this.settingsEffects.apply('debug');
   };
 
   handleAppsignalErrorReportingSelect = (option: DropdownOption) => {

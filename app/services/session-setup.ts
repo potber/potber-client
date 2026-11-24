@@ -1,10 +1,9 @@
 import { isDestroying } from '@ember/destroyable';
 import Service, { service } from '@ember/service';
 import type CustomSession from './custom-session';
-import type DeviceManagerService from './device-manager';
 import type LocalStorageService from './local-storage';
 import type NewsfeedService from './newsfeed';
-import type RendererService from './renderer';
+import type SettingsEffectsService from './settings-effects';
 import type SettingsService from './settings';
 import type { Settings } from './settings';
 import type SettingsSyncService from './settings-sync';
@@ -17,8 +16,7 @@ export default class SessionSetupService extends Service {
   @service declare settingsSync: SettingsSyncService;
   @service declare socials: SocialsService;
   @service declare localStorage: LocalStorageService;
-  @service declare renderer: RendererService;
-  @service declare deviceManager: DeviceManagerService;
+  @service declare settingsEffects: SettingsEffectsService;
   @service declare newsfeed: NewsfeedService;
 
   async setup() {
@@ -52,11 +50,7 @@ export default class SessionSetupService extends Service {
   private applySyncedSettings = (settings: Settings) => {
     if (isDestroying(this)) return;
     this.settings.replaceSettings(settings);
-    this.renderer.updateTheme();
-    this.renderer.updateSidebarLayout();
-    this.renderer.updateFontSize();
-    this.deviceManager.toggleGesturesSupport();
-    this.settings.toggleDebugMode(this.settings.getSetting('debug'));
+    this.settingsEffects.applyAll();
   };
 
   private applySyncedCollections = (collections: SyncedCollections) => {
