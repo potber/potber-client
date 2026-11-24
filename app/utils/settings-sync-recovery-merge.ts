@@ -10,6 +10,7 @@ import {
 
 const blockedUsersSchema = v.array(blockedUserSchema);
 const savedPostsSchema = v.array(persistedSavedPostSchema);
+const boardFavoriteIdsSchema = v.array(v.string());
 
 export const BLOCKED_USERS_FIELD = 'blockedUsers';
 export const BOARD_FAVORITES_FIELD = 'boardFavoriteIds';
@@ -32,7 +33,7 @@ export function collectionsFromValues(
   if (!v.is(blockedUsersSchema, blockedUsers)) {
     throw new Error('Invalid encrypted blocklist.');
   }
-  if (!isStringArray(boardFavoriteIds)) {
+  if (!v.is(boardFavoriteIdsSchema, boardFavoriteIds)) {
     throw new Error('Invalid encrypted board favorites.');
   }
   if (!v.is(savedPostsSchema, savedPosts)) {
@@ -48,36 +49,24 @@ export function mergeUnlockValues(
 ) {
   const primary = source === 'local' ? localValues : remoteValues;
   const secondary = source === 'local' ? remoteValues : localValues;
-  const primaryBlockedUsers = primary[BLOCKED_USERS_FIELD];
-  const secondaryBlockedUsers = secondary[BLOCKED_USERS_FIELD];
-  const primaryBoardFavorites = primary[BOARD_FAVORITES_FIELD];
-  const secondaryBoardFavorites = secondary[BOARD_FAVORITES_FIELD];
-  const primarySavedPosts = primary[SAVED_POSTS_FIELD];
-  const secondarySavedPosts = secondary[SAVED_POSTS_FIELD];
-
-  if (
-    !v.is(blockedUsersSchema, primaryBlockedUsers) ||
-    !v.is(blockedUsersSchema, secondaryBlockedUsers) ||
-    !isStringArray(primaryBoardFavorites) ||
-    !isStringArray(secondaryBoardFavorites) ||
-    !v.is(savedPostsSchema, primarySavedPosts) ||
-    !v.is(savedPostsSchema, secondarySavedPosts)
-  ) {
-    throw new Error('Invalid collections while unlocking settings sync.');
-  }
+  const primaryCollections = collectionsFromValues(primary);
+  const secondaryCollections = collectionsFromValues(secondary);
 
   return {
     ...primary,
     [BLOCKED_USERS_FIELD]: unionById(
-      primaryBlockedUsers,
-      secondaryBlockedUsers,
+      primaryCollections.blockedUsers,
+      secondaryCollections.blockedUsers,
     ),
     [BOARD_FAVORITES_FIELD]: unionBy(
-      primaryBoardFavorites,
-      secondaryBoardFavorites,
+      primaryCollections.boardFavoriteIds,
+      secondaryCollections.boardFavoriteIds,
       (id) => id,
     ),
-    [SAVED_POSTS_FIELD]: unionById(primarySavedPosts, secondarySavedPosts),
+    [SAVED_POSTS_FIELD]: unionById(
+      primaryCollections.savedPosts,
+      secondaryCollections.savedPosts,
+    ),
   };
 }
 
@@ -151,11 +140,5 @@ function arraysEqual(first: unknown, second: unknown): boolean {
     Array.isArray(second) &&
     first.length === second.length &&
     first.every((entry, index) => jsonValuesEqual(entry, second[index]))
-  );
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
   );
 }
