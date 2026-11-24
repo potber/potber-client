@@ -1,3 +1,4 @@
+import * as v from 'valibot';
 import Service from '@ember/service';
 import { module, test } from 'qunit';
 import ApiService from 'potber-client/services/api';
@@ -69,6 +70,7 @@ module('Unit | Service | Api', function (hooks) {
     const api = this.owner.lookup('service:api') as ApiService;
 
     const result = await api.fetch('/test', {
+      schema: v.object({ ok: v.boolean() }),
       query: {
         flag: false,
         count: 0,
@@ -148,9 +150,12 @@ module('Unit | Service | Api', function (hooks) {
     const session = this.owner.lookup('service:session') as SessionStub;
     const messages = this.owner.lookup('service:messages') as MessagesStub;
 
-    await assert.rejects(api.fetch('/test'), (error: unknown) => {
-      return error instanceof ApiError && error.statusCode === 401;
-    });
+    await assert.rejects(
+      api.fetch('/test', { schema: v.undefined() }),
+      (error: unknown) => {
+        return error instanceof ApiError && error.statusCode === 401;
+      },
+    );
 
     assert.strictEqual(session.invalidateCalls, 1);
     assert.deepEqual(messages.notifications, []);
@@ -200,9 +205,12 @@ module('Unit | Service | Api', function (hooks) {
     try {
       const api = this.owner.lookup('service:api') as ApiService;
 
-      await assert.rejects(api.fetch('/test'), (error: unknown) => {
-        return error instanceof DOMException && error.name === 'TimeoutError';
-      });
+      await assert.rejects(
+        api.fetch('/test', { schema: v.undefined() }),
+        (error: unknown) => {
+          return error instanceof DOMException && error.name === 'TimeoutError';
+        },
+      );
     } finally {
       appConfig.httpTimeoutThreshold = originalTimeout;
     }
