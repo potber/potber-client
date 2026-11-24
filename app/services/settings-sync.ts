@@ -49,7 +49,12 @@ import {
   type SettingsSyncUnlockSource,
   type SyncedCollections,
 } from 'potber-client/utils/settings-sync-recovery-merge';
-import type { Settings } from './settings';
+import {
+  preferenceFieldKey,
+  preferencesFromSyncValues,
+  preferencesToSyncValues,
+} from 'potber-client/utils/settings-sync-preferences';
+import type { Settings } from './settings/types';
 import type { BlockedUser } from './socials';
 
 export {
@@ -63,7 +68,6 @@ export type {
 } from 'potber-client/utils/settings-sync-recovery-merge';
 
 const SYNC_DEBOUNCE_MS = 750;
-const SETTINGS_FIELD_PREFIX = 'settings.';
 
 export type SettingsSyncState =
   'busy' | 'disabled' | 'locked' | 'enabled' | 'unavailable';
@@ -225,7 +229,7 @@ export default class SettingsSyncService extends Service {
         decrypted.remote = overwritten.remote;
       }
 
-      const settings = this.settingsForValues(values);
+      const settings = preferencesFromSyncValues(values, this.currentSettings);
       const collections = collectionsFromValues(values);
       await this.storeKey(decrypted.key);
       writeSyncMetadata(this.requireUserId(), metadata);
@@ -245,7 +249,7 @@ export default class SettingsSyncService extends Service {
   settingChanged(key: keyof Settings, settings: Settings) {
     this.currentSettings = { ...settings };
     if (this.state === 'disabled' || !this.userId) return;
-    this.valueChanged(`${SETTINGS_FIELD_PREFIX}${key}`);
+    this.valueChanged(preferenceFieldKey(key));
   }
 
   blockedUsersChanged(blockedUsers: BlockedUser[]) {
@@ -545,39 +549,24 @@ export default class SettingsSyncService extends Service {
   }
 
   private get currentValues(): Record<string, unknown> {
-    const settings = Object.fromEntries(
-      Object.entries(this.currentSettings ?? {}).map(([key, value]) => [
-        `${SETTINGS_FIELD_PREFIX}${key}`,
-        value,
-      ]),
-    );
     return {
-      ...settings,
+      ...preferencesToSyncValues(this.currentSettings),
       [BLOCKED_USERS_FIELD]: this.collections.blockedUsers,
       [BOARD_FAVORITES_FIELD]: this.collections.boardFavoriteIds,
       [SAVED_POSTS_FIELD]: this.collections.savedPosts,
     };
   }
 
-  private settingsForValues(values: Record<string, unknown>): Settings {
-    const settings = { ...this.currentSettings } as Record<string, unknown>;
-    for (const key of Object.keys(settings)) {
-      const fieldKey = `${SETTINGS_FIELD_PREFIX}${key}`;
-      if (!(fieldKey in values)) {
-        throw new Error(`Missing encrypted configuration field: ${fieldKey}`);
-      }
-      settings[key] = values[fieldKey];
-    }
-    return settings as unknown as Settings;
-  }
-
   private settingsFromValues(values: Record<string, unknown>): Settings {
-    this.currentSettings = this.settingsForValues(values);
+    this.currentSettings = preferencesFromSyncValues(
+      values,
+      this.currentSettings,
+    );
     return this.currentSettings;
   }
 
   private validateValues(values: Record<string, unknown>) {
-    this.settingsForValues(values);
+    preferencesFromSyncValues(values, this.currentSettings);
     collectionsFromValues(values);
   }
 

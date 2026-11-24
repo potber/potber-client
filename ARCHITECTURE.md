@@ -61,7 +61,7 @@ The rendering boundary remains distinct from parsing: post and private-message c
 
 `SettingsSyncService` coordinates per-user encrypted payloads, recovery/unlock behavior, field clocks, revision conflicts, and collection merging. It uses Web Crypto for encryption, IndexedDB for key persistence, and localStorage for synchronization metadata/device identity. The [settings sync transport](app/utils/settings-sync-transport.ts) handles authenticated requests to `/user-configuration`.
 
-Persisted field names, payload versions, clocks, and remote revisions form compatibility boundaries. Keep validation, merge behavior, and unlock semantics consistent when changing them.
+The [sync preference mapping](app/utils/settings-sync-preferences.ts) translates preferences to the v1 `settings.*` fields and normalizes decoded values. Persisted field names, payload versions, clocks, and remote revisions form compatibility boundaries. Keep validation, merge behavior, and unlock semantics consistent when changing them.
 
 ## Boundaries and invariants
 
