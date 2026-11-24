@@ -150,15 +150,15 @@ Bunny setup per environment:
 
 Settings of the GitHub Environments `test`, `production` and `preview`:
 
-| Kind     | Name                                                                          | Notes                                                                                |
-| -------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Variable | `BUNNY_STORAGE_ZONE`                                                          | Storage Zone name                                                                    |
-| Variable | `BUNNY_PULL_ZONE_ID`                                                          | Numeric Pull Zone ID                                                                 |
-| Variable | `BUNNY_STORAGE_HOSTNAME`                                                      | Optional, defaults to `storage.bunnycdn.com` (Falkenstein)                           |
-| Variable | `API_URL`, `AUTH_ISSUER_URL`, `AUTH_CLIENT_ID`                                | Required                                                                             |
-| Variable | `IMGPOT_URL`, `APPSIGNAL_FRONTEND_KEY`, `APPSIGNAL_REVISION`, `MEME_HOST_URL` | Optional; empty values fall back to the build-time config in `config/environment.js` |
-| Secret   | `BUNNY_STORAGE_PASSWORD`                                                      | Storage Zone password                                                                |
-| Secret   | `BUNNYNET_API_KEY`                                                            | Account API key for the cache purge; can also be a repository secret                 |
+| Kind     | Name                                           | Notes                                                                                |
+| -------- | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Variable | `BUNNY_STORAGE_ZONE`                           | Storage Zone name                                                                    |
+| Variable | `BUNNY_PULL_ZONE_ID`                           | Numeric Pull Zone ID                                                                 |
+| Variable | `BUNNY_STORAGE_HOSTNAME`                       | Optional, defaults to `storage.bunnycdn.com` (Falkenstein)                           |
+| Variable | `API_URL`, `AUTH_ISSUER_URL`, `AUTH_CLIENT_ID` | Required                                                                             |
+| Variable | `IMGPOT_URL`, `MEME_HOST_URL`                  | Optional; empty values fall back to the build-time config in `config/environment.js` |
+| Secret   | `BUNNY_STORAGE_PASSWORD`                       | Storage Zone password                                                                |
+| Secret   | `BUNNYNET_API_KEY`                             | Account API key for the cache purge; can also be a repository secret                 |
 
 If the `production` environment has deployment branch rules, allow `v*` tags.
 

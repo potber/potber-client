@@ -3,8 +3,7 @@ name: deploy-static
 # Builds the client and publishes it to a Bunny Storage Zone behind a Pull Zone.
 # All settings come from the GitHub Environment named by `environment`:
 #   vars:    BUNNY_STORAGE_ZONE, BUNNY_PULL_ZONE_ID, BUNNY_STORAGE_HOSTNAME (optional),
-#            API_URL, AUTH_ISSUER_URL, AUTH_CLIENT_ID, IMGPOT_URL, APPSIGNAL_FRONTEND_KEY,
-#            APPSIGNAL_REVISION and MEME_HOST_URL (the last four optional)
+#            API_URL, AUTH_ISSUER_URL, AUTH_CLIENT_ID, IMGPOT_URL and MEME_HOST_URL (the last two optional)
 #   secrets: BUNNY_STORAGE_PASSWORD, BUNNYNET_API_KEY
 # The job is skipped while BUNNY_STORAGE_ZONE is unset in that environment.
 # `storage_prefix` deploys into a folder of the Storage Zone (PR previews).
@@ -18,10 +17,6 @@ on:
         required: true
       storage_prefix:
         description: "Optional folder inside the Storage Zone, e.g. 'pr-132'."
-        type: string
-        default: ""
-      appsignal_revision:
-        description: "Optional AppSignal revision; overrides the environment's APPSIGNAL_REVISION."
         type: string
         default: ""
     outputs:
@@ -80,8 +75,6 @@ jobs:
           IMGPOT_URL: ${{ vars.IMGPOT_URL }}
           AUTH_ISSUER_URL: ${{ vars.AUTH_ISSUER_URL }}
           AUTH_CLIENT_ID: ${{ vars.AUTH_CLIENT_ID }}
-          APPSIGNAL_FRONTEND_KEY: ${{ vars.APPSIGNAL_FRONTEND_KEY }}
-          APPSIGNAL_REVISION: ${{ inputs.appsignal_revision || vars.APPSIGNAL_REVISION }}
           MEME_HOST_URL: ${{ vars.MEME_HOST_URL }}
 
       - name: Upload to Bunny Storage

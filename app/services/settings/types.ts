@@ -13,7 +13,6 @@ export interface Settings {
   transitions: Transitions;
   gestures: Gestures;
   debug: boolean;
-  appsignalErrorReporting: boolean;
 }
 
 export enum AvatarStyle {

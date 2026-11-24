@@ -5,7 +5,7 @@ set -eu
 
 OUTPUT="${1:?usage: $0 <output-file>}"
 TEMPLATE="$(dirname "$0")/injected-config.js.template"
-VARIABLES='API_URL IMGPOT_URL AUTH_ISSUER_URL AUTH_CLIENT_ID APPSIGNAL_FRONTEND_KEY APPSIGNAL_REVISION MEME_HOST_URL'
+VARIABLES='API_URL IMGPOT_URL AUTH_ISSUER_URL AUTH_CLIENT_ID MEME_HOST_URL'
 
 if [ -z "${API_URL:-}" ]; then
   echo "$0: API_URL is required" >&2

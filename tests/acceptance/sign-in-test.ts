@@ -114,7 +114,6 @@ module('Acceptance | Sign-in', function (hooks) {
       JSON.stringify({
         landingPage: LandingPage.home,
         autoRefreshSidebar: false,
-        appsignalErrorReporting: false,
       }),
     );
 

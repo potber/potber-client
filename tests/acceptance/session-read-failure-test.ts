@@ -45,7 +45,6 @@ module('Acceptance | Session read failure', function (hooks) {
       JSON.stringify({
         landingPage: LandingPage.home,
         autoRefreshSidebar: false,
-        appsignalErrorReporting: false,
       }),
     );
 

@@ -8,12 +8,18 @@ export function preferenceFieldKey(key: string): string {
 export function preferencesToSyncValues(
   preferences?: Settings,
 ): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(preferences ?? {}).map(([key, value]) => [
-      preferenceFieldKey(key),
-      value,
-    ]),
-  );
+  if (!preferences) return {};
+
+  return {
+    ...Object.fromEntries(
+      Object.entries(preferences).map(([key, value]) => [
+        preferenceFieldKey(key),
+        value,
+      ]),
+    ),
+    // Older v1 clients require this field when recovering settings.
+    'settings.appsignalErrorReporting': false,
+  };
 }
 
 export function preferencesFromSyncValues(

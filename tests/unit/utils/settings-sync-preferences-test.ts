@@ -15,7 +15,14 @@ module('Unit | Utility | Settings sync preferences', function () {
 
     assert.strictEqual(values['settings.theme'], Theme['tokyo-night']);
     assert.true(values['settings.debug']);
-    assert.deepEqual(preferencesFromSyncValues(values, defaults), preferences);
+    assert.false(values['settings.appsignalErrorReporting']);
+    assert.deepEqual(
+      preferencesFromSyncValues(
+        { ...values, 'settings.appsignalErrorReporting': true },
+        defaults,
+      ),
+      preferences,
+    );
   });
 
   test('defaults malformed values while preserving valid values', function (assert) {

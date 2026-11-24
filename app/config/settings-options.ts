@@ -208,17 +208,6 @@ export const settingsConfig: SettingsOptions = {
       data: false,
     },
   ],
-
-  appsignalErrorReportingOptions: [
-    {
-      label: 'An',
-      data: true,
-    },
-    {
-      label: 'Aus',
-      data: false,
-    },
-  ],
 };
 
 export type CurrentSettingOptions = {
