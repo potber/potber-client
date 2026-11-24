@@ -6,7 +6,7 @@ import SettingsService from 'potber-client/services/settings';
 import ThreadStore from 'potber-client/services/stores/thread';
 
 export default class ThreadController extends Controller {
-  @service('stores/thread' as any) declare threadStore: ThreadStore;
+  @service('stores/thread') declare threadStore: ThreadStore;
   @service declare settings: SettingsService;
   declare model: ThreadRouteModel;
 

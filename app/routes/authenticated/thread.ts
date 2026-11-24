@@ -87,7 +87,7 @@ export default class ThreadRoute extends SlowRoute {
         postId,
       };
       return model;
-    } catch (error: any) {
+    } catch (error) {
       return reject(error);
     }
   }

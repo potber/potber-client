@@ -1,13 +1,14 @@
 import Route from '@ember/routing/route';
 import RouterService from '@ember/routing/router-service';
 import { service } from '@ember/service';
+import type Transition from '@ember/routing/transition';
 import CustomSession from 'potber-client/services/custom-session';
 
 export default class AuthenticatedRoute extends Route {
   @service declare session: CustomSession;
   @service declare router: RouterService;
 
-  async beforeModel(transition: any) {
+  async beforeModel(transition: Transition) {
     try {
       this.session.requireAuthentication(transition, 'login');
     } catch (error) {
@@ -15,7 +16,7 @@ export default class AuthenticatedRoute extends Route {
     }
   }
 
-  redirect(model: undefined, transition: any) {
+  redirect(model: undefined, transition: Transition) {
     if (transition.targetName === 'authenticated.index') {
       this.router.transitionTo('authenticated.home');
     }

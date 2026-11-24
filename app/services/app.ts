@@ -18,7 +18,6 @@ export default class AppService extends Service {
   @service declare deploymentVersion: DeploymentVersionService;
   @service declare releaseNotice: ReleaseNoticeService;
   initialized = false;
-  deferredInstallPrompt: any = undefined;
 
   async initialize() {
     if (this.initialized) return;

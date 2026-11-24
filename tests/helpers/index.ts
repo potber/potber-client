@@ -36,7 +36,7 @@ function setupApplicationTest(
     registerTranslations(this);
 
     if (options?.authenticate) {
-      await authenticateSession();
+      await authenticateSession({});
     }
   });
   //

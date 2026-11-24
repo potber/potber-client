@@ -36,7 +36,7 @@ export default class Avatar extends Component<Signature> {
     try {
       const user = await this.api.findUserById(userId);
       this.modal.userProfile({ user });
-    } catch (error: any) {
+    } catch {
       // In case of an error, do not call the modal
       return;
     }

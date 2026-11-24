@@ -63,15 +63,6 @@ export function isChristmasSeason() {
 }
 
 /**
- * Tries to parse the input as an integer.
- * @param input - The value to parse.
- * @returns The parsed integer value, or NaN if parsing fails.
- */
-export function tryParseInt(input: any) {
-  return parseInt(input);
-}
-
-/**
  * Checks if the given string is null, empty or only contains whitespace.
  * @param input The string to check.
  * @returns Whether the string is null, empty or only contains whitespace.

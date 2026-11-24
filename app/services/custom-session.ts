@@ -1,25 +1,25 @@
 import { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
-import type CookiesService from 'ember-cookies/services/cookies';
 import BaseSessionService from 'ember-simple-auth/services/session';
 import { ApiError } from './api/error';
 import type { Session } from './api/types/session';
 import type ApiService from './api';
 
-export default class CustomSession extends BaseSessionService {
+/**
+ * Ember Simple Auth's persisted session data. The `authenticated` record comes from the
+ * session cookie, so its values stay `unknown` until a reader checks them.
+ */
+export interface SessionData {
+  authenticated: {
+    authenticator: string;
+    access_token?: unknown;
+    [key: string]: unknown;
+  };
+}
+
+export default class CustomSession extends BaseSessionService<SessionData> {
   @service declare api: ApiService;
-  @service declare cookies: CookiesService;
   @tracked sessionData: Session | null = null;
-  declare data: any;
-  declare isAuthenticated?: boolean;
-  declare invalidate: () => Promise<void>;
-  declare authenticate: (
-    authenticator: string,
-    hash: Record<string, string>,
-  ) => Promise<void>;
-  declare setup: () => Promise<void>;
-  declare requireAuthentication: (transition: any, routeName: string) => void;
-  declare transitionTo: (redirectTarget: any) => void;
 
   /**
    * The bearer token for forum and Imgpot requests, or `undefined` when signed out.
@@ -27,7 +27,7 @@ export default class CustomSession extends BaseSessionService {
    */
   get accessToken(): string | undefined {
     if (!this.isAuthenticated) return undefined;
-    const token: unknown = this.data?.authenticated?.access_token;
+    const token = this.data?.authenticated?.access_token;
     return typeof token === 'string' && token !== '' ? token : undefined;
   }
 
@@ -57,21 +57,11 @@ export default class CustomSession extends BaseSessionService {
     }
   }
 
+  /**
+   * Replaces Ember Simple Auth's post-sign-in redirect: the `auth.callback` route sends the
+   * user to the home page after `authenticate()` resolves.
+   */
   async handleAuthentication() {
-    // Store session data
     await this.update();
-    // We don't want the session service to redirect to a route automatically after
-    // successful login, so we override this method.
-    const attemptedTransition = this.data.attemptedTransition;
-    const redirectTarget = this.cookies.read(
-      'ember_simple_auth-redirectTarget',
-    );
-    if (attemptedTransition) {
-      attemptedTransition.retry();
-      this.data.attemptedTransition = null;
-    } else if (redirectTarget) {
-      this.transitionTo(redirectTarget);
-      this.cookies.clear('ember_simple_auth-redirectTarget');
-    }
   }
 }

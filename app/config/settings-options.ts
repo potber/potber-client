@@ -221,23 +221,25 @@ export const settingsConfig: SettingsOptions = {
   ],
 };
 
-export type CurrentSettingOptions = Record<
-  `current${Capitalize<keyof Settings>}Option`,
-  DropdownOption
->;
+export type CurrentSettingOptions = {
+  [Key in keyof Settings as `current${Capitalize<Key>}Option`]: DropdownOption<
+    Settings[Key]
+  >;
+};
 
 export function getCurrentSettingOptions(
   settings: Settings,
 ): CurrentSettingOptions {
-  const result: Partial<CurrentSettingOptions> = {};
+  // Object.entries loses the pairing between each key and its option type, so the record
+  // is built untyped and checked against CurrentSettingOptions on return.
+  const result: Record<string, DropdownOption | undefined> = {};
 
   for (const [optionsKey, options] of Object.entries(settingsConfig)) {
     const settingKey = optionsKey.replace('Options', '') as keyof Settings;
-    const currentOptionKey =
-      `current${optionsKey.charAt(0).toUpperCase()}${optionsKey.slice(1, -1)}` as keyof CurrentSettingOptions;
+    const currentOptionKey = `current${optionsKey.charAt(0).toUpperCase()}${optionsKey.slice(1, -1)}`;
     result[currentOptionKey] = options.find(
       (option) => option.data === settings[settingKey],
-    ) as DropdownOption;
+    );
   }
 
   return result as CurrentSettingOptions;

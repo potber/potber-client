@@ -29,6 +29,7 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 - Follow existing Ember routes/controllers/services and typed `.gts` component patterns. Keep component styles colocated when the surrounding feature uses CSS modules.
 - Put ordinary forum API operations in `app/services/api/endpoints/` and expose them through `ApiService`; preserve its authentication, timeout, and error handling. Consult the architecture document for separate transports.
 - Treat network and persisted JSON as untrusted data. Type annotations and assertions do not validate responses at runtime.
+- ESLint rejects explicit `any`. Use `unknown` and narrow it, or a precise type. Ember Simple Auth's session types come from the package; extend `SessionData` in `app/services/custom-session.ts` instead of adding a module stub under `types/`.
 - Validate API responses by passing a Valibot schema from `app/services/api/schemas/` as the `fetch` `schema` option. See [Authentication and forum requests](ARCHITECTURE.md#authentication-and-forum-requests) when adding validation to an endpoint.
 - Preserve final HTML sanitization before `htmlSafe`; include hostile-input cases when changing parsers or rendering boundaries.
 - Keep user-facing translations in `translations/de-de.yaml` where the feature uses `ember-intl`.

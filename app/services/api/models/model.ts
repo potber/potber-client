@@ -22,7 +22,7 @@ export class Model {
    * Marks the model as being in the process of sending a state to the server.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  save(...args: any[]) {
+  save(...args: unknown[]) {
     this._isSaving = true;
   }
 

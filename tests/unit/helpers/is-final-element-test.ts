@@ -18,10 +18,10 @@ module('Unit | Helper | is-final-element', function (hooks) {
       isFinalElement([undefined, [1, 2, 3, 4]]);
     });
     assert.throws(() => {
-      isFinalElement([3, undefined as unknown as any[]]);
+      isFinalElement([3, undefined as unknown as unknown[]]);
     });
     assert.throws(() => {
-      isFinalElement([3, 'foo' as unknown as any[]]);
+      isFinalElement([3, 'foo' as unknown as unknown[]]);
     });
   });
 });

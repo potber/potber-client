@@ -7,7 +7,7 @@ import type { SafeString } from '@ember/template';
 interface Signature {
   Element: HTMLSpanElement;
   Args: {
-    loading?: any;
+    loading?: unknown;
     length: number;
     lengthRandomness?: number;
     lines?: number;
