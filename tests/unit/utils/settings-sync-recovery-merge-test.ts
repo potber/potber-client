@@ -1,4 +1,7 @@
-import { collectionsFromValues } from 'potber-client/utils/settings-sync-recovery-merge';
+import {
+  collectionsFromValues,
+  mergeUnlockValues,
+} from 'potber-client/utils/settings-sync-recovery-merge';
 import { module, test } from 'qunit';
 
 module('Unit | Utility | Settings sync recovery merge', function () {
@@ -11,6 +14,24 @@ module('Unit | Utility | Settings sync recovery merge', function () {
           savedPosts: [{ id: '101', threadId: '42' }, { id: '102' }],
         }),
       /Invalid encrypted saved posts/,
+    );
+  });
+
+  test('reports the invalid collection whether it comes from the primary or secondary copy', function (assert) {
+    const valid = {
+      blockedUsers: [],
+      boardFavoriteIds: ['14'],
+      savedPosts: [],
+    };
+    const invalid = { ...valid, boardFavoriteIds: [14] };
+
+    assert.throws(
+      () => mergeUnlockValues('remote', invalid, valid),
+      /Invalid encrypted board favorites/,
+    );
+    assert.throws(
+      () => mergeUnlockValues('local', invalid, valid),
+      /Invalid encrypted board favorites/,
     );
   });
 });
