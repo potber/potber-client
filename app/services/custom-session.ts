@@ -2,6 +2,7 @@ import { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import type CookiesService from 'ember-cookies/services/cookies';
 import BaseSessionService from 'ember-simple-auth/services/session';
+import { ApiError } from './api/error';
 import type { Session } from './api/types/session';
 import type ApiService from './api';
 
@@ -37,6 +38,11 @@ export default class CustomSession extends BaseSessionService {
     return this.sessionData;
   }
 
+  /**
+   * Reloads forum session data. Only HTTP 401 signs the user out. Other failures (network
+   * errors, timeouts, 5xx, unexpected payloads) keep the user signed in and leave `sessionData`
+   * as it was, which is `null` on first load. `ApiService` already logs and reports them.
+   */
   async update() {
     if (!this.isAuthenticated) {
       this.sessionData = null;
@@ -44,7 +50,9 @@ export default class CustomSession extends BaseSessionService {
       try {
         this.sessionData = await this.api.getSession();
       } catch (error) {
-        this.invalidate();
+        if (error instanceof ApiError && error.statusCode === 401) {
+          this.invalidate();
+        }
       }
     }
   }
