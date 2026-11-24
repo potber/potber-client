@@ -24,6 +24,28 @@ export function checkCoverage(summary, thresholds) {
   }
 }
 
+/**
+ * Rejects a pull request whose coverage falls below the exact base commit in any metric.
+ * Istanbul rounds percentages to two decimals, so equal coverage compares as equal.
+ */
+export function checkCoverageAgainstBase(summary, baseline) {
+  const drops = [];
+  for (const metric of metrics) {
+    const base = baseline.total?.[metric]?.pct;
+    if (!Number.isFinite(base)) {
+      throw new Error(`Baseline coverage has no measured ${metric}.`);
+    }
+    const { pct } = summary.total[metric];
+    if (pct < base)
+      drops.push(`${metric} coverage fell from ${base}% to ${pct}%`);
+  }
+  if (drops.length) {
+    throw new Error(
+      `${drops.join('; ')}. Add tests for the changed code so coverage does not fall below the base.`,
+    );
+  }
+}
+
 export function formatCoverageSummary(summary, thresholds, baseline) {
   const header = ['Metric', 'Covered', 'Coverage', 'Minimum'];
   if (baseline) header.push('Base coverage', 'Change (pp)');
@@ -66,14 +88,15 @@ if (
   const thresholds = JSON.parse(
     readFileSync('config/coverage-thresholds.json'),
   );
+  const baselinePath = process.env.COVERAGE_BASELINE;
+  const baseline = baselinePath
+    ? JSON.parse(readFileSync(baselinePath))
+    : undefined;
   checkCoverage(summary, thresholds);
 
+  // Write the comparison table before the base check, so a failing run still shows it.
   const summaryPath = process.env.GITHUB_STEP_SUMMARY;
   if (summaryPath) {
-    const baselinePath = process.env.COVERAGE_BASELINE;
-    const baseline = baselinePath
-      ? JSON.parse(readFileSync(baselinePath))
-      : undefined;
     appendFileSync(
       summaryPath,
       formatCoverageSummary(summary, thresholds, baseline),
@@ -84,4 +107,5 @@ if (
       .map((metric) => `${metric}: ${summary.total[metric].pct}%`)
       .join(' | '),
   );
+  if (baseline) checkCoverageAgainstBase(summary, baseline);
 }

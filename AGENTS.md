@@ -42,6 +42,7 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 - Exercise changed user flows end-to-end in a browser when the change affects interaction, navigation, authentication, or rendering; report any unavailable backend or browser prerequisite.
 - For documentation-only changes, check Markdown formatting and local link targets; application tests are unnecessary unless commands or runtime configuration also changed.
 - Verify that coverage output actually exists before reporting coverage. Check for `coverage/coverage-summary.json` and `coverage/index.html` after the run.
+- PR coverage fails when any metric falls below the target branch's coverage. When you change application code, add tests that cover it.
 - Review the final diff and report checks run, remaining failures, and material limitations. Keep unrelated changes out of the patch.
 
 ## Documentation
