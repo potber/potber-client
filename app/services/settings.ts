@@ -2,10 +2,9 @@ import { action } from '@ember/object';
 import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import LocalStorageService from './local-storage';
-import RendererService from './renderer';
 import SettingsSyncService from './settings-sync';
 import { normalizeSettings } from './settings/normalize';
-import { Gestures, SidebarLayout, type Settings } from './settings/types';
+import { SidebarLayout, type Settings } from './settings/types';
 
 export {
   AvatarStyle,
@@ -19,15 +18,10 @@ export {
 export type { Settings } from './settings/types';
 export default class SettingsService extends Service {
   @service declare localStorage: LocalStorageService;
-  @service declare renderer: RendererService;
   @service declare settingsSync: SettingsSyncService;
 
   @tracked protected active: Settings = this.load();
   readonly default = normalizeSettings({});
-
-  initialize() {
-    this.toggleDebugMode(this.getSetting('debug'));
-  }
 
   /**
    * Loads settings from local storage and/or defaults to default values
@@ -71,15 +65,6 @@ export default class SettingsService extends Service {
 
   get sidebarLayout() {
     return this.active.sidebarLayout;
-  }
-
-  toggleDebugMode(enabled: boolean) {
-    this.renderer.setStyleVariable(
-      '--gestures-container-background',
-      enabled && this.getSetting('gestures') !== Gestures.none
-        ? 'var(--gestures-container-background-debug)'
-        : 'unset',
-    );
   }
 
   isRightSidebar(): boolean {

@@ -2,14 +2,14 @@ import Service, { service } from '@ember/service';
 import DeviceManagerService from './device-manager';
 import NewsfeedService from './newsfeed';
 import RendererService from './renderer';
-import SettingsService from './settings';
+import type SettingsEffectsService from './settings-effects';
 import ExceptionHandler from './exception-handler';
 import SessionSetupService from './session-setup';
 import type DeploymentVersionService from './deployment-version';
 import type ReleaseNoticeService from './release-notice';
 
 export default class AppService extends Service {
-  @service declare settings: SettingsService;
+  @service declare settingsEffects: SettingsEffectsService;
   @service declare renderer: RendererService;
   @service declare deviceManager: DeviceManagerService;
   @service declare newsfeed: NewsfeedService;
@@ -23,7 +23,7 @@ export default class AppService extends Service {
   async initialize() {
     if (this.initialized) return;
     this.exceptionHandler.initialize();
-    this.settings.initialize();
+    this.settingsEffects.apply('debug');
     this.newsfeed.initialize();
     this.renderer.initialize();
     this.deviceManager.initialize();
