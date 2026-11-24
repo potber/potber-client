@@ -10,7 +10,7 @@ module('Unit | Service | App | Initialization', function (hooks) {
     let finishSessionSetup: (() => void) | undefined;
 
     app.exceptionHandler.initialize = () => undefined;
-    app.settings.initialize = () => undefined;
+    app.settingsEffects.apply = () => undefined;
     app.newsfeed.initialize = () => undefined;
     app.renderer.initialize = () => undefined;
     app.deviceManager.initialize = () => undefined;

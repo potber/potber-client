@@ -2,6 +2,7 @@ import Service, { service } from '@ember/service';
 import type DeviceManagerService from './device-manager';
 import type RendererService from './renderer';
 import type SettingsService from './settings';
+import { Gestures } from './settings/types';
 
 export default class SettingsEffectsService extends Service {
   @service declare deviceManager: DeviceManagerService;
@@ -13,8 +14,15 @@ export default class SettingsEffectsService extends Service {
     sidebarLayout: () => this.renderer.updateSidebarLayout(),
     fontSize: () => this.renderer.updateFontSize(),
     gestures: () => this.deviceManager.toggleGesturesSupport(),
-    debug: () =>
-      this.settings.toggleDebugMode(this.settings.getSetting('debug')),
+    debug: () => {
+      const showOverlay =
+        this.settings.getSetting('debug') &&
+        this.settings.getSetting('gestures') !== Gestures.none;
+      this.renderer.setStyleVariable(
+        '--gestures-container-background',
+        showOverlay ? 'var(--gestures-container-background-debug)' : 'unset',
+      );
+    },
   };
 
   apply(setting: keyof SettingsEffectsService['effects']) {
