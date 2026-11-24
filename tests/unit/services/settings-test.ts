@@ -68,6 +68,27 @@ module('Unit | Service | Settings', function (hooks) {
     assert.deepEqual(actual, expected);
   });
 
+  test('keeps valid stored fields and defaults missing or malformed ones', function (assert) {
+    class LocalStorageStub extends LocalStorageService {
+      readSettings() {
+        return {
+          theme: Theme['tokyo-night'],
+          replaceForumUrls: false,
+          landingPage: 'home',
+          autoRefreshSidebar: 'false',
+        };
+      }
+    }
+    this.owner.register('service:local-storage', LocalStorageStub);
+    const settings = this.owner.lookup('service:settings') as SettingsService;
+
+    assert.deepEqual(settings.getSettings(), {
+      ...settings.default,
+      theme: Theme['tokyo-night'],
+      replaceForumUrls: false,
+    });
+  });
+
   test('Saves the active settings to localStorage', function (assert) {
     assert.expect(1);
 
