@@ -26,7 +26,7 @@ export default class SessionSetupService extends Service {
     await this.session.update();
     if (isDestroying(this)) return;
     const session = this.session.sessionData;
-    const accessToken = this.session.data.authenticated.access_token;
+    const { accessToken } = this.session;
     const socials = this.socials.load();
     if (session && accessToken) {
       const syncedSettings = await this.settingsSync.initialize(

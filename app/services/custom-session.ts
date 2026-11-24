@@ -3,7 +3,7 @@ import { tracked } from '@glimmer/tracking';
 import type CookiesService from 'ember-cookies/services/cookies';
 import BaseSessionService from 'ember-simple-auth/services/session';
 import type { Session } from './api/types/session';
-import ApiService from './api';
+import type ApiService from './api';
 
 export default class CustomSession extends BaseSessionService {
   @service declare api: ApiService;
@@ -19,6 +19,16 @@ export default class CustomSession extends BaseSessionService {
   declare setup: () => Promise<void>;
   declare requireAuthentication: (transition: any, routeName: string) => void;
   declare transitionTo: (redirectTarget: any) => void;
+
+  /**
+   * The bearer token for forum and Imgpot requests, or `undefined` when signed out.
+   * Read credentials here instead of reaching into Ember Simple Auth's session data.
+   */
+  get accessToken(): string | undefined {
+    if (!this.isAuthenticated) return undefined;
+    const token: unknown = this.data?.authenticated?.access_token;
+    return typeof token === 'string' && token !== '' ? token : undefined;
+  }
 
   async getSessionData() {
     if (!this.sessionData) {

@@ -21,7 +21,7 @@ module('Unit | Service | Imgpot | Responses', function (hooks) {
     this.owner.register(
       'service:session',
       class extends Service {
-        data = { authenticated: { access_token: 'test-token' } };
+        accessToken = 'test-token';
       },
     );
   });
