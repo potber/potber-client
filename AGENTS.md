@@ -50,7 +50,7 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 
 - [README.md](README.md): setup, features, deployment configuration, and preview environments.
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, data flow, and system boundaries.
-- Readiness history: [original assessment](AGENT_READY_ASSESSMENT.md) and [reassessment at `dc6b5ef`](AGENT_READY_REASSESSMENT_2026-11-22.md), and [reassessment at `54b7937`](AGENT_READY_REASSESSMENT_2026-11-22_54b7937.md).
+- [Readiness history](docs/guides/readiness-history.md): consult saved scores and open findings when planning readiness work. Update the index when saving a reassessment.
 
 Create an ADR under `docs/adr/` only when a decision is costly to reverse, surprising without context, and involves a real trade-off. Record the context, decision, and rationale; create the directory with the first qualifying record.
 
