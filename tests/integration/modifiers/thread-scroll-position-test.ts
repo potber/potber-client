@@ -16,6 +16,22 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
   const originalScrollTo = window.scrollTo;
   const originalUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
+  class RouterStub extends Service {
+    currentRouteName = 'authenticated.thread';
+  }
+
+  class SettingsStub extends Service {
+    getSetting() {
+      return false;
+    }
+  }
+
+  hooks.beforeEach(function (this: Context) {
+    this.owner.register('service:router', RouterStub);
+    this.owner.register('service:settings', SettingsStub);
+    this.threadScrollPosition = threadScrollPosition;
+  });
+
   hooks.afterEach(function () {
     window.scrollBy = originalScrollBy;
     window.scrollTo = originalScrollTo;
@@ -23,16 +39,6 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
   });
 
   test('waits for a post and refocuses it after media loads', async function (this: Context, assert) {
-    class RouterStub extends Service {
-      currentRouteName = 'authenticated.thread';
-    }
-
-    class SettingsStub extends Service {
-      getSetting() {
-        return false;
-      }
-    }
-
     const scrollByCalls: ScrollToOptions[] = [];
     const scrollToCalls: ScrollToOptions[] = [];
     let postTop = 300;
@@ -53,9 +59,6 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
       );
     };
 
-    this.owner.register('service:router', RouterStub);
-    this.owner.register('service:settings', SettingsStub);
-    this.threadScrollPosition = threadScrollPosition;
     window.history.replaceState(null, '', '/thread?TID=1&PID=123');
 
     await render<Context>(hbs`
@@ -64,6 +67,9 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
         <span {{this.threadScrollPosition}}></span>
       </div>
     `);
+    // The modifier looks for the post in an animation frame. Insert the post only after
+    // that frame so the test always takes the wait-for-post path.
+    await nextAnimationFrame();
 
     const topNav = document.getElementById('top-nav') as HTMLElement;
     Object.defineProperty(topNav, 'clientHeight', { value: 50 });
@@ -103,4 +109,35 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
       behavior: 'auto',
     });
   });
+
+  test('scrolls to a post that is already rendered', async function (this: Context, assert) {
+    const scrollToCalls: ScrollToOptions[] = [];
+    window.scrollTo = (options?: ScrollToOptions | number, y?: number) => {
+      scrollToCalls.push(
+        typeof options === 'number'
+          ? { left: options, top: y }
+          : (options ?? {}),
+      );
+    };
+    window.history.replaceState(null, '', '/thread?TID=1&PID=123');
+
+    await render<Context>(hbs`
+      <div class='thread-page'>
+        <article id='post-123'></article>
+        <span {{this.threadScrollPosition}}></span>
+      </div>
+    `);
+
+    await waitUntil(() => scrollToCalls.length > 0);
+
+    assert.strictEqual(scrollToCalls[0]?.behavior, 'auto');
+  });
 });
+
+function nextAnimationFrame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
+}
