@@ -4,16 +4,8 @@ import { tracked } from '@glimmer/tracking';
 import LocalStorageService from './local-storage';
 import RendererService from './renderer';
 import SettingsSyncService from './settings-sync';
-import type { Settings } from './settings/types';
-import {
-  AvatarStyle,
-  FontSize,
-  Gestures,
-  LandingPage,
-  SidebarLayout,
-  Theme,
-  Transitions,
-} from './settings/types';
+import { normalizeSettings } from './settings/normalize';
+import { Gestures, SidebarLayout, type Settings } from './settings/types';
 
 export {
   AvatarStyle,
@@ -31,23 +23,7 @@ export default class SettingsService extends Service {
   @service declare settingsSync: SettingsSyncService;
 
   @tracked protected active: Settings = this.load();
-  readonly default: Settings = {
-    avatarStyle: AvatarStyle.small,
-    theme: Theme.default,
-    landingPage: LandingPage.boardOverview,
-    autoRefreshSidebar: true,
-    sidebarLayout: SidebarLayout.leftTop,
-    fontSize: FontSize.medium,
-    collapseQuotes: false,
-    replaceForumUrls: true,
-    darkenReadPosts: false,
-    hideGlobalAndAnnouncementThreads: false,
-    goToBottomOfThreadPage: true,
-    transitions: Transitions.static,
-    gestures: Gestures.none,
-    debug: false,
-    appsignalErrorReporting: true,
-  };
+  readonly default = normalizeSettings({});
 
   initialize() {
     this.toggleDebugMode(this.getSetting('debug'));
@@ -59,63 +35,7 @@ export default class SettingsService extends Service {
    * @returns The settings.
    */
   load(): Settings {
-    return this.normalize(this.localStorage.readSettings());
-  }
-
-  private normalize(storedSettings: Settings | null): Settings {
-    const settings = { ...this.default };
-    if (storedSettings) {
-      if (Object.values(AvatarStyle).includes(storedSettings.avatarStyle)) {
-        settings.avatarStyle = storedSettings.avatarStyle;
-      }
-      if (Object.values(Theme).includes(storedSettings.theme)) {
-        settings.theme = storedSettings.theme;
-      }
-      if (Object.values(LandingPage).includes(storedSettings.landingPage)) {
-        settings.landingPage = storedSettings.landingPage;
-      }
-      if (Object.values(SidebarLayout).includes(storedSettings.sidebarLayout)) {
-        settings.sidebarLayout = storedSettings.sidebarLayout;
-      }
-      if (Object.values(FontSize).includes(storedSettings.fontSize)) {
-        settings.fontSize = storedSettings.fontSize;
-      }
-      if (Object.values(Transitions).includes(storedSettings.transitions)) {
-        settings.transitions = storedSettings.transitions;
-      }
-      if (typeof storedSettings.autoRefreshSidebar === 'boolean') {
-        settings.autoRefreshSidebar = storedSettings.autoRefreshSidebar;
-      }
-      if (typeof storedSettings.replaceForumUrls === 'boolean') {
-        settings.replaceForumUrls = storedSettings.replaceForumUrls;
-      }
-      if (typeof storedSettings.darkenReadPosts === 'boolean') {
-        settings.darkenReadPosts = storedSettings.darkenReadPosts;
-      }
-      if (typeof storedSettings.collapseQuotes === 'boolean') {
-        settings.collapseQuotes = storedSettings.collapseQuotes;
-      }
-      if (typeof storedSettings.goToBottomOfThreadPage === 'boolean') {
-        settings.goToBottomOfThreadPage = storedSettings.goToBottomOfThreadPage;
-      }
-      if (
-        typeof storedSettings.hideGlobalAndAnnouncementThreads === 'boolean'
-      ) {
-        settings.hideGlobalAndAnnouncementThreads =
-          storedSettings.hideGlobalAndAnnouncementThreads;
-      }
-      if (Object.values(Gestures).includes(storedSettings.gestures)) {
-        settings.gestures = storedSettings.gestures;
-      }
-      if (typeof storedSettings.debug === 'boolean') {
-        settings.debug = storedSettings.debug;
-      }
-      if (typeof storedSettings.appsignalErrorReporting === 'boolean') {
-        settings.appsignalErrorReporting =
-          storedSettings.appsignalErrorReporting;
-      }
-    }
-    return settings;
+    return normalizeSettings(this.localStorage.readSettings());
   }
 
   /**
@@ -145,7 +65,7 @@ export default class SettingsService extends Service {
   }
 
   replaceSettings(settings: Settings) {
-    this.active = this.normalize(settings);
+    this.active = normalizeSettings(settings);
     this.localStorage.writeSettings(this.active);
   }
 

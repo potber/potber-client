@@ -35,11 +35,10 @@ export default class LocalStorageService extends Service {
    * Reads 'settings' from localStorage.
    * @returns The raw settings object or null.
    */
-  readSettings(): Settings | null {
+  readSettings(): unknown {
     try {
       const jsonString = localStorage.getItem(`${PREFIX}settings`);
-      const rawSettings: Settings = JSON.parse(jsonString || '{}');
-      return rawSettings;
+      return JSON.parse(jsonString || '{}');
     } catch (error) {
       // Return null in case of any issues during load.
       return null;
