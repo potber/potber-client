@@ -14,7 +14,7 @@ import CustomSession from 'potber-client/services/custom-session';
 import {
   getCurrentSettingOptions,
   settingsConfig,
-} from 'potber-client/routes/authenticated/settings';
+} from 'potber-client/config/settings-options';
 import SettingsSyncService, {
   type SettingsSyncUnlockSource,
 } from 'potber-client/services/settings-sync';

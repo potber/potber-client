@@ -9,13 +9,14 @@ import {
 import type { Settings } from 'potber-client/services/settings';
 import type { DropdownOption } from 'potber-client/components/common/control/dropdown/types';
 
-/**
- * Defines all available options for seach setting.
- */
-export const settingsConfig: Record<
-  `${keyof Settings}Options`,
-  { label: string; data: any }[]
-> = {
+type SettingsOptions = {
+  [Key in keyof Settings as `${Key}Options`]: Array<{
+    label: string;
+    data: Settings[Key];
+  }>;
+};
+
+export const settingsConfig: SettingsOptions = {
   avatarStyleOptions: [
     {
       label: 'An',
