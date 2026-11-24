@@ -10,6 +10,9 @@ import type Owner from '@ember/owner';
 import type IntlService from 'ember-intl/services/intl';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import ModalService from 'potber-client/services/modal';
+import NotificationsService, {
+  type NotificationEntry,
+} from 'potber-client/services/notifications';
 import translationsForDeDe from 'virtual:ember-intl/translations/de-de';
 
 // This file exists to provide wrappers around ember-qunit's / ember-mocha's
@@ -26,6 +29,14 @@ function registerTranslations(context: { owner: Owner }): void {
   intl.setLocale(['de-de']);
 }
 
+class AcceptanceNotificationsService extends NotificationsService {
+  override setupAutoClear(notification: NotificationEntry): void {
+    // Ember waits for run-loop timers before resolving interaction helpers.
+    notification.remaining = Math.min(notification.remaining, 100);
+    super.setupAutoClear(notification);
+  }
+}
+
 function setupApplicationTest(
   hooks: NestedHooks,
   options?: ApplicationTestOptions,
@@ -33,6 +44,10 @@ function setupApplicationTest(
   upstreamSetupApplicationTest(hooks, options);
 
   hooks.beforeEach(async function () {
+    this.owner.register(
+      'service:notifications',
+      AcceptanceNotificationsService,
+    );
     registerTranslations(this);
 
     if (options?.authenticate) {
