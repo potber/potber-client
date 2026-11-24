@@ -23,6 +23,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run quality:test
+      - run: npm run test:tooling
       - name: Check for structural regressions
         env:
           BASE_BRANCH: ${{ github.base_ref }}

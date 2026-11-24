@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { checkCoverage, formatCoverageSummary } from '../check-coverage.mjs';
+import {
+  checkCoverage,
+  checkCoverageAgainstBase,
+  formatCoverageSummary,
+} from '../check-coverage.mjs';
 
 const thresholds = { lines: 45, statements: 44, functions: 32, branches: 38 };
 function summary() {
@@ -40,6 +44,43 @@ test('coverage gate rejects a regression in each metric', () => {
     regressed.total[metric].pct = thresholds[metric] - 0.01;
     assert.throws(() => checkCoverage(regressed, thresholds), /below/);
   }
+});
+
+test('coverage gate accepts unchanged or higher coverage than the base', () => {
+  assert.doesNotThrow(() => checkCoverageAgainstBase(summary(), summary()));
+  const lower = summary();
+  for (const metric of Object.keys(thresholds)) lower.total[metric].pct = 49.99;
+  assert.doesNotThrow(() => checkCoverageAgainstBase(summary(), lower));
+});
+
+test('coverage gate rejects a drop below the base in each metric', () => {
+  for (const metric of Object.keys(thresholds)) {
+    const dropped = summary();
+    dropped.total[metric].pct = 49.99;
+    assert.throws(
+      () => checkCoverageAgainstBase(dropped, summary()),
+      new RegExp(`${metric} coverage fell from 50% to 49.99%`),
+    );
+  }
+});
+
+test('coverage gate names every metric that fell below the base', () => {
+  const dropped = summary();
+  dropped.total.lines.pct = 49;
+  dropped.total.branches.pct = 48.5;
+  assert.throws(
+    () => checkCoverageAgainstBase(dropped, summary()),
+    /lines coverage fell from 50% to 49%[^]*branches coverage fell from 50% to 48.5%/,
+  );
+});
+
+test('coverage gate rejects a base report without a measured metric', () => {
+  const base = summary();
+  delete base.total.functions;
+  assert.throws(
+    () => checkCoverageAgainstBase(summary(), base),
+    /Baseline coverage has no measured functions/,
+  );
 });
 
 test('coverage summary shows signed percentage-point changes against the base', () => {
