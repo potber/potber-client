@@ -79,7 +79,7 @@ The [sync preference mapping](app/utils/settings-sync-preferences.ts) translates
 
 ### Errors and observability
 
-`MessagesService` provides application logs and notifications; `ExceptionHandler` installs global error handling. `ApiService` translates request failures and reports eligible errors through AppSignal. Reporting depends on configured AppSignal support and the user's error-reporting preference. Follow the existing reporting paths rather than emitting tokens or decrypted synchronization payloads into logs.
+`MessagesService` provides application logs and notifications; `ExceptionHandler` installs global error handling. `ApiService` logs request failures locally and shows the configured notifications. Keep tokens and decrypted synchronization payloads out of logs.
 
 ### Types and tests
 

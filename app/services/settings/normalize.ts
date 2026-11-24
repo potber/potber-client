@@ -25,7 +25,6 @@ const settingsSchema = v.object({
   transitions: v.fallback(v.enum(Transitions), Transitions.static),
   gestures: v.fallback(v.enum(Gestures), Gestures.none),
   debug: v.fallback(v.boolean(), false),
-  appsignalErrorReporting: v.fallback(v.boolean(), true),
 });
 
 export function normalizeSettings(input: unknown): Settings {

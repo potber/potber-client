@@ -35,7 +35,6 @@ jobs:
     with:
       environment: preview
       storage_prefix: pr-${{ github.event.pull_request.number }}
-      appsignal_revision: pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
     secrets: inherit
 
   comment:

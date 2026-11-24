@@ -116,7 +116,6 @@ module('Acceptance | Reading the forum', function (hooks) {
       JSON.stringify({
         landingPage: LandingPage.home,
         autoRefreshSidebar: false,
-        appsignalErrorReporting: false,
       }),
     );
 

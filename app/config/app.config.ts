@@ -2,16 +2,6 @@ import environment from 'potber-client/config/environment';
 import { clean } from 'semver';
 
 const version = clean(environment.APP.version ?? '') ?? '';
-const appsignalFrontendKey = String(
-  window.APP?.APPSIGNAL_FRONTEND_KEY ??
-    environment.APP['APPSIGNAL_FRONTEND_KEY'] ??
-    '',
-).trim();
-const appsignalRevision = String(
-  window.APP?.APPSIGNAL_REVISION ??
-    environment.APP['APPSIGNAL_REVISION'] ??
-    version,
-).trim();
 
 /**
  * Configuration object for the application.
@@ -58,11 +48,6 @@ export const appConfig = {
       environment.APP['MEME_HOST_URL'] ??
       'https://potber.de',
   ),
-  appsignal: {
-    frontendKey: appsignalFrontendKey,
-    revision: appsignalRevision || version,
-    enabled: Boolean(appsignalFrontendKey),
-  },
   /**
    * The URL for the forum.
    */

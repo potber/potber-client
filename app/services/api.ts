@@ -1,5 +1,4 @@
 import Service, { service } from '@ember/service';
-import { appsignal, appsignalEnabled } from 'potber-client/appsignal';
 import { appConfig } from 'potber-client/config/app.config';
 import MessagesService from './messages';
 import type { MessageType } from './messages';
@@ -16,7 +15,6 @@ import type * as v from 'valibot';
 import type CustomSession from './custom-session';
 import * as Bookmarks from './api/endpoints/bookmarks.endpoints';
 import * as PrivateMessages from './api/endpoints/private-messages.endpoints';
-import SettingsService from './settings';
 
 export interface FetchStatusNotification {
   /**
@@ -61,7 +59,7 @@ interface ProtectedFetchOptions<
    */
   request?: RequestInit;
   /**
-   * Validates a successful response body. Mismatches are reported and thrown like request errors.
+   * Validates a successful response body. Mismatches use the same error handling as failed requests.
    */
   schema: Schema;
 }
@@ -70,7 +68,6 @@ export default class ApiService extends Service {
   @service declare messages: MessagesService;
   @service declare intl: IntlService;
   @service declare session: CustomSession;
-  @service declare settings: SettingsService;
 
   // --- Endpoints are being defined in this section --- //
   getSession = Session._get;
@@ -160,24 +157,14 @@ export default class ApiService extends Service {
       });
       return await decodeForumResponse(response, schema, path);
     } catch (error: unknown) {
-      await this.handleErrors(error, options, {
-        method: request?.method ?? 'GET',
-        url: url.toString(),
-      });
+      await this.handleErrors(error, options);
       throw error;
     } finally {
       window.clearTimeout(timeoutId);
     }
   };
 
-  private async handleErrors(
-    error: unknown,
-    options?: PublicFetchOptions,
-    requestContext?: {
-      method: string;
-      url: string;
-    },
-  ) {
+  private async handleErrors(error: unknown, options?: PublicFetchOptions) {
     const { statusNotifications, silent } = {
       statusNotifications: [
         {
@@ -189,8 +176,6 @@ export default class ApiService extends Service {
       silent: false,
       ...options,
     };
-
-    this.reportError(error, requestContext);
 
     this.messages.log(JSON.stringify(error), {
       context: this.constructor.name,
@@ -237,49 +222,6 @@ export default class ApiService extends Service {
         fallbackNotification.message,
         fallbackNotification.type ?? 'error',
       );
-    }
-  }
-
-  private reportError(
-    error: unknown,
-    requestContext?: {
-      method: string;
-      url: string;
-    },
-  ) {
-    if (!appsignalEnabled) {
-      return;
-    }
-
-    if (!this.settings.getSetting('appsignalErrorReporting')) {
-      return;
-    }
-
-    if (error instanceof ApiError) {
-      if (error.statusCode < 500) {
-        return;
-      }
-
-      appsignal.sendError(error, (span) => {
-        span.setAction('api.fetch');
-        span.setTags({
-          method: requestContext?.method ?? 'GET',
-          statusCode: String(error.statusCode),
-          url: requestContext?.url ?? appConfig.apiUrl,
-        });
-      });
-
-      return;
-    }
-
-    if (error instanceof Error || error instanceof ErrorEvent) {
-      appsignal.sendError(error, (span) => {
-        span.setAction('api.fetch');
-        span.setTags({
-          method: requestContext?.method ?? 'GET',
-          url: requestContext?.url ?? appConfig.apiUrl,
-        });
-      });
     }
   }
 }

@@ -19,14 +19,7 @@ module('Unit | Service | Exception handler', function (hooks) {
       }
     }
 
-    class SettingsStub extends Service {
-      getSetting() {
-        return false;
-      }
-    }
-
     this.owner.register('service:messages', MessagesStub);
-    this.owner.register('service:settings', SettingsStub);
     handler = this.owner.lookup(
       'service:exception-handler',
     ) as ExceptionHandler;

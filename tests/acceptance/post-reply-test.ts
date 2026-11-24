@@ -110,7 +110,6 @@ module('Acceptance | Writing posts', function (hooks) {
       'potber-settings',
       JSON.stringify({
         autoRefreshSidebar: false,
-        appsignalErrorReporting: false,
       }),
     );
 

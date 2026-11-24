@@ -94,13 +94,6 @@ export default class SettingsController extends Controller {
     this.settingsEffects.apply('debug');
   };
 
-  handleAppsignalErrorReportingSelect = (
-    option: DropdownOption<Settings['appsignalErrorReporting']>,
-  ) => {
-    this.settings.setSetting('appsignalErrorReporting', option.data);
-    window.location.reload();
-  };
-
   handleRefreshApp = () => {
     this.deploymentVersion.refreshApp();
   };

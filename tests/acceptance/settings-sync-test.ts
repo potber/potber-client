@@ -60,7 +60,6 @@ module('Acceptance | Settings sync', function (hooks) {
         landingPage: LandingPage.home,
         theme: Theme['tokyo-night'],
         autoRefreshSidebar: false,
-        appsignalErrorReporting: false,
       }),
     );
     remote = undefined;

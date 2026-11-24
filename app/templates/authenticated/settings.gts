@@ -143,21 +143,6 @@ export default <template>
       </:info>
     </Dropdown>
 
-    <Dropdown
-      @options={{@controller.config.appsignalErrorReportingOptions}}
-      @default={{@controller.currentOptions.currentAppsignalErrorReportingOption}}
-      @onSelect={{@controller.handleAppsignalErrorReportingSelect}}
-      @size='max'
-      @label={{t 'route.settings.appsignal-error-reporting.label'}}
-    >
-      <:info>
-        <InfoButton
-          @title={{t 'route.settings.appsignal-error-reporting.label'}}
-          @text={{t 'route.settings.appsignal-error-reporting.info'}}
-        />
-      </:info>
-    </Dropdown>
-
     <h3>{{t 'route.settings.category.behavior'}}</h3>
 
     <Dropdown

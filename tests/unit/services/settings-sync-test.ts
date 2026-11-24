@@ -32,7 +32,6 @@ const settings: Settings = {
   transitions: Transitions.dynamic,
   gestures: Gestures.all,
   debug: true,
-  appsignalErrorReporting: false,
 };
 
 const collections: SyncedCollections = {

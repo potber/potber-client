@@ -77,7 +77,6 @@ module('Acceptance | Private messages', function (hooks) {
       'potber-settings',
       JSON.stringify({
         autoRefreshSidebar: false,
-        appsignalErrorReporting: false,
       }),
     );
 
