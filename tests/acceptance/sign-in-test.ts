@@ -6,12 +6,51 @@ import {
   waitUntil,
 } from '@ember/test-helpers';
 import { module, test } from 'qunit';
-import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
+import BaseSessionStore from 'ember-simple-auth/session-stores/base';
 import { authConfig } from 'potber-client/config/auth.config';
 import { LandingPage } from 'potber-client/services/settings';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 
 const accessToken = 'test+token/with=padding';
+const callbackFragment =
+  '#access_token=test%2Btoken%2Fwith%3Dpadding&token_type=Bearer';
+
+// Outlives the app instance, like the cookie that keeps the target across the OAuth redirect.
+let persistedRedirectTarget: string | null = null;
+
+/**
+ * Keeps session data in memory, which avoids the cookie store's background renewal timers in
+ * the browser runner, and keeps the redirect target outside the app instance.
+ */
+class TestSessionStore extends BaseSessionStore {
+  private data = '{}';
+
+  persist(data: unknown) {
+    this.data = JSON.stringify(data);
+    return Promise.resolve();
+  }
+
+  restore() {
+    return Promise.resolve(JSON.parse(this.data) as unknown);
+  }
+
+  clear() {
+    this.data = '{}';
+    return Promise.resolve();
+  }
+
+  setRedirectTarget(url: string) {
+    persistedRedirectTarget = url;
+  }
+
+  getRedirectTarget() {
+    return persistedRedirectTarget;
+  }
+
+  clearRedirectTarget() {
+    persistedRedirectTarget = null;
+  }
+}
 
 function setCallbackFragment(fragment: string) {
   window.history.replaceState(window.history.state, '', fragment);
@@ -59,8 +98,8 @@ module('Acceptance | Sign-in', function (hooks) {
   let sessionAuthorization: string | null;
 
   hooks.beforeEach(function () {
-    // Avoid the real cookie store's background renewal timers in the browser runner.
-    this.owner.register('session-store:application', EphemeralSessionStore);
+    this.owner.register('session-store:application', TestSessionStore);
+    persistedRedirectTarget = null;
     originalURL = window.location.href;
     originalOnError = window.onerror;
     storedValues = new Map(
@@ -122,9 +161,7 @@ module('Acceptance | Sign-in', function (hooks) {
   });
 
   test('a successful callback signs the user in and shows their home page', async function (assert) {
-    setCallbackFragment(
-      '#access_token=test%2Btoken%2Fwith%3Dpadding&token_type=Bearer',
-    );
+    setCallbackFragment(callbackFragment);
 
     const destination = await captureSignInRedirect(() =>
       visit('/auth/callback'),
@@ -156,6 +193,48 @@ module('Acceptance | Sign-in', function (hooks) {
     assert.dom('[data-test-settings-sync-enable]').doesNotExist();
   });
 
+  test('signing in after visiting settings returns the user to settings', async function (assert) {
+    await captureSignInRedirect(() => visit('/settings'));
+    assert.strictEqual(persistedRedirectTarget, '/settings');
+
+    setCallbackFragment(callbackFragment);
+    const destination = await captureSignInRedirect(() =>
+      visit('/auth/callback'),
+    );
+
+    assert.strictEqual(destination, undefined, 'sign-in stays in the app');
+    assert.strictEqual(currentURL(), '/settings');
+    assert.true(
+      findAll('button').some(
+        (button) => button.textContent?.trim() === 'Abmelden',
+      ),
+      'the signed-in settings page renders',
+    );
+    assert.strictEqual(persistedRedirectTarget, null, 'target is cleared');
+  });
+
+  for (const target of [
+    'https://example.com/settings',
+    '//example.com/settings',
+    '/\\example.com/settings',
+    'settings',
+    '/auth/callback',
+    '/login',
+  ]) {
+    test(`a redirect target of ${target} is ignored after sign-in`, async function (assert) {
+      persistedRedirectTarget = target;
+      setCallbackFragment(callbackFragment);
+
+      const destination = await captureSignInRedirect(() =>
+        visit('/auth/callback'),
+      );
+
+      assert.strictEqual(destination, undefined, 'sign-in stays in the app');
+      assert.strictEqual(currentURL(), '/home');
+      assert.strictEqual(persistedRedirectTarget, null, 'target is cleared');
+    });
+  }
+
   test('a rejected callback starts sign-in again without creating a session', async function (assert) {
     setCallbackFragment('#error=access_denied');
 
@@ -177,9 +256,7 @@ module('Acceptance | Sign-in', function (hooks) {
   });
 
   test('signing out requires authorization to revisit settings', async function (assert) {
-    setCallbackFragment(
-      '#access_token=test%2Btoken%2Fwith%3Dpadding&token_type=Bearer',
-    );
+    setCallbackFragment(callbackFragment);
     await visit('/auth/callback');
     await waitUntil(() => startupRefreshed);
     await visit('/settings');
