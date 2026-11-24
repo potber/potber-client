@@ -1,4 +1,7 @@
-import type { PersistedSavedPost } from 'potber-client/models/post';
+import {
+  persistedSavedPostSchema,
+  type PersistedSavedPost,
+} from 'potber-client/models/post';
 import * as v from 'valibot';
 import {
   blockedUserSchema,
@@ -6,6 +9,7 @@ import {
 } from 'potber-client/models/blocked-user';
 
 const blockedUsersSchema = v.array(blockedUserSchema);
+const savedPostsSchema = v.array(persistedSavedPostSchema);
 
 export const BLOCKED_USERS_FIELD = 'blockedUsers';
 export const BOARD_FAVORITES_FIELD = 'boardFavoriteIds';
@@ -31,7 +35,7 @@ export function collectionsFromValues(
   if (!isStringArray(boardFavoriteIds)) {
     throw new Error('Invalid encrypted board favorites.');
   }
-  if (!isPersistedSavedPosts(savedPosts)) {
+  if (!v.is(savedPostsSchema, savedPosts)) {
     throw new Error('Invalid encrypted saved posts.');
   }
   return { blockedUsers, boardFavoriteIds, savedPosts };
@@ -56,8 +60,8 @@ export function mergeUnlockValues(
     !v.is(blockedUsersSchema, secondaryBlockedUsers) ||
     !isStringArray(primaryBoardFavorites) ||
     !isStringArray(secondaryBoardFavorites) ||
-    !isPersistedSavedPosts(primarySavedPosts) ||
-    !isPersistedSavedPosts(secondarySavedPosts)
+    !v.is(savedPostsSchema, primarySavedPosts) ||
+    !v.is(savedPostsSchema, secondarySavedPosts)
   ) {
     throw new Error('Invalid collections while unlocking settings sync.');
   }
@@ -153,18 +157,5 @@ function arraysEqual(first: unknown, second: unknown): boolean {
 function isStringArray(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-  );
-}
-
-function isPersistedSavedPosts(value: unknown): value is PersistedSavedPost[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (entry) =>
-        Boolean(entry) &&
-        typeof entry === 'object' &&
-        typeof (entry as PersistedSavedPost).id === 'string' &&
-        typeof (entry as PersistedSavedPost).threadId === 'string',
-    )
   );
 }
