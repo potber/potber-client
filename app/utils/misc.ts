@@ -1,3 +1,4 @@
+import { later } from '@ember/runloop';
 import { appConfig } from 'potber-client/config/app.config';
 
 /**
@@ -25,6 +26,15 @@ export function getDateFromUnixTimestamp(timestamp: string) {
  */
 export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Like `sleep`, but schedules the timer on Ember's run loop, so `settled()` in tests waits for it.
+ * Use it for delays that tests should not outlive, such as modal animations.
+ * @param ms The amount of miliseconds.
+ */
+export function settledSleep(ms: number) {
+  return new Promise<void>((resolve) => later(() => resolve(), ms));
 }
 
 /**

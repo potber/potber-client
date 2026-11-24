@@ -2,7 +2,7 @@ import Service, { service } from '@ember/service';
 import type RouterService from '@ember/routing/router-service';
 import { gt, valid } from 'semver';
 import { appConfig } from 'potber-client/config/app.config';
-import { sleep } from 'potber-client/utils/misc';
+import { settledSleep } from 'potber-client/utils/misc';
 import type LocalStorageService from './local-storage';
 import type ModalService from './modal';
 
@@ -25,7 +25,7 @@ export default class ReleaseNoticeService extends Service {
       // Establish a baseline on first use without presenting an update modal.
       if (!encounteredVersion) return;
 
-      await sleep(this.versionModalDelayMs);
+      await settledSleep(this.versionModalDelayMs);
       this.modal.confirm({
         title: 'Es gibt Neuigkeiten!',
         text: `Potber wurde auf Version ${currentVersion} aktualisiert.

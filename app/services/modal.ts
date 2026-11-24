@@ -11,7 +11,7 @@ import type { ListModalOptions } from 'potber-client/components/modal/types/list
 import type { MemeSelectModalOptions } from 'potber-client/components/modal/types/meme-select';
 import type { PostPreviewModalOptions } from 'potber-client/components/modal/types/post-preview';
 import type { UserProfileModalOptions } from 'potber-client/components/modal/types/user-profile';
-import { sleep } from 'potber-client/utils/misc';
+import { settledSleep } from 'potber-client/utils/misc';
 
 const TIME_TO_DESTROY = 300;
 
@@ -149,7 +149,7 @@ export default class ModalService extends Service {
     this.modal.show();
     // Wait for the DOM to have updated the 'display' CSS property. The amount of time doesn't matter,
     // but it needs to happen asynchronously.
-    await sleep(1);
+    await settledSleep(1);
     this.modal.classList.add('show');
   }
 
@@ -159,7 +159,7 @@ export default class ModalService extends Service {
    */
   async close(afterClose?: () => void) {
     this.modal.classList.remove('show');
-    await sleep(TIME_TO_DESTROY);
+    await settledSleep(TIME_TO_DESTROY);
     this.modal.close();
     this.activeModal = {
       type: null,

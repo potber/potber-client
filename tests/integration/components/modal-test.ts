@@ -1,10 +1,24 @@
-import { click, settled, triggerEvent, waitUntil } from '@ember/test-helpers';
+import { click, settled, triggerEvent } from '@ember/test-helpers';
 import ModalService from 'potber-client/services/modal';
 import { setupRenderingTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
 module('Integration | Component | Modal', function (hooks) {
   setupRenderingTest(hooks, { includeModals: true });
+
+  test('settles only after the dialog has opened and closed', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.info({ title: 'Info', text: 'Text' });
+    await settled();
+    assert.dom('#modal').hasAttribute('open');
+    assert.dom('#modal').hasClass('show');
+
+    void modal.close();
+    await settled();
+
+    assert.dom('#modal').doesNotHaveAttribute('open');
+    assert.strictEqual(modal.activeModal.type, null);
+  });
 
   test('runs input cancellation when Escape dismisses the dialog', async function (assert) {
     const modal = this.owner.lookup('service:modal') as ModalService;
@@ -19,9 +33,7 @@ module('Integration | Component | Modal', function (hooks) {
     await triggerEvent('#modal', 'cancel');
 
     assert.strictEqual(cancellations, 1);
-    await waitUntil(
-      () => !(document.querySelector('#modal') as HTMLDialogElement).open,
-    );
+    assert.dom('#modal').doesNotHaveAttribute('open');
   });
 
   test('runs input cancellation when the backdrop dismisses the dialog', async function (assert) {
@@ -37,9 +49,7 @@ module('Integration | Component | Modal', function (hooks) {
     await click('#modal-backdrop');
 
     assert.strictEqual(cancellations, 1);
-    await waitUntil(
-      () => !(document.querySelector('#modal') as HTMLDialogElement).open,
-    );
+    assert.dom('#modal').doesNotHaveAttribute('open');
   });
 
   test('offers a distinct alternative action in confirm modals', async function (assert) {
