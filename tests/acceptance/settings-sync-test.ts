@@ -263,11 +263,6 @@ module('Acceptance | Settings sync', function (hooks) {
     await click('[data-test-settings-sync-delete]');
     await click(confirm);
     await waitFor(enable);
-    // ModalService.close() finishes on an untracked timer. Wait for it, or it throws after teardown.
-    await waitUntil(
-      () =>
-        !(document.getElementById('modal') as HTMLDialogElement | null)?.open,
-    );
     assert.strictEqual(remote, undefined);
     assert.dom(forget).doesNotExist();
 
