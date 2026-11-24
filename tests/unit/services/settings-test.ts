@@ -1,4 +1,4 @@
-import LocalStorageService from 'potber-client/services/local-storage';
+import SettingsStorageService from 'potber-client/services/settings-storage';
 import SettingsService, {
   AvatarStyle,
   FontSize,
@@ -34,13 +34,13 @@ module('Unit | Service | Settings', function (hooks) {
   setupTest(hooks);
 
   test('Loads settings.', function (assert) {
-    // Stub LocalStorage service
-    class LocalStorageStub extends LocalStorageService {
-      readSettings(): Settings | null {
+    // Stub the settings storage service
+    class SettingsStorageStub extends SettingsStorageService {
+      read(): Settings | null {
         return { ...mockedSettings };
       }
     }
-    this.owner.register('service:local-storage', LocalStorageStub);
+    this.owner.register('service:settings-storage', SettingsStorageStub);
 
     const settings = this.owner.lookup(
       'service:settings',
@@ -52,12 +52,12 @@ module('Unit | Service | Settings', function (hooks) {
   });
 
   test('Resorts to using default values in case of empty or corrupt storage.', function (assert) {
-    class LocalStorageStub extends LocalStorageService {
-      readSettings(): Settings | null {
+    class SettingsStorageStub extends SettingsStorageService {
+      read(): Settings | null {
         return null;
       }
     }
-    this.owner.register('service:local-storage', LocalStorageStub);
+    this.owner.register('service:settings-storage', SettingsStorageStub);
 
     const settings = this.owner.lookup(
       'service:settings',
@@ -69,8 +69,8 @@ module('Unit | Service | Settings', function (hooks) {
   });
 
   test('keeps valid stored fields and defaults missing or malformed ones', function (assert) {
-    class LocalStorageStub extends LocalStorageService {
-      readSettings() {
+    class SettingsStorageStub extends SettingsStorageService {
+      read() {
         return {
           theme: Theme['tokyo-night'],
           replaceForumUrls: false,
@@ -79,7 +79,7 @@ module('Unit | Service | Settings', function (hooks) {
         };
       }
     }
-    this.owner.register('service:local-storage', LocalStorageStub);
+    this.owner.register('service:settings-storage', SettingsStorageStub);
     const settings = this.owner.lookup('service:settings') as SettingsService;
 
     assert.deepEqual(settings.getSettings(), {
@@ -94,16 +94,16 @@ module('Unit | Service | Settings', function (hooks) {
 
     const actual = { ...mockedSettings };
 
-    class LocalStorageStub extends LocalStorageService {
-      readSettings(): Settings | null {
+    class SettingsStorageStub extends SettingsStorageService {
+      read(): Settings | null {
         return { ...mockedSettings };
       }
 
-      writeSettings(settings: Settings) {
+      write(settings: Settings) {
         assert.deepEqual(settings, actual);
       }
     }
-    this.owner.register('service:local-storage', LocalStorageStub);
+    this.owner.register('service:settings-storage', SettingsStorageStub);
 
     const settings = this.owner.lookup(
       'service:settings',

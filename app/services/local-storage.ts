@@ -11,7 +11,6 @@ import {
 import { appConfig } from 'potber-client/config/app.config';
 import { Boards } from './api/types';
 import ApiService from './api';
-import type { Settings } from './settings';
 import {
   blockedUserSchema,
   type Socials,
@@ -35,29 +34,6 @@ export default class LocalStorageService extends Service {
 
   async initialize() {
     await this.getBoardFavorites();
-  }
-
-  /**
-   * Reads 'settings' from localStorage.
-   * @returns The raw settings object or null.
-   */
-  readSettings(): unknown {
-    try {
-      const jsonString = localStorage.getItem(`${PREFIX}settings`);
-      return JSON.parse(jsonString || '{}');
-    } catch (error) {
-      // Return null in case of any issues during load.
-      return null;
-    }
-  }
-
-  /**
-   * Writes 'settings' to localStorage.
-   * @param settings The settings object.
-   */
-  writeSettings(settings: Settings) {
-    const jsonString = JSON.stringify(settings);
-    localStorage.setItem(`${PREFIX}settings`, jsonString);
   }
 
   /**

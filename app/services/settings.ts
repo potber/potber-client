@@ -1,7 +1,7 @@
 import { action } from '@ember/object';
 import Service, { service } from '@ember/service';
 import { tracked } from '@glimmer/tracking';
-import LocalStorageService from './local-storage';
+import type SettingsStorageService from './settings-storage';
 import SettingsSyncService from './settings-sync';
 import { normalizeSettings } from './settings/normalize';
 import { SidebarLayout, type Settings } from './settings/types';
@@ -17,7 +17,7 @@ export {
 } from './settings/types';
 export type { Settings } from './settings/types';
 export default class SettingsService extends Service {
-  @service declare localStorage: LocalStorageService;
+  @service declare settingsStorage: SettingsStorageService;
   @service declare settingsSync: SettingsSyncService;
 
   @tracked protected active: Settings = this.load();
@@ -29,14 +29,14 @@ export default class SettingsService extends Service {
    * @returns The settings.
    */
   load(): Settings {
-    return normalizeSettings(this.localStorage.readSettings());
+    return normalizeSettings(this.settingsStorage.read());
   }
 
   /**
    * Saves the active settings.
    */
   @action save() {
-    this.localStorage.writeSettings(this.active);
+    this.settingsStorage.write(this.active);
   }
 
   getSettings() {
@@ -60,7 +60,7 @@ export default class SettingsService extends Service {
 
   replaceSettings(settings: Settings) {
     this.active = normalizeSettings(settings);
-    this.localStorage.writeSettings(this.active);
+    this.settingsStorage.write(this.active);
   }
 
   get sidebarLayout() {
