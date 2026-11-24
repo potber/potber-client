@@ -1,4 +1,5 @@
 import Service from '@ember/service';
+import { waitForPromise } from '@ember/test-waiters';
 import { tracked } from '@glimmer/tracking';
 import type { ConfirmModalOptions } from 'potber-client/components/modal/types/confirm';
 import type { IconSelectModalOptions } from 'potber-client/components/modal/types/icon-select';
@@ -149,7 +150,8 @@ export default class ModalService extends Service {
     this.modal.show();
     // Wait for the DOM to have updated the 'display' CSS property. The amount of time doesn't matter,
     // but it needs to happen asynchronously.
-    await sleep(1);
+    // Tests wait for this and the close delay through `settled()`.
+    await waitForPromise(sleep(1));
     this.modal.classList.add('show');
   }
 
@@ -159,7 +161,7 @@ export default class ModalService extends Service {
    */
   async close(afterClose?: () => void) {
     this.modal.classList.remove('show');
-    await sleep(TIME_TO_DESTROY);
+    await waitForPromise(sleep(TIME_TO_DESTROY));
     this.modal.close();
     this.activeModal = {
       type: null,

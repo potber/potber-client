@@ -1,5 +1,6 @@
 import Service, { service } from '@ember/service';
 import type RouterService from '@ember/routing/router-service';
+import { waitForPromise } from '@ember/test-waiters';
 import { gt, valid } from 'semver';
 import { appConfig } from 'potber-client/config/app.config';
 import { sleep } from 'potber-client/utils/misc';
@@ -25,7 +26,7 @@ export default class ReleaseNoticeService extends Service {
       // Establish a baseline on first use without presenting an update modal.
       if (!encounteredVersion) return;
 
-      await sleep(this.versionModalDelayMs);
+      await waitForPromise(sleep(this.versionModalDelayMs));
       this.modal.confirm({
         title: 'Es gibt Neuigkeiten!',
         text: `Potber wurde auf Version ${currentVersion} aktualisiert.
