@@ -1,3 +1,4 @@
+import { registerDestructor } from '@ember/destroyable';
 import { service } from '@ember/service';
 import Modifier from 'ember-modifier';
 import { DragGesture } from '@use-gesture/vanilla';
@@ -35,10 +36,10 @@ export default class SidebarEdgeOpenGestureModifier extends Modifier<SidebarEdge
       },
     });
 
-    return () => {
+    registerDestructor(this, () => {
       recognizer.destroy();
       this.resetGesture();
-    };
+    });
   }
 
   private readMaxWidth() {
