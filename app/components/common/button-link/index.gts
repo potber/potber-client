@@ -16,6 +16,7 @@ export interface Signature {
     variant?: ControlVariant;
     title?: string;
     disabled?: boolean;
+    disabledClass?: string;
     iconSize?: IconSize;
     onClick?: () => void;
   };
@@ -49,36 +50,27 @@ export default class ButtonLink extends Component<Signature> {
     return this.args.query || {};
   }
 
+  get models() {
+    return this.args.model ? [this.args.model] : [];
+  }
+
   <template>
-    {{#if @model}}
-      <LinkTo
-        class='button-link control-size-{{@size}}
-          icon-size-{{this.iconSize}}
-          control-variant-{{this.variant}}
-          {{if @disabled (classNames this "disabled")}}'
-        @route={{@route}}
-        @query={{this.query}}
-        @model={{@model}}
-        @disabled={{@disabled}}
-        {{on 'click' this.handleClick}}
-        ...attributes
-      >
-        {{yield}}
-      </LinkTo>
-    {{else}}
-      <LinkTo
-        class='button-link control-size-{{@size}}
-          icon-size-{{this.iconSize}}
-          control-variant-{{this.variant}}
-          {{if @disabled (classNames this "disabled")}}'
-        @route={{@route}}
-        @query={{this.query}}
-        @disabled={{@disabled}}
-        {{on 'click' this.handleClick}}
-        ...attributes
-      >
-        {{yield}}
-      </LinkTo>
-    {{/if}}
+    <LinkTo
+      class='button-link control-size-{{@size}}
+        icon-size-{{this.iconSize}}
+        control-variant-{{this.variant}}
+        {{if
+          @disabled
+          (if @disabledClass @disabledClass (classNames this "disabled"))
+        }}'
+      @route={{@route}}
+      @query={{this.query}}
+      @models={{this.models}}
+      @disabled={{@disabled}}
+      {{on 'click' this.handleClick}}
+      ...attributes
+    >
+      {{yield}}
+    </LinkTo>
   </template>
 }

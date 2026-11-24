@@ -10,6 +10,7 @@ import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
+import type RendererService from 'potber-client/services/renderer';
 import { LandingPage } from 'potber-client/services/settings';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
@@ -201,6 +202,20 @@ module('Acceptance | Reading the forum', function (hooks) {
       if (value === null) localStorage.removeItem(key);
       else localStorage.setItem(key, value);
     }
+  });
+
+  test('following the bookmarks link closes the mobile sidebar', async function (assert) {
+    await visit('/board-overview');
+    await waitUntil(() => startupRefreshed);
+    const renderer = this.owner.lookup('service:renderer') as RendererService;
+    renderer.isDesktop = false;
+    await renderer.openSidebar();
+    assert.true(renderer.sidebarExpanded);
+
+    await click(`#sidebar-nav a[href="${bookmarksPath}"]`);
+
+    assert.strictEqual(currentURL(), bookmarksPath);
+    assert.false(renderer.sidebarExpanded);
   });
 
   test('opens a board and reads a thread from the board overview', async function (assert) {
