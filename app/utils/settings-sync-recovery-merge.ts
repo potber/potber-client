@@ -1,5 +1,11 @@
 import type { PersistedSavedPost } from 'potber-client/models/post';
-import type { BlockedUser } from 'potber-client/services/socials';
+import * as v from 'valibot';
+import {
+  blockedUserSchema,
+  type BlockedUser,
+} from 'potber-client/models/blocked-user';
+
+const blockedUsersSchema = v.array(blockedUserSchema);
 
 export const BLOCKED_USERS_FIELD = 'blockedUsers';
 export const BOARD_FAVORITES_FIELD = 'boardFavoriteIds';
@@ -19,7 +25,7 @@ export function collectionsFromValues(
   const blockedUsers = values[BLOCKED_USERS_FIELD];
   const boardFavoriteIds = values[BOARD_FAVORITES_FIELD];
   const savedPosts = values[SAVED_POSTS_FIELD];
-  if (!isBlockedUsers(blockedUsers)) {
+  if (!v.is(blockedUsersSchema, blockedUsers)) {
     throw new Error('Invalid encrypted blocklist.');
   }
   if (!isStringArray(boardFavoriteIds)) {
@@ -46,8 +52,8 @@ export function mergeUnlockValues(
   const secondarySavedPosts = secondary[SAVED_POSTS_FIELD];
 
   if (
-    !isBlockedUsers(primaryBlockedUsers) ||
-    !isBlockedUsers(secondaryBlockedUsers) ||
+    !v.is(blockedUsersSchema, primaryBlockedUsers) ||
+    !v.is(blockedUsersSchema, secondaryBlockedUsers) ||
     !isStringArray(primaryBoardFavorites) ||
     !isStringArray(secondaryBoardFavorites) ||
     !isPersistedSavedPosts(primarySavedPosts) ||
@@ -147,19 +153,6 @@ function arraysEqual(first: unknown, second: unknown): boolean {
 function isStringArray(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-  );
-}
-
-function isBlockedUsers(value: unknown): value is BlockedUser[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (entry) =>
-        Boolean(entry) &&
-        typeof entry === 'object' &&
-        typeof (entry as BlockedUser).id === 'string' &&
-        typeof (entry as BlockedUser).name === 'string',
-    )
   );
 }
 

@@ -11,10 +11,15 @@ import { appConfig } from 'potber-client/config/app.config';
 import { Boards } from './api/types';
 import ApiService from './api';
 import type { Settings } from './settings';
-import type { Socials } from './socials';
+import {
+  blockedUserSchema,
+  type Socials,
+} from 'potber-client/models/blocked-user';
+import * as v from 'valibot';
 import SettingsSyncService from './settings-sync';
 
 const PREFIX = 'potber-';
+const storedSocialsSchema = v.object({ blockedUsers: v.array(v.unknown()) });
 const SAVED_POST_FETCH_CONCURRENCY = 4;
 
 export default class LocalStorageService extends Service {
@@ -56,14 +61,19 @@ export default class LocalStorageService extends Service {
 
   /**
    * Reads 'socials' from localStorage.
-   * @returns The raw socials object or null.
+   * @returns The valid blocked users, or null if the record cannot be read.
    */
   readSocials(): Socials | null {
     try {
       const jsonString = localStorage.getItem(`${PREFIX}socials`);
       if (!jsonString) return null;
-      const rawSocials: Socials = JSON.parse(jsonString);
-      return rawSocials;
+      const rawSocials: unknown = JSON.parse(jsonString);
+      if (!v.is(storedSocialsSchema, rawSocials)) return null;
+      return {
+        blockedUsers: rawSocials.blockedUsers.filter((entry) =>
+          v.is(blockedUserSchema, entry),
+        ),
+      };
     } catch (error) {
       // Return null in case of any issues during load.
       return null;

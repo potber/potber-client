@@ -182,6 +182,31 @@ module('Unit | Service | LocalStorage', function (hooks) {
     assert.deepEqual(service.readPersistedSavedPosts(), []);
   });
 
+  test('keeps valid users when stored blocklist entries are malformed', function (assert) {
+    const storage = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+    const key = 'potber-socials';
+    const previous = localStorage.getItem(key);
+    const validUser = { id: '12', name: 'Alice' };
+
+    try {
+      localStorage.setItem(key, JSON.stringify({ blockedUsers: 'Alice' }));
+      assert.strictEqual(storage.readSocials(), null);
+
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          blockedUsers: [validUser, null, { id: 15, name: 'Bob' }],
+        }),
+      );
+      assert.deepEqual(storage.readSocials(), { blockedUsers: [validUser] });
+    } finally {
+      if (previous === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, previous);
+    }
+  });
+
   test('treats a missing or invalid encountered version as unknown', function (assert) {
     const service = this.owner.lookup(
       'service:local-storage',
