@@ -13,7 +13,7 @@ import * as Posts from './api/endpoints/posts.endpoints';
 import { ApiError } from './api/error';
 import { decodeForumResponse } from './api/response';
 import type * as v from 'valibot';
-import CustomSession from './custom-session';
+import type CustomSession from './custom-session';
 import * as Bookmarks from './api/endpoints/bookmarks.endpoints';
 import * as PrivateMessages from './api/endpoints/private-messages.endpoints';
 import SettingsService from './settings';
@@ -130,10 +130,8 @@ export default class ApiService extends Service {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     };
-    if (this.session.isAuthenticated) {
-      headers['Authorization'] =
-        `Bearer ${this.session.data.authenticated.access_token}`;
-    }
+    const { accessToken } = this.session;
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
     this.messages.log(
       `Outgoing request: ${request?.method ?? 'GET'} ${url.toString()}`,
       {

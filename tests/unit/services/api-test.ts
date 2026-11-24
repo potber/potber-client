@@ -37,12 +37,7 @@ module('Unit | Service | Api', function (hooks) {
     }
 
     class SessionStub extends Service {
-      isAuthenticated = true;
-      data = {
-        authenticated: {
-          access_token: 'test-token',
-        },
-      };
+      accessToken = 'test-token';
 
       async invalidate(): Promise<void> {
         return;
@@ -113,12 +108,7 @@ module('Unit | Service | Api', function (hooks) {
     }
 
     class SessionStub extends Service {
-      isAuthenticated = true;
-      data = {
-        authenticated: {
-          access_token: 'test-token',
-        },
-      };
+      accessToken = 'test-token';
       invalidateCalls = 0;
 
       async invalidate(): Promise<void> {

@@ -1,7 +1,7 @@
 import Service, { service } from '@ember/service';
 import * as v from 'valibot';
 import { appConfig } from 'potber-client/config/app.config';
-import CustomSession from './custom-session';
+import type CustomSession from './custom-session';
 
 const imageVariationSchema = v.object({
   variationType: v.picklist(['large', 'medium', 'small']),
@@ -60,7 +60,7 @@ export default class ImgpotService extends Service {
   @service declare session: CustomSession;
 
   private get accessToken() {
-    const accessToken = this.session.data?.authenticated?.access_token;
+    const { accessToken } = this.session;
     if (!accessToken) {
       throw new Error('Nicht authentifiziert.');
     }
