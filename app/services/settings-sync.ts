@@ -425,37 +425,46 @@ export default class SettingsSyncService extends Service {
     values: Record<string, unknown>,
     decrypted: DecryptedRemote,
   ): Promise<OverwriteResult> {
-    let remote = decrypted.remote;
-    let payload = decrypted.payload;
-
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const metadata = createOverwriteMetadata(
-        values,
-        payload,
-        Date.now(),
-        getOrCreateDeviceId,
+    const { key, payload, remote } = decrypted;
+    const first = await this.prepareOverwrite(values, key, payload);
+    try {
+      const written = await this.writeRevision(
+        first.encrypted,
+        remote.revision,
       );
-      const encrypted = await this.encrypt(values, decrypted.key, metadata);
-      try {
-        const written = await this.writeRevision(encrypted, remote.revision);
-        return { metadata, remote: written };
-      } catch (error) {
-        if (attempt !== 0 || !isRevisionConflict(error)) {
-          throw error;
-        }
+      return { metadata: first.metadata, remote: written };
+    } catch (error) {
+      if (!isRevisionConflict(error)) throw error;
 
-        const latest = await this.fetchRemote();
-        if (!latest) {
-          throw new Error('No encrypted settings exist for this account.', {
-            cause: error,
-          });
-        }
-        remote = latest;
-        payload = await this.decryptPayload(latest, decrypted.key);
+      const latest = await this.fetchRemote();
+      if (!latest) {
+        throw new Error('No encrypted settings exist for this account.', {
+          cause: error,
+        });
       }
-    }
 
-    throw new Error('Unable to overwrite encrypted settings.');
+      const latestPayload = await this.decryptPayload(latest, key);
+      const retry = await this.prepareOverwrite(values, key, latestPayload);
+      const written = await this.writeRevision(
+        retry.encrypted,
+        latest.revision,
+      );
+      return { metadata: retry.metadata, remote: written };
+    }
+  }
+
+  private async prepareOverwrite(
+    values: Record<string, unknown>,
+    key: CryptoKey,
+    payload: EncryptedSettingsPayload,
+  ) {
+    const metadata = createOverwriteMetadata(
+      values,
+      payload,
+      Date.now(),
+      getOrCreateDeviceId,
+    );
+    return { metadata, encrypted: await this.encrypt(values, key, metadata) };
   }
 
   private async encrypt(
