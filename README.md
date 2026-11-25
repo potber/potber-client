@@ -124,6 +124,8 @@ You need to have Docker installed on your system and have the [Dev Containers ex
 - `npm run lint:fix`
 - `npm run quality:check` — check for structural regressions against the merge base. See the [structural checks guide](docs/guides/quality-gates.md).
 
+After `npm ci`, the pre-commit hook formats staged files and runs Glint and the browser suite. Install Chromium or set `TESTEM_BROWSER` to another installed Testem browser before committing.
+
 #### Testing
 
 - `npm run test`
