@@ -5,7 +5,7 @@ import type { PublicFetchOptions } from '../api';
 import { Bookmark } from '../api/models/bookmark';
 import { trackedFunction } from 'reactiveweb/function';
 import type { TrackedState } from 'ember-resources';
-import { sleep } from 'potber-client/utils/misc';
+import { settledSleep } from 'potber-client/utils/misc';
 
 interface ReloadOptions extends PublicFetchOptions {
   /**
@@ -65,7 +65,7 @@ export default class BookmarkStore extends Service {
    */
   reload = async (options?: ReloadOptions) => {
     if (options?.delay) {
-      await sleep(options.delay);
+      await settledSleep(options.delay);
     }
     this.state = trackedFunction(this, () =>
       this.api.findAllBookmarks(options),

@@ -2,7 +2,7 @@ import Service, { service } from '@ember/service';
 import ApiService from '../api';
 import { tracked } from '@glimmer/tracking';
 import type { TrackedState } from 'ember-resources';
-import { sleep } from 'potber-client/utils/misc';
+import { settledSleep } from 'potber-client/utils/misc';
 import { trackedFunction } from 'reactiveweb/function';
 import { PrivateMessage } from '../api/models/private-message';
 import type { FindManyPrivateMessagesOptions } from '../api/endpoints/private-messages.endpoints';
@@ -48,7 +48,7 @@ export default class PrivateMessageStore extends Service {
    */
   reload = async (options?: ReloadOptions) => {
     if (options?.delay) {
-      await sleep(options.delay);
+      await settledSleep(options.delay);
     }
     this.state = trackedFunction(this, () =>
       this.api.findManyPrivateMessages(options, {
