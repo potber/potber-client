@@ -15,6 +15,7 @@ import {
   type Settings,
 } from 'potber-client/services/settings';
 import { setupTest } from 'potber-client/tests/helpers';
+import { readSyncMetadata } from 'potber-client/utils/settings-sync-metadata-storage';
 import { module, test } from 'qunit';
 
 const settings: Settings = {
@@ -646,6 +647,31 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(localStorage.getItem(metadataKey), null);
     assert.strictEqual(localStorage.getItem(otherMetadataKey), savedMetadata);
     assert.strictEqual(localStorage.getItem(deviceKey), deviceId);
+  });
+
+  test('rebuilds missing field clocks before uploading a pending edit', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    localStorage.setItem('potber-settingsSyncDeviceId', 'remembered-device');
+    await service.initialize(settings, authentication);
+    await service.enable(settings);
+
+    const local = { ...settings, theme: Theme.default };
+    service.settingChanged('theme', local);
+    localStorage.removeItem('potber-settingsSyncMetadata-123');
+    assert.strictEqual(readSyncMetadata('123'), undefined);
+
+    await service.syncNow();
+
+    assert.strictEqual(service.lastError, null);
+    assert.strictEqual(service.writes[1]?.expectedRevision, 1);
+    assert.strictEqual(
+      readSyncMetadata('123')?.fields['settings.theme']?.deviceId,
+      'remembered-device',
+    );
+    assert.deepEqual(await service.initialize(settings, authentication), local);
   });
 
   test('merges and retries after a concurrent update', async function (assert) {
