@@ -32,7 +32,27 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: env -u GITHUB_STEP_SUMMARY npm run test:coverage
+      - name: Measure browser coverage
+        shell: bash
+        run: |
+          log="$(mktemp)"
+          trap 'rm -f "$log"' EXIT
+          if env -u GITHUB_STEP_SUMMARY npm run test:coverage 2>&1 | tee "$log"; then
+            exit 0
+          fi
+
+          # Testem emits one synthetic failure when Chromium never connects.
+          # Retry only that startup failure, never a failed test or coverage check.
+          if grep -Eq '^not ok 1 Chromium - \[undefined ms\] - error$' "$log" &&
+             grep -Fq 'Browser failed to connect within ' "$log" &&
+             grep -Fxq '# tests 1' "$log" &&
+             grep -Fxq '# pass  0' "$log" &&
+             grep -Fxq '# fail  1' "$log"; then
+            echo "::warning::Chromium did not connect to Testem. Retrying coverage once."
+            env -u GITHUB_STEP_SUMMARY npm run test:coverage
+          else
+            exit 1
+          fi
       - uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
