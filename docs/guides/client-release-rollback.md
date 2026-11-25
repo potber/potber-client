@@ -48,3 +48,5 @@ See the [23 November 2026 staging rehearsal](staging-rollback-rehearsal-2026-11-
 Run the [authenticated staging smoke test](staging-auth-smoke.md) to verify sign-in and session persistence in the deployed client with isolated fixtures.
 
 See the [25 November 2026 authenticated rehearsal](staging-rollback-rehearsal-2026-11-25.md) for live sign-in and reload on both the rolled-back and restored builds.
+
+See the [staging session continuity rehearsal](staging-rollback-session-continuity-2026-11-25.md) for verification of one existing browser session across rollback and restore.
