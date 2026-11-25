@@ -86,6 +86,11 @@ interface DecryptedRemote {
   values: Record<string, unknown>;
 }
 
+interface ParsedValues {
+  settings: Settings;
+  collections: SyncedCollections;
+}
+
 export default class SettingsSyncService extends Service {
   @tracked state: SettingsSyncState = 'busy';
   @tracked lastError: string | null = null;
@@ -141,10 +146,11 @@ export default class SettingsSyncService extends Service {
           this.key,
           this.currentValues,
         );
-        const settings = this.applyValues(merged.values);
+        const parsed = this.parseValues(merged.values);
+        this.commitValues(parsed);
         this.state = 'enabled';
         if (merged.shouldUpload) this.scheduleUpload(merged.values);
-        return settings;
+        return parsed.settings;
       } catch (error) {
         this.lastError = errorMessage(error);
         this.state = 'locked';
@@ -238,18 +244,14 @@ export default class SettingsSyncService extends Service {
         decrypted.remote = overwritten.remote;
       }
 
-      const settings = preferencesFromSyncValues(values, this.currentSettings);
-      const collections = collectionsFromValues(values);
+      const parsed = this.parseValues(values);
       await this.storeKey(decrypted.key);
       writeSyncMetadata(this.requireUserId(), metadata);
       this.key = decrypted.key;
       this.remote = decrypted.remote;
-      this.currentSettings = settings;
-      this.collections = cloneCollections(collections);
       this.state = 'enabled';
-      this.onRemoteSettings?.(settings);
-      this.onRemoteCollections?.(cloneCollections(collections));
-      return settings;
+      this.commitValues(parsed, { notifySettings: true });
+      return parsed.settings;
     } catch (error) {
       this.throwUnlockError(error);
     }
@@ -411,7 +413,7 @@ export default class SettingsSyncService extends Service {
     this.remote = remote;
     const payload = await this.decryptPayload(remote, key);
     const values = valuesFromPayload(payload);
-    this.validateValues(values);
+    this.parseValues(values);
     return { key, payload, remote, values };
   }
 
@@ -435,7 +437,9 @@ export default class SettingsSyncService extends Service {
       return;
     }
     const merged = await this.decryptAndMerge(remote, this.key!, localValues);
-    this.applyValues(merged.values, { notifySettings: true });
+    this.commitValues(this.parseValues(merged.values), {
+      notifySettings: true,
+    });
     // Adopt the fetched revision only after its values were applied.
     this.remote = remote;
     this.remote = await this.writeValues(
@@ -453,25 +457,24 @@ export default class SettingsSyncService extends Service {
   }
 
   /**
-   * Validates every synced field before changing in-memory state or notifying
-   * listeners, so an invalid remote copy applies nothing.
+   * Reads synced values into settings and collections and throws if any field
+   * is invalid. Callers parse before changing state, so an invalid copy applies nothing.
    */
-  private applyValues(
-    values: Record<string, unknown>,
+  private parseValues(values: Record<string, unknown>): ParsedValues {
+    return {
+      settings: preferencesFromSyncValues(values, this.currentSettings),
+      collections: collectionsFromValues(values),
+    };
+  }
+
+  private commitValues(
+    { settings, collections }: ParsedValues,
     { notifySettings = false } = {},
-  ): Settings {
-    const settings = preferencesFromSyncValues(values, this.currentSettings);
-    const collections = collectionsFromValues(values);
+  ) {
     this.currentSettings = settings;
     this.collections = cloneCollections(collections);
     if (notifySettings) this.onRemoteSettings?.(settings);
     this.onRemoteCollections?.(cloneCollections(collections));
-    return settings;
-  }
-
-  private validateValues(values: Record<string, unknown>) {
-    preferencesFromSyncValues(values, this.currentSettings);
-    collectionsFromValues(values);
   }
 
   /**
