@@ -15,6 +15,7 @@ import {
   type Settings,
 } from 'potber-client/services/settings';
 import { setupTest } from 'potber-client/tests/helpers';
+import { sealSettingsPayload } from 'potber-client/utils/settings-sync-envelope';
 import { readSyncMetadata } from 'potber-client/utils/settings-sync-metadata-storage';
 import { module, test } from 'qunit';
 
@@ -134,6 +135,27 @@ module('Unit | Service | SettingsSync', function (hooks) {
     );
     assert.ok(service.persistedKey, 'a non-extractable key is remembered');
     assert.false(service.persistedKey!.extractable);
+  });
+
+  test('does not replace settings that another device already synced', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    await service.enable(settings);
+    await service.forgetThisDevice();
+    const remote = service.remoteValue;
+
+    await assert.rejects(
+      service.enable({ ...settings, theme: Theme.default }),
+      /Unlock them with the recovery key/,
+    );
+    assert.strictEqual(service.state, 'locked');
+    assert.true(service.hasRemoteConfiguration);
+    assert.strictEqual(service.persistedKey, undefined);
+    assert.strictEqual(service.remoteValue, remote);
+    assert.strictEqual(service.writes.length, 1);
   });
 
   test('unlocks the same settings on a new device using only the recovery key', async function (assert) {
@@ -722,6 +744,65 @@ module('Unit | Service | SettingsSync', function (hooks) {
       service.writes.length,
       1,
       'does not recreate the remote copy',
+    );
+  });
+
+  test('applies nothing from a conflicting remote copy with an invalid collection', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const appliedSettings: Settings[] = [];
+    const appliedCollections: SyncedCollections[] = [];
+    await service.initialize(
+      settings,
+      { userId: '123', accessToken: 'token' },
+      (remoteSettings) => appliedSettings.push(remoteSettings),
+      collections,
+      (remoteCollections) => appliedCollections.push(remoteCollections),
+    );
+    await service.enable(settings);
+
+    const local = { ...settings, theme: Theme.default };
+    service.settingChanged('theme', local);
+    const values: Record<string, unknown> = {
+      ...Object.fromEntries(
+        Object.entries({ ...settings, debug: false }).map(([key, value]) => [
+          `settings.${key}`,
+          value,
+        ]),
+      ),
+      ...collections,
+      blockedUsers: 'not a list',
+    };
+    const clock = { modifiedAt: Date.now() + 60_000, deviceId: 'other' };
+    const envelope = await sealSettingsPayload(
+      values,
+      {
+        fields: Object.fromEntries(Object.keys(values).map((k) => [k, clock])),
+      },
+      () => clock,
+      service.persistedKey!,
+      '123',
+    );
+    service.remoteValue = {
+      ...envelope,
+      revision: 2,
+      updatedAt: new Date().toISOString(),
+    };
+    service.conflictsRemaining = 1;
+    await service.syncNow();
+
+    assert.strictEqual(service.lastError, 'Invalid encrypted blocklist.');
+    assert.deepEqual(appliedSettings, [], 'remote settings are not applied');
+    assert.deepEqual(appliedCollections, []);
+    assert.strictEqual(service.writes.length, 1, 'nothing is uploaded');
+    assert.strictEqual(service.remoteValue.revision, 2);
+
+    await service.syncNow();
+    assert.strictEqual(
+      service.writes[1]?.expectedRevision,
+      1,
+      'the retry is not based on the rejected revision',
     );
   });
 
