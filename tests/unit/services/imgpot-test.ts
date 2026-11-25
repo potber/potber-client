@@ -1,5 +1,9 @@
 import Service from '@ember/service';
 import { module, test } from 'qunit';
+import {
+  getImgpotInsertValues,
+  type ImgpotImageVariation,
+} from 'potber-client/services/imgpot';
 import type ImgpotService from 'potber-client/services/imgpot';
 import { setupTest } from 'potber-client/tests/helpers';
 
@@ -15,13 +19,17 @@ module('Unit | Service | Imgpot | Responses', function (hooks) {
   setupTest(hooks);
 
   let originalFetch: typeof fetch;
+  let accessToken: string | undefined;
 
   hooks.beforeEach(function () {
     originalFetch = globalThis.fetch;
+    accessToken = 'test-token';
     this.owner.register(
       'service:session',
       class extends Service {
-        accessToken = 'test-token';
+        get accessToken() {
+          return accessToken;
+        }
       },
     );
   });
@@ -60,5 +68,69 @@ module('Unit | Service | Imgpot | Responses', function (hooks) {
     globalThis.fetch = async () =>
       Response.json({ message: 'Unauthorized' }, { status: 401 });
     await assert.rejects(service.listImages(), /Unauthorized/);
+  });
+
+  test('rejects a signed-out request before calling fetch', async function (assert) {
+    const service = this.owner.lookup('service:imgpot') as ImgpotService;
+    accessToken = undefined;
+    globalThis.fetch = async () => {
+      assert.step('fetch');
+      return Response.json({});
+    };
+
+    await assert.rejects(service.listImages(), /Nicht authentifiziert/);
+    assert.verifySteps([]);
+  });
+});
+
+module('Unit | Service | Imgpot | Insert values', function () {
+  const large: ImgpotImageVariation = {
+    variationType: 'large',
+    cdnUrl: 'https://images.example/large.png',
+  };
+  const medium: ImgpotImageVariation = {
+    variationType: 'medium',
+    cdnUrl: 'https://images.example/medium.png',
+  };
+  const small: ImgpotImageVariation = {
+    variationType: 'small',
+    cdnUrl: 'https://images.example/small.png',
+  };
+
+  test('uses the large image as the link and the medium image as the thumbnail', function (assert) {
+    assert.deepEqual(
+      getImgpotInsertValues({ variations: [small, medium, large] }),
+      {
+        src: large.cdnUrl,
+        thumbnail: medium.cdnUrl,
+      },
+    );
+  });
+
+  test('uses one image when the full and inline URLs are the same', function (assert) {
+    assert.deepEqual(
+      getImgpotInsertValues({
+        variations: [large, { ...medium, cdnUrl: large.cdnUrl }],
+      }),
+      { src: large.cdnUrl, thumbnail: '' },
+    );
+  });
+
+  test('falls back to an available variant or rejects an empty list', function (assert) {
+    for (const variation of [medium, large, small]) {
+      assert.deepEqual(
+        getImgpotInsertValues({ variations: [variation] }),
+        {
+          src: variation.cdnUrl,
+          thumbnail: '',
+        },
+        variation.variationType,
+      );
+    }
+
+    assert.throws(
+      () => getImgpotInsertValues({ variations: [] }),
+      /keine verwendbaren Varianten/,
+    );
   });
 });
