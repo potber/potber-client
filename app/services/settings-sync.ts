@@ -1,7 +1,6 @@
 import {
   createInitialMetadata,
   metadataFromPayload,
-  nextModifiedAt,
 } from 'potber-client/utils/settings-sync-clocks';
 import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
@@ -34,14 +33,14 @@ import {
 } from 'potber-client/utils/settings-sync-merge';
 import {
   clearSyncMetadata,
-  getOrCreateDeviceId,
+  createLocalFieldClock,
+  recordLocalFieldChange,
   readSyncMetadata,
   writeSyncMetadata,
 } from 'potber-client/utils/settings-sync-metadata-storage';
 import {
   valuesFromPayload,
   type EncryptedSettingsPayload,
-  type FieldClock,
 } from 'potber-client/utils/settings-sync-payload';
 import {
   BLOCKED_USERS_FIELD,
@@ -178,7 +177,7 @@ export default class SettingsSyncService extends Service {
       const { key, recoveryKey } = await createRecoveryKey();
       this.currentSettings = { ...localSettings };
       const values = this.currentValues;
-      const metadata = createInitialMetadata(values, this.createClock);
+      const metadata = createInitialMetadata(values, createLocalFieldClock);
       writeSyncMetadata(this.requireUserId(), metadata);
       const encrypted = await this.encrypt(values, key, metadata);
       const remote = await this.writeRemote(encrypted);
@@ -288,9 +287,7 @@ export default class SettingsSyncService extends Service {
 
   private valueChanged(key: string) {
     if (this.state === 'disabled' || this.state === 'locked') return;
-    const metadata = readSyncMetadata(this.userId) ?? { fields: {} };
-    metadata.fields[key] = this.createClock(metadata);
-    writeSyncMetadata(this.requireUserId(), metadata);
+    recordLocalFieldChange(this.requireUserId(), key);
     const values = this.currentValues;
     this.pendingValues = values;
     if (this.state === 'enabled' && this.key) this.scheduleUpload(values);
@@ -330,7 +327,7 @@ export default class SettingsSyncService extends Service {
     try {
       const metadata =
         readSyncMetadata(this.userId) ??
-        createInitialMetadata(values, this.createClock);
+        createInitialMetadata(values, createLocalFieldClock);
       writeSyncMetadata(this.requireUserId(), metadata);
       const encrypted = await this.encrypt(values, key, metadata);
       this.remote = await this.writeRevision(encrypted, this.remote?.revision);
@@ -399,7 +396,7 @@ export default class SettingsSyncService extends Service {
       localValues,
       payload,
       readSyncMetadata(this.userId),
-      this.createClock,
+      createLocalFieldClock,
     );
     writeSyncMetadata(this.requireUserId(), merged.metadata);
     return merged;
@@ -431,7 +428,7 @@ export default class SettingsSyncService extends Service {
     sealSettingsPayload(
       values,
       metadata,
-      this.createClock,
+      createLocalFieldClock,
       key,
       this.requireUserId(),
     );
@@ -452,7 +449,7 @@ export default class SettingsSyncService extends Service {
     this.applyCollectionsFromValues(merged.values);
     const metadata =
       readSyncMetadata(this.userId) ??
-      createInitialMetadata(merged.values, this.createClock);
+      createInitialMetadata(merged.values, createLocalFieldClock);
     const encrypted = await this.encrypt(merged.values, this.key!, metadata);
     this.remote = await this.writeRevision(encrypted, remote.revision);
   }
@@ -489,11 +486,6 @@ export default class SettingsSyncService extends Service {
       clearSyncMetadata(this.userId);
     }
   }
-
-  private createClock = (metadata: SettingsSyncMetadata): FieldClock => ({
-    modifiedAt: nextModifiedAt(metadata, Date.now()),
-    deviceId: getOrCreateDeviceId(),
-  });
 
   private ensureAuthenticated() {
     if (!this.accessToken || !this.userId) {
