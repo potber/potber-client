@@ -34,7 +34,7 @@ import {
   clearSyncMetadata,
   createLocalFieldClock,
   recordLocalFieldChange,
-  readSyncMetadata,
+  readOrCreateSyncMetadata,
   mergeAndStoreRemoteSettings,
   writeSyncMetadata,
 } from 'potber-client/utils/settings-sync-metadata-storage';
@@ -325,12 +325,7 @@ export default class SettingsSyncService extends Service {
     key: CryptoKey,
   ) {
     try {
-      const metadata =
-        readSyncMetadata(this.userId) ??
-        createInitialMetadata(values, createLocalFieldClock);
-      writeSyncMetadata(this.requireUserId(), metadata);
-      const encrypted = await this.encrypt(values, key, metadata);
-      this.remote = await this.writeRevision(encrypted, this.remote?.revision);
+      this.remote = await this.writeValues(values, key, this.remote?.revision);
     } catch (error) {
       if (!isRevisionConflict(error)) throw error;
       await this.resolveConflict(values);
@@ -361,6 +356,16 @@ export default class SettingsSyncService extends Service {
     value: WriteUserConfiguration,
   ): Promise<RemoteUserConfiguration> {
     return writeRemoteSettings(this.ensureAuthenticated(), value);
+  }
+
+  private async writeValues(
+    values: Record<string, unknown>,
+    key: CryptoKey,
+    expectedRevision: WriteUserConfiguration['expectedRevision'],
+  ): Promise<RemoteUserConfiguration> {
+    const metadata = readOrCreateSyncMetadata(this.requireUserId(), values);
+    const encrypted = await this.encrypt(values, key, metadata);
+    return this.writeRevision(encrypted, expectedRevision);
   }
 
   private writeRevision(
@@ -444,11 +449,11 @@ export default class SettingsSyncService extends Service {
     const settings = this.settingsFromValues(merged.values);
     this.onRemoteSettings?.(settings);
     this.applyCollectionsFromValues(merged.values);
-    const metadata =
-      readSyncMetadata(this.userId) ??
-      createInitialMetadata(merged.values, createLocalFieldClock);
-    const encrypted = await this.encrypt(merged.values, this.key!, metadata);
-    this.remote = await this.writeRevision(encrypted, remote.revision);
+    this.remote = await this.writeValues(
+      merged.values,
+      this.key!,
+      remote.revision,
+    );
   }
 
   private get currentValues(): Record<string, unknown> {
