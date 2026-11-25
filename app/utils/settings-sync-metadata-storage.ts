@@ -1,4 +1,6 @@
 import * as v from 'valibot';
+import { nextModifiedAt } from './settings-sync-clocks';
+import type { FieldClock } from './settings-sync-payload';
 import type { SettingsSyncMetadata } from './settings-sync-merge';
 
 const METADATA_PREFIX = 'potber-settingsSyncMetadata-';
@@ -51,4 +53,19 @@ export function getOrCreateDeviceId() {
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
   }
   return deviceId;
+}
+
+export function createLocalFieldClock(
+  metadata: SettingsSyncMetadata,
+): FieldClock {
+  return {
+    modifiedAt: nextModifiedAt(metadata, Date.now()),
+    deviceId: getOrCreateDeviceId(),
+  };
+}
+
+export function recordLocalFieldChange(userId: string, field: string): void {
+  const metadata = readSyncMetadata(userId) ?? { fields: {} };
+  metadata.fields[field] = createLocalFieldClock(metadata);
+  writeSyncMetadata(userId, metadata);
 }
