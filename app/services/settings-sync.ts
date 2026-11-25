@@ -8,10 +8,12 @@ import { tracked } from '@glimmer/tracking';
 import type { PersistedSavedPost } from 'potber-client/models/post';
 import {
   createRecoveryKey,
-  decryptSettings,
-  encryptSettings,
   importRecoveryKey,
 } from 'potber-client/utils/settings-sync-crypto';
+import {
+  openSettingsPayload,
+  sealSettingsPayload,
+} from 'potber-client/utils/settings-sync-envelope';
 import {
   deleteDeviceKey,
   readDeviceKey,
@@ -37,12 +39,9 @@ import {
   writeSyncMetadata,
 } from 'potber-client/utils/settings-sync-metadata-storage';
 import {
-  parseSettingsPayload,
-  serializeSettingsPayload,
   valuesFromPayload,
   type EncryptedSettingsPayload,
   type FieldClock,
-  type SyncedField,
 } from 'potber-client/utils/settings-sync-payload';
 import {
   BLOCKED_USERS_FIELD,
@@ -230,9 +229,8 @@ export default class SettingsSyncService extends Service {
           decrypted,
           {
             fetchRemote: () => this.fetchRemote(),
-            decrypt: (remote, key) => this.decryptPayload(remote, key),
-            encrypt: (values, key, metadata) =>
-              this.encrypt(values, key, metadata),
+            decrypt: this.decryptPayload,
+            encrypt: this.encrypt,
             write: (encrypted, revision) =>
               this.writeRevision(encrypted, revision),
           },
@@ -404,13 +402,8 @@ export default class SettingsSyncService extends Service {
     return merged;
   }
 
-  private async decryptPayload(
-    remote: RemoteUserConfiguration,
-    key: CryptoKey,
-  ): Promise<EncryptedSettingsPayload> {
-    const plaintext = await decryptSettings(remote, key, this.requireUserId());
-    return parseSettingsPayload(plaintext);
-  }
+  private decryptPayload = (remote: RemoteUserConfiguration, key: CryptoKey) =>
+    openSettingsPayload(remote, key, this.requireUserId());
 
   private async decryptForUnlock(
     recoveryKey: string,
@@ -427,24 +420,18 @@ export default class SettingsSyncService extends Service {
     return { key, payload, remote, values };
   }
 
-  private async encrypt(
+  private encrypt = (
     values: Record<string, unknown>,
     key: CryptoKey,
     metadata: SettingsSyncMetadata,
-  ): Promise<WriteUserConfiguration> {
-    const fields: Record<string, SyncedField> = {};
-    for (const [fieldKey, value] of Object.entries(values)) {
-      fields[fieldKey] = {
-        value,
-        clock: metadata.fields[fieldKey] ?? this.createClock(metadata),
-      };
-    }
-    return encryptSettings(
-      serializeSettingsPayload(fields),
+  ) =>
+    sealSettingsPayload(
+      values,
+      metadata,
+      this.createClock,
       key,
       this.requireUserId(),
     );
-  }
 
   private async resolveConflict(localValues: Record<string, unknown>) {
     const remote = await this.fetchRemote();
