@@ -62,7 +62,7 @@ export async function createRecoveryKey() {
   return { key: await importRawKey(rawKey), recoveryKey };
 }
 
-export function importRecoveryKey(recoveryKey: string) {
+export async function importRecoveryKey(recoveryKey: string) {
   return importRawKey(parseRecoveryKey(recoveryKey));
 }
 
