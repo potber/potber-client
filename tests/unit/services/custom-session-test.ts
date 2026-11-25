@@ -63,10 +63,10 @@ module('Unit | Service | CustomSession', function (hooks) {
 
     hooks.beforeEach(async function () {
       readSession = async () => forumSession;
-      class ApiStub extends Service {
-        getSession = () => readSession();
+      class ForumTransportStub extends Service {
+        fetch = () => readSession();
       }
-      this.owner.register('service:api', ApiStub);
+      this.owner.register('service:forum-transport', ForumTransportStub);
       await authenticateSession({ access_token: 'forum-token' });
       invalidations = 0;
       const current = session(this.owner);
@@ -80,6 +80,22 @@ module('Unit | Service | CustomSession', function (hooks) {
     test('loads the forum session', async function (assert) {
       await session(this.owner).update();
       assert.deepEqual(session(this.owner).sessionData, forumSession);
+    });
+
+    test('clears cached session data without a forum request after sign-out', async function (assert) {
+      const current = session(this.owner);
+      readSession = async () => {
+        assert.step('read forum session');
+        return forumSession;
+      };
+      await current.update();
+      assert.deepEqual(current.sessionData, forumSession);
+
+      await invalidateSession();
+      await current.update();
+
+      assert.strictEqual(current.sessionData, null);
+      assert.verifySteps(['read forum session']);
     });
 
     test('signs out when the forum rejects the token with HTTP 401', async function (assert) {
