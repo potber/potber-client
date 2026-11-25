@@ -1,0 +1,32 @@
+# Changes to the gate policy and its ownership require maintainer review.
+/.github/CODEOWNERS @herrkris @spuxx-dev
+
+# Required CI jobs.
+/.github/workflows/pull-request.yml @herrkris @spuxx-dev
+/.github/workflows/pr-coverage.yml @herrkris @spuxx-dev
+/.github/workflows/structural-checks.yml @herrkris @spuxx-dev
+
+# Analyzer, lint, and type-check configuration.
+/.jscpd.json @herrkris @spuxx-dev
+/knip.json @herrkris @spuxx-dev
+/eslint.config.js @herrkris @spuxx-dev
+/.prettierrc.js @herrkris @spuxx-dev
+/.prettierignore @herrkris @spuxx-dev
+/tsconfig.json @herrkris @spuxx-dev
+/jsconfig.json @herrkris @spuxx-dev
+
+# Coverage instrumentation and verification tooling.
+/babel.config.mjs @herrkris @spuxx-dev
+/ember-cli-build.js @herrkris @spuxx-dev
+/vite.config.mjs @herrkris @spuxx-dev
+/testem.js @herrkris @spuxx-dev
+/config/coverage.js @herrkris @spuxx-dev
+/config/coverage-thresholds.json @herrkris @spuxx-dev
+/scripts/structural-*.mjs @herrkris @spuxx-dev
+/scripts/*coverage.mjs @herrkris @spuxx-dev
+/scripts/tests/coverage.test.mjs @herrkris @spuxx-dev
+
+# npm scripts and analyzer versions.
+/package.json @herrkris @spuxx-dev
+/package-lock.json @herrkris @spuxx-dev
+/.nvmrc @herrkris @spuxx-dev
