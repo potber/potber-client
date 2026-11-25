@@ -1,5 +1,7 @@
+import Service from '@ember/service';
 import { settled } from '@ember/test-helpers';
 import RendererService from 'potber-client/services/renderer';
+import { SidebarLayout } from 'potber-client/services/settings';
 import { setupTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -88,5 +90,107 @@ module('Unit | Service | Renderer', function (hooks) {
 
     assert.false(renderer.scrollToElement('missing-renderer-test-post'));
     assert.deepEqual(scrollCalls, []);
+  });
+  module('Sidebar', function (hooks) {
+    const root = document.documentElement;
+    let originalStyle: string | null;
+    let wasDragging: boolean;
+    let layout: SidebarLayout;
+
+    hooks.beforeEach(function () {
+      originalStyle = root.getAttribute('style');
+      wasDragging = root.hasAttribute('data-sidebar-dragging');
+      layout = SidebarLayout.leftTop;
+      this.owner.register(
+        'service:settings',
+        class extends Service {
+          get sidebarLayout() {
+            return layout;
+          }
+
+          isRightSidebar() {
+            return (
+              layout === SidebarLayout.rightTop ||
+              layout === SidebarLayout.rightBottom
+            );
+          }
+
+          getSetting() {
+            return true;
+          }
+        },
+      );
+    });
+
+    hooks.afterEach(function () {
+      if (originalStyle === null) root.removeAttribute('style');
+      else root.setAttribute('style', originalStyle);
+      root.toggleAttribute('data-sidebar-dragging', wasDragging);
+    });
+
+    test('positions the sidebar and leaves space for a bottom toggle', function (assert) {
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      const properties = [
+        '--sidebar-left',
+        '--sidebar-right',
+        '--bottom-nav-left-gap',
+        '--bottom-nav-right-gap',
+      ];
+      const gap = 'var(--control-default-height)';
+      const layouts = [
+        [SidebarLayout.leftTop, '0px', 'unset', '0px', '0px'],
+        [SidebarLayout.leftBottom, '0px', 'unset', gap, '0px'],
+        [SidebarLayout.rightTop, 'unset', '0px', '0px', '0px'],
+        [SidebarLayout.rightBottom, 'unset', '0px', '0px', gap],
+      ] as const;
+
+      for (const [side, ...expected] of layouts) {
+        layout = side;
+        renderer.updateSidebarLayout();
+        assert.deepEqual(
+          properties.map((property) => root.style.getPropertyValue(property)),
+          expected,
+          SidebarLayout[side],
+        );
+      }
+    });
+
+    test('refreshes once on opening and resets the right sidebar when closing', async function (assert) {
+      layout = SidebarLayout.rightTop;
+      this.owner.register(
+        'service:newsfeed',
+        class extends Service {
+          async refresh() {
+            assert.step('refresh');
+          }
+        },
+      );
+
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      renderer.dragSidebar(120, 0.5);
+      assert.true(root.hasAttribute('data-sidebar-dragging'));
+
+      await renderer.toggleSidebar();
+      assert.true(renderer.sidebarExpanded);
+      assert.false(root.hasAttribute('data-sidebar-dragging'));
+      assert.strictEqual(
+        root.style.getPropertyValue('--sidebar-shell-offset'),
+        'calc(-1 * var(--sidebar-expanded-width))',
+      );
+
+      await renderer.openSidebar();
+      assert.verifySteps(['refresh']);
+
+      await renderer.toggleSidebar();
+      assert.false(renderer.sidebarExpanded);
+      assert.strictEqual(
+        root.style.getPropertyValue('--sidebar-shell-offset'),
+        '0px',
+      );
+      assert.strictEqual(
+        root.style.getPropertyValue('--sidebar-backdrop-pointer-events'),
+        'none',
+      );
+    });
   });
 });
