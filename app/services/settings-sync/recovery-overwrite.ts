@@ -1,12 +1,12 @@
-import { createOverwriteMetadata } from './settings-sync-clocks';
-import type { SettingsSyncMetadata } from './settings-sync-merge';
-import { getOrCreateDeviceId } from './settings-sync-metadata-storage';
-import type { EncryptedSettingsPayload } from './settings-sync-payload';
+import { createOverwriteMetadata } from './clocks';
+import type { SettingsSyncMetadata } from './merge';
+import { getOrCreateDeviceId } from './metadata-storage';
+import type { EncryptedSettingsPayload } from './payload';
 import {
   isRevisionConflict,
   type RemoteUserConfiguration,
   type WriteUserConfiguration,
-} from './settings-sync-transport';
+} from './transport';
 
 interface RecoveryOverwriteOperations {
   fetchRemote(): Promise<RemoteUserConfiguration | null>;

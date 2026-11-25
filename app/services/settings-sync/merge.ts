@@ -1,7 +1,4 @@
-import type {
-  EncryptedSettingsPayload,
-  FieldClock,
-} from './settings-sync-payload';
+import type { EncryptedSettingsPayload, FieldClock } from './payload';
 
 export interface SettingsSyncMetadata {
   fields: Record<string, FieldClock>;

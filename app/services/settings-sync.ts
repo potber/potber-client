@@ -1,23 +1,23 @@
 import {
   createInitialMetadata,
   metadataFromPayload,
-} from 'potber-client/utils/settings-sync-clocks';
+} from 'potber-client/services/settings-sync/clocks';
 import Service from '@ember/service';
 import { tracked } from '@glimmer/tracking';
 import type { PersistedSavedPost } from 'potber-client/models/post';
 import {
   createRecoveryKey,
   importRecoveryKey,
-} from 'potber-client/utils/settings-sync-crypto';
+} from 'potber-client/services/settings-sync/crypto';
 import {
   openSettingsPayload,
   sealSettingsPayload,
-} from 'potber-client/utils/settings-sync-envelope';
+} from 'potber-client/services/settings-sync/envelope';
 import {
   deleteDeviceKey,
   readDeviceKey,
   writeDeviceKey,
-} from 'potber-client/utils/settings-sync-key-storage';
+} from 'potber-client/services/settings-sync/key-storage';
 import {
   deleteRemoteSettings,
   fetchRemoteSettings,
@@ -25,11 +25,11 @@ import {
   writeRemoteSettings,
   type RemoteUserConfiguration,
   type WriteUserConfiguration,
-} from 'potber-client/utils/settings-sync-transport';
+} from 'potber-client/services/settings-sync/transport';
 import {
   type MergeResult,
   type SettingsSyncMetadata,
-} from 'potber-client/utils/settings-sync-merge';
+} from 'potber-client/services/settings-sync/merge';
 import {
   clearSyncMetadata,
   createLocalFieldClock,
@@ -37,11 +37,11 @@ import {
   readOrCreateSyncMetadata,
   mergeAndStoreRemoteSettings,
   writeSyncMetadata,
-} from 'potber-client/utils/settings-sync-metadata-storage';
+} from 'potber-client/services/settings-sync/metadata-storage';
 import {
   valuesFromPayload,
   type EncryptedSettingsPayload,
-} from 'potber-client/utils/settings-sync-payload';
+} from 'potber-client/services/settings-sync/payload';
 import {
   BLOCKED_USERS_FIELD,
   BOARD_FAVORITES_FIELD,
@@ -51,28 +51,28 @@ import {
   collectionsToValues,
   emptyCollections,
   type SyncedCollections,
-} from 'potber-client/utils/settings-sync-collections';
+} from 'potber-client/services/settings-sync/collections';
 import {
   mergeUnlockValues,
   syncedValuesDiffer,
   type SettingsSyncUnlockSource,
-} from 'potber-client/utils/settings-sync-recovery-merge';
+} from 'potber-client/services/settings-sync/recovery-merge';
 import {
   preferenceFieldKey,
   preferencesFromSyncValues,
   preferencesToSyncValues,
-} from 'potber-client/utils/settings-sync-preferences';
-import { overwriteRecoveredSettings } from 'potber-client/utils/settings-sync-recovery-overwrite';
+} from 'potber-client/services/settings-sync/preferences';
+import { overwriteRecoveredSettings } from 'potber-client/services/settings-sync/recovery-overwrite';
 import type { Settings } from './settings/types';
 import type { BlockedUser } from 'potber-client/models/blocked-user';
 
 export {
   SettingsSyncRequestError,
   type RemoteUserConfiguration,
-} from 'potber-client/utils/settings-sync-transport';
+} from 'potber-client/services/settings-sync/transport';
 
-export type { SettingsSyncUnlockSource } from 'potber-client/utils/settings-sync-recovery-merge';
-export type { SyncedCollections } from 'potber-client/utils/settings-sync-collections';
+export type { SettingsSyncUnlockSource } from 'potber-client/services/settings-sync/recovery-merge';
+export type { SyncedCollections } from 'potber-client/services/settings-sync/collections';
 
 const SYNC_DEBOUNCE_MS = 750;
 

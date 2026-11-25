@@ -15,8 +15,8 @@ import {
   type Settings,
 } from 'potber-client/services/settings';
 import { setupTest } from 'potber-client/tests/helpers';
-import { sealSettingsPayload } from 'potber-client/utils/settings-sync-envelope';
-import { readSyncMetadata } from 'potber-client/utils/settings-sync-metadata-storage';
+import { sealSettingsPayload } from 'potber-client/services/settings-sync/envelope';
+import { readSyncMetadata } from 'potber-client/services/settings-sync/metadata-storage';
 import { module, test } from 'qunit';
 
 const settings: Settings = {

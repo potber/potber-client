@@ -3,7 +3,7 @@ import {
   decryptSettings,
   encryptSettings,
   importRecoveryKey,
-} from 'potber-client/utils/settings-sync-crypto';
+} from 'potber-client/services/settings-sync/crypto';
 import { module, test } from 'qunit';
 
 const prefix = 'potber-sync-v1-';

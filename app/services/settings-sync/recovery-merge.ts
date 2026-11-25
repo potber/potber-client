@@ -3,7 +3,7 @@ import {
   BOARD_FAVORITES_FIELD,
   SAVED_POSTS_FIELD,
   collectionsFromValues,
-} from './settings-sync-collections';
+} from './collections';
 
 export type SettingsSyncUnlockSource = 'local' | 'remote';
 

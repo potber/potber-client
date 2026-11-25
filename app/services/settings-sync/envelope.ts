@@ -2,14 +2,14 @@ import {
   decryptSettings,
   encryptSettings,
   type SettingsSyncEnvelope,
-} from './settings-sync-crypto';
-import type { SettingsSyncMetadata } from './settings-sync-merge';
+} from './crypto';
+import type { SettingsSyncMetadata } from './merge';
 import {
   parseSettingsPayload,
   serializeSettingsPayload,
   type FieldClock,
   type SyncedField,
-} from './settings-sync-payload';
+} from './payload';
 
 export function sealSettingsPayload(
   values: Record<string, unknown>,

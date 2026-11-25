@@ -2,7 +2,7 @@ import {
   parseSettingsPayload,
   serializeSettingsPayload,
   valuesFromPayload,
-} from 'potber-client/utils/settings-sync-payload';
+} from 'potber-client/services/settings-sync/payload';
 import { module, test } from 'qunit';
 
 module('Unit | Utils | Settings sync payload', function () {

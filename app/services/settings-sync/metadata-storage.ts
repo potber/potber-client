@@ -1,13 +1,7 @@
 import * as v from 'valibot';
-import { createInitialMetadata, nextModifiedAt } from './settings-sync-clocks';
-import type {
-  EncryptedSettingsPayload,
-  FieldClock,
-} from './settings-sync-payload';
-import {
-  mergeSettings,
-  type SettingsSyncMetadata,
-} from './settings-sync-merge';
+import { createInitialMetadata, nextModifiedAt } from './clocks';
+import type { EncryptedSettingsPayload, FieldClock } from './payload';
+import { mergeSettings, type SettingsSyncMetadata } from './merge';
 
 const METADATA_PREFIX = 'potber-settingsSyncMetadata-';
 const DEVICE_ID_KEY = 'potber-settingsSyncDeviceId';

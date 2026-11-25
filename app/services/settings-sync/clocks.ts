@@ -1,8 +1,5 @@
-import type { SettingsSyncMetadata } from './settings-sync-merge';
-import type {
-  EncryptedSettingsPayload,
-  FieldClock,
-} from './settings-sync-payload';
+import type { SettingsSyncMetadata } from './merge';
+import type { EncryptedSettingsPayload, FieldClock } from './payload';
 
 export function nextModifiedAt(metadata: SettingsSyncMetadata, now: number) {
   const latest = Object.values(metadata.fields).reduce(

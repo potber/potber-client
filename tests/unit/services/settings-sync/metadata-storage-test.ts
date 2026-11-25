@@ -2,7 +2,7 @@ import {
   readOrCreateSyncMetadata,
   readSyncMetadata,
   writeSyncMetadata,
-} from 'potber-client/utils/settings-sync-metadata-storage';
+} from 'potber-client/services/settings-sync/metadata-storage';
 import { module, test } from 'qunit';
 
 const userId = 'metadata-test';

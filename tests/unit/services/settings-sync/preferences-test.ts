@@ -3,7 +3,7 @@ import { Theme } from 'potber-client/services/settings/types';
 import {
   preferencesFromSyncValues,
   preferencesToSyncValues,
-} from 'potber-client/utils/settings-sync-preferences';
+} from 'potber-client/services/settings-sync/preferences';
 import { module, test } from 'qunit';
 
 module('Unit | Utility | Settings sync preferences', function () {

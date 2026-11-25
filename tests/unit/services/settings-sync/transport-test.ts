@@ -3,7 +3,7 @@ import {
   fetchRemoteSettings,
   SettingsSyncRequestError,
   writeRemoteSettings,
-} from 'potber-client/utils/settings-sync-transport';
+} from 'potber-client/services/settings-sync/transport';
 
 const envelope = { version: 1, iv: 'test-iv', ciphertext: 'test-ciphertext' };
 const configuration = {
