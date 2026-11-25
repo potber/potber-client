@@ -25,11 +25,11 @@ A titled discussion in a board, made of pages of posts.
 _Avoid_: topic, discussion
 
 **Global thread**:
-A forum-wide thread that the forum lists in board views alongside each board's own threads. Users can hide global threads and announcements in board views.
+A thread the forum lists across boards alongside each board's own threads. It can also be an announcement.
 _Avoid_: pinned thread
 
 **Announcement**:
-A thread that the forum marks as an announcement. Like global threads, users can hide announcements in board views.
+A thread the forum designates as a notice. An announcement can belong to a single board or also be a global thread. Potber has one board-view setting that hides both announcements and global threads.
 
 **Post**:
 One contribution to a thread, written by a single user.
