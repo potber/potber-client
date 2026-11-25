@@ -326,10 +326,7 @@ export default class SettingsSyncService extends Service {
         createInitialMetadata(values, this.createClock);
       writeSyncMetadata(this.requireUserId(), metadata);
       const encrypted = await this.encrypt(values, key, metadata);
-      this.remote = await this.writeRemote({
-        ...encrypted,
-        expectedRevision: this.remote?.revision,
-      });
+      this.remote = await this.writeRevision(encrypted, this.remote?.revision);
     } catch (error) {
       if (!isRevisionConflict(error)) throw error;
       await this.resolveConflict(values);
@@ -360,6 +357,13 @@ export default class SettingsSyncService extends Service {
     value: WriteUserConfiguration,
   ): Promise<RemoteUserConfiguration> {
     return writeRemoteSettings(this.ensureAuthenticated(), value);
+  }
+
+  private writeRevision(
+    encrypted: WriteUserConfiguration,
+    expectedRevision: WriteUserConfiguration['expectedRevision'],
+  ): Promise<RemoteUserConfiguration> {
+    return this.writeRemote({ ...encrypted, expectedRevision });
   }
 
   protected async deleteRemote(): Promise<void> {
@@ -433,10 +437,7 @@ export default class SettingsSyncService extends Service {
       );
       const encrypted = await this.encrypt(values, decrypted.key, metadata);
       try {
-        const written = await this.writeRemote({
-          ...encrypted,
-          expectedRevision: remote.revision,
-        });
+        const written = await this.writeRevision(encrypted, remote.revision);
         return { metadata, remote: written };
       } catch (error) {
         if (attempt !== 0 || !isRevisionConflict(error)) {
@@ -494,10 +495,7 @@ export default class SettingsSyncService extends Service {
       readSyncMetadata(this.userId) ??
       createInitialMetadata(merged.values, this.createClock);
     const encrypted = await this.encrypt(merged.values, this.key!, metadata);
-    this.remote = await this.writeRemote({
-      ...encrypted,
-      expectedRevision: remote.revision,
-    });
+    this.remote = await this.writeRevision(encrypted, remote.revision);
   }
 
   private get currentValues(): Record<string, unknown> {
