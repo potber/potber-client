@@ -143,8 +143,7 @@ export default class SettingsSyncService extends Service {
           this.key,
           this.currentValues,
         );
-        const settings = this.settingsFromValues(merged.values);
-        this.applyCollectionsFromValues(merged.values);
+        const settings = this.applyValues(merged.values);
         this.state = 'enabled';
         if (merged.shouldUpload) this.scheduleUpload(merged.values);
         return settings;
@@ -445,10 +444,9 @@ export default class SettingsSyncService extends Service {
       return;
     }
     const merged = await this.decryptAndMerge(remote, this.key!, localValues);
+    this.applyValues(merged.values, { notifySettings: true });
+    // Adopt the fetched revision only after its values were applied.
     this.remote = remote;
-    const settings = this.settingsFromValues(merged.values);
-    this.onRemoteSettings?.(settings);
-    this.applyCollectionsFromValues(merged.values);
     this.remote = await this.writeValues(
       merged.values,
       this.key!,
@@ -463,23 +461,26 @@ export default class SettingsSyncService extends Service {
     };
   }
 
-  private settingsFromValues(values: Record<string, unknown>): Settings {
-    this.currentSettings = preferencesFromSyncValues(
-      values,
-      this.currentSettings,
-    );
-    return this.currentSettings;
+  /**
+   * Validates every synced field before changing in-memory state or notifying
+   * listeners, so an invalid remote copy applies nothing.
+   */
+  private applyValues(
+    values: Record<string, unknown>,
+    { notifySettings = false } = {},
+  ): Settings {
+    const settings = preferencesFromSyncValues(values, this.currentSettings);
+    const collections = collectionsFromValues(values);
+    this.currentSettings = settings;
+    this.collections = cloneCollections(collections);
+    if (notifySettings) this.onRemoteSettings?.(settings);
+    this.onRemoteCollections?.(cloneCollections(collections));
+    return settings;
   }
 
   private validateValues(values: Record<string, unknown>) {
     preferencesFromSyncValues(values, this.currentSettings);
     collectionsFromValues(values);
-  }
-
-  private applyCollectionsFromValues(values: Record<string, unknown>) {
-    const collections = collectionsFromValues(values);
-    this.collections = cloneCollections(collections);
-    this.onRemoteCollections?.(cloneCollections(collections));
   }
 
   private async clearLocalSyncState() {
