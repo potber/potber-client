@@ -50,9 +50,11 @@ See `package.json` for additional scripts. Browser tests default to Chromium; `T
 
 - [README.md](README.md): setup, features, deployment configuration, and preview environments.
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, data flow, and system boundaries.
+- [GLOSSARY.md](GLOSSARY.md): canonical domain terms. Use them in code, docs, and PRs, and update the glossary when a term changes meaning.
+- [Architecture decisions](docs/adr/): records of decisions that are costly to reverse.
 - [Readiness history](docs/guides/readiness-history.md): consult saved scores and open findings when planning readiness work. Update the index when saving a reassessment.
 
-Create an ADR under `docs/adr/` only when a decision is costly to reverse, surprising without context, and involves a real trade-off. Record the context, decision, and rationale; create the directory with the first qualifying record.
+Add an ADR under `docs/adr/` only when a decision is costly to reverse, surprising without context, and involves a real trade-off. Record the context, decision, and rationale, and number it after the highest existing record.
 
 ## Known gotchas
 
