@@ -46,12 +46,17 @@ import {
 import {
   BLOCKED_USERS_FIELD,
   BOARD_FAVORITES_FIELD,
-  collectionsFromValues,
-  mergeUnlockValues,
   SAVED_POSTS_FIELD,
+  cloneCollections,
+  collectionsFromValues,
+  collectionsToValues,
+  emptyCollections,
+  type SyncedCollections,
+} from 'potber-client/utils/settings-sync-collections';
+import {
+  mergeUnlockValues,
   syncedValuesDiffer,
   type SettingsSyncUnlockSource,
-  type SyncedCollections,
 } from 'potber-client/utils/settings-sync-recovery-merge';
 import {
   preferenceFieldKey,
@@ -67,10 +72,8 @@ export {
   type RemoteUserConfiguration,
 } from 'potber-client/utils/settings-sync-transport';
 
-export type {
-  SettingsSyncUnlockSource,
-  SyncedCollections,
-} from 'potber-client/utils/settings-sync-recovery-merge';
+export type { SettingsSyncUnlockSource } from 'potber-client/utils/settings-sync-recovery-merge';
+export type { SyncedCollections } from 'potber-client/utils/settings-sync-collections';
 
 const SYNC_DEBOUNCE_MS = 750;
 
@@ -457,9 +460,7 @@ export default class SettingsSyncService extends Service {
   private get currentValues(): Record<string, unknown> {
     return {
       ...preferencesToSyncValues(this.currentSettings),
-      [BLOCKED_USERS_FIELD]: this.collections.blockedUsers,
-      [BOARD_FAVORITES_FIELD]: this.collections.boardFavoriteIds,
-      [SAVED_POSTS_FIELD]: this.collections.savedPosts,
+      ...collectionsToValues(this.collections),
     };
   }
 
@@ -517,18 +518,6 @@ export default class SettingsSyncService extends Service {
       cause: error,
     });
   }
-}
-
-function emptyCollections(): SyncedCollections {
-  return { blockedUsers: [], boardFavoriteIds: [], savedPosts: [] };
-}
-
-function cloneCollections(collections: SyncedCollections): SyncedCollections {
-  return {
-    blockedUsers: collections.blockedUsers.map((user) => ({ ...user })),
-    boardFavoriteIds: [...collections.boardFavoriteIds],
-    savedPosts: collections.savedPosts.map((post) => ({ ...post })),
-  };
 }
 
 function errorMessage(error: unknown) {

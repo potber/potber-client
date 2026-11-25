@@ -1,7 +1,5 @@
-import {
-  collectionsFromValues,
-  mergeUnlockValues,
-} from 'potber-client/utils/settings-sync-recovery-merge';
+import { collectionsFromValues } from 'potber-client/utils/settings-sync-collections';
+import { mergeUnlockValues } from 'potber-client/utils/settings-sync-recovery-merge';
 import { module, test } from 'qunit';
 
 module('Unit | Utility | Settings sync recovery merge', function () {
