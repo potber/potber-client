@@ -28,7 +28,7 @@ Assessed on 25 November 2026 against merged main at [`ef9fb94`](https://github.c
 
 **Documentation & Context (+1).** The [quality gates guide](docs/guides/quality-gates.md) documents how a sole maintainer merges code-owned changes. [ARCHITECTURE.md](ARCHITECTURE.md) records the Chromium startup mitigation. At `ef9fb94`, it still described the metadata module as a reader only. The PR that saves this report corrects that description; the score does not count the correction.
 
-**Architecture Clarity (+1).** `SettingsSyncService` shrank from 550 to 527 lines. The [metadata module](app/utils/settings-sync-metadata-storage.ts) owns the field-clock lifecycle. The service has one path each for sealed writes, disabling after remote deletion, and parsing and applying synced values. An invalid remote copy applies nothing.
+**Architecture Clarity (+1).** `SettingsSyncService` shrank from 550 to 527 lines. The [metadata module](https://github.com/potber/potber-client/blob/ef9fb94/app/utils/settings-sync-metadata-storage.ts) owns the field-clock lifecycle. The service has one path each for sealed writes, disabling after remote deletion, and parsing and applying synced values. An invalid remote copy applies nothing.
 
 ## Operating constraint
 

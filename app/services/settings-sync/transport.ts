@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { appConfig } from 'potber-client/config/app.config';
-import type { SettingsSyncEnvelope } from './settings-sync-crypto';
+import type { SettingsSyncEnvelope } from './crypto';
 
 const remoteUserConfigurationSchema = v.object({
   version: v.pipe(v.number(), v.safeInteger()),

@@ -24,7 +24,7 @@ Assessed on 25 November 2026 against merged main at [`60313c1`](https://github.c
 
 ## What improved
 
-**Architecture Clarity (+1).** The [recovery overwrite module](app/utils/settings-sync-recovery-overwrite.ts) now owns preparation, revision-checked writes, and the single retry after HTTP 409. `SettingsSyncService` still applies recovered settings and stores the device key. It shrank from 594 lines immediately before the extraction to 550 lines.
+**Architecture Clarity (+1).** The [recovery overwrite module](https://github.com/potber/potber-client/blob/60313c1/app/utils/settings-sync-recovery-overwrite.ts) now owns preparation, revision-checked writes, and the single retry after HTTP 409. `SettingsSyncService` still applies recovered settings and stores the device key. It shrank from 594 lines immediately before the extraction to 550 lines.
 
 ## Operating constraint
 
