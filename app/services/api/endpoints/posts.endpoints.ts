@@ -1,8 +1,30 @@
 import * as v from 'valibot';
-import ApiService from 'potber-client/services/api';
-import type { PublicFetchOptions } from 'potber-client/services/api';
+import type ApiService from 'potber-client/services/api';
+import type {
+  FetchStatusNotification,
+  PublicFetchOptions,
+} from 'potber-client/services/api';
 import { postQuoteSchema, postReadSchema } from '../schemas/posts';
-import { Posts } from '../types';
+import type { Posts } from '../types';
+
+function postReadNotifications(
+  intl: ApiService['intl'],
+): FetchStatusNotification[] {
+  return [
+    {
+      statusCode: 403,
+      message: intl.t('error.posts.find-by-id.forbidden'),
+    },
+    {
+      statusCode: 404,
+      message: intl.t('error.posts.find-by-id.not-found'),
+    },
+    {
+      statusCode: '*',
+      message: intl.t('error.unknown'),
+    },
+  ];
+}
 
 /**
  * Finds and returns a post by its id and threadId.
@@ -15,29 +37,12 @@ export async function findById(
   threadId: string,
   options?: PublicFetchOptions,
 ): Promise<Posts.Read> {
-  const post: Posts.Read = await this.fetch(
-    `posts/${id}?threadId=${threadId}`,
-    {
-      ...options,
-      schema: postReadSchema,
-      statusNotifications: [
-        {
-          statusCode: 403,
-          message: this.intl.t('error.posts.find-by-id.forbidden'),
-        },
-        {
-          statusCode: 404,
-          message: this.intl.t('error.posts.find-by-id.not-found'),
-        },
-        {
-          statusCode: '*',
-          message: this.intl.t('error.unknown'),
-        },
-      ],
-      request: { method: 'GET' },
-    },
-  );
-  return post;
+  return this.fetch(`posts/${id}?threadId=${threadId}`, {
+    ...options,
+    schema: postReadSchema,
+    statusNotifications: postReadNotifications(this.intl),
+    request: { method: 'GET' },
+  });
 }
 
 /**
@@ -122,26 +127,12 @@ export async function quote(
   id: string,
   options?: PublicFetchOptions,
 ): Promise<Posts.Quote> {
-  const quotedPost: Posts.Quote = await this.fetch(`posts/${id}/quote`, {
+  return this.fetch(`posts/${id}/quote`, {
     ...options,
     schema: postQuoteSchema,
-    statusNotifications: [
-      {
-        statusCode: 403,
-        message: this.intl.t('error.posts.find-by-id.forbidden'),
-      },
-      {
-        statusCode: 404,
-        message: this.intl.t('error.posts.find-by-id.not-found'),
-      },
-      {
-        statusCode: '*',
-        message: this.intl.t('error.unknown'),
-      },
-    ],
+    statusNotifications: postReadNotifications(this.intl),
     request: { method: 'GET' },
   });
-  return quotedPost;
 }
 
 /**
