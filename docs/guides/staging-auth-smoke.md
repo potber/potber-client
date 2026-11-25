@@ -17,4 +17,4 @@ NODE_PATH="$smoke_tools/node_modules" node scripts/staging-auth-smoke.mjs
 
 Run **Staging live login** from GitHub Actions on `main` to verify the real staging auth and API services. It uses a dedicated forum account from the `STAGING_SMOKE_USERNAME` and `STAGING_SMOKE_PASSWORD` secrets in the GitHub `test` environment.
 
-Each run submits one login, requests a one-hour session, verifies the account greeting, and reloads once. The browser permits at most four staging API session reads. It serves fixtures for bookmarks, private messages, and settings sync, and blocks writes other than the staging login. Staging auth sends the login to the live forum. The workflow has no automatic trigger or retry.
+Each run submits one login, requests a one-hour session, verifies the account greeting, and reloads once. Duplicate session requests share one staging API read per page load, with at most two reads per run. It serves fixtures for bookmarks, private messages, and settings sync, and blocks writes other than the staging login. Staging auth sends the login to the live forum. The workflow has no automatic trigger or retry.
