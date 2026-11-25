@@ -156,6 +156,24 @@ module.exports = [
     },
   },
   {
+    name: 'potber/settings-sync-boundary',
+    files: ['app/**/*.{js,ts,gjs,gts}'],
+    ignores: ['app/services/settings-sync.ts', 'app/services/settings-sync/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(?:^|/)settings-sync/',
+              message: 'Use the public SettingsSyncService module.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     name: 'potber/node-scripts',
     ...nodeScriptConfig,
     files: nodeScriptFiles,
