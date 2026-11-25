@@ -87,3 +87,7 @@ async function throwResponseError(response: Response): Promise<never> {
     result.success ? result.output.message : response.statusText,
   );
 }
+
+export function isRevisionConflict(error: unknown): boolean {
+  return error instanceof SettingsSyncRequestError && error.status === 409;
+}

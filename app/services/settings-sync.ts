@@ -1,6 +1,5 @@
 import {
   createInitialMetadata,
-  createOverwriteMetadata,
   metadataFromPayload,
   nextModifiedAt,
 } from 'potber-client/utils/settings-sync-clocks';
@@ -21,7 +20,7 @@ import {
 import {
   deleteRemoteSettings,
   fetchRemoteSettings,
-  SettingsSyncRequestError,
+  isRevisionConflict,
   writeRemoteSettings,
   type RemoteUserConfiguration,
   type WriteUserConfiguration,
@@ -60,6 +59,7 @@ import {
   preferencesFromSyncValues,
   preferencesToSyncValues,
 } from 'potber-client/utils/settings-sync-preferences';
+import { overwriteRecoveredSettings } from 'potber-client/utils/settings-sync-recovery-overwrite';
 import type { Settings } from './settings/types';
 import type { BlockedUser } from 'potber-client/models/blocked-user';
 
@@ -83,11 +83,6 @@ interface DecryptedRemote {
   payload: EncryptedSettingsPayload;
   remote: RemoteUserConfiguration;
   values: Record<string, unknown>;
-}
-
-interface OverwriteResult {
-  metadata: SettingsSyncMetadata;
-  remote: RemoteUserConfiguration;
 }
 
 export default class SettingsSyncService extends Service {
@@ -230,7 +225,18 @@ export default class SettingsSyncService extends Service {
       let metadata = metadataFromPayload(values, decrypted.payload);
 
       if (syncedValuesDiffer(decrypted.values, values)) {
-        const overwritten = await this.overwriteRemote(values, decrypted);
+        const overwritten = await overwriteRecoveredSettings(
+          values,
+          decrypted,
+          {
+            fetchRemote: () => this.fetchRemote(),
+            decrypt: (remote, key) => this.decryptPayload(remote, key),
+            encrypt: (values, key, metadata) =>
+              this.encrypt(values, key, metadata),
+            write: (encrypted, revision) =>
+              this.writeRevision(encrypted, revision),
+          },
+        );
         metadata = overwritten.metadata;
         decrypted.remote = overwritten.remote;
       }
@@ -421,52 +427,6 @@ export default class SettingsSyncService extends Service {
     return { key, payload, remote, values };
   }
 
-  private async overwriteRemote(
-    values: Record<string, unknown>,
-    decrypted: DecryptedRemote,
-  ): Promise<OverwriteResult> {
-    const { key, payload, remote } = decrypted;
-    const first = await this.prepareOverwrite(values, key, payload);
-    try {
-      const written = await this.writeRevision(
-        first.encrypted,
-        remote.revision,
-      );
-      return { metadata: first.metadata, remote: written };
-    } catch (error) {
-      if (!isRevisionConflict(error)) throw error;
-
-      const latest = await this.fetchRemote();
-      if (!latest) {
-        throw new Error('No encrypted settings exist for this account.', {
-          cause: error,
-        });
-      }
-
-      const latestPayload = await this.decryptPayload(latest, key);
-      const retry = await this.prepareOverwrite(values, key, latestPayload);
-      const written = await this.writeRevision(
-        retry.encrypted,
-        latest.revision,
-      );
-      return { metadata: retry.metadata, remote: written };
-    }
-  }
-
-  private async prepareOverwrite(
-    values: Record<string, unknown>,
-    key: CryptoKey,
-    payload: EncryptedSettingsPayload,
-  ) {
-    const metadata = createOverwriteMetadata(
-      values,
-      payload,
-      Date.now(),
-      getOrCreateDeviceId,
-    );
-    return { metadata, encrypted: await this.encrypt(values, key, metadata) };
-  }
-
   private async encrypt(
     values: Record<string, unknown>,
     key: CryptoKey,
@@ -582,10 +542,6 @@ function cloneCollections(collections: SyncedCollections): SyncedCollections {
     boardFavoriteIds: [...collections.boardFavoriteIds],
     savedPosts: collections.savedPosts.map((post) => ({ ...post })),
   };
-}
-
-function isRevisionConflict(error: unknown): boolean {
-  return error instanceof SettingsSyncRequestError && error.status === 409;
 }
 
 function errorMessage(error: unknown) {
