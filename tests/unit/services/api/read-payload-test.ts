@@ -21,6 +21,7 @@ import type {
   Threads,
 } from 'potber-client/services/api/types';
 import type { Session } from 'potber-client/services/api/types/session';
+import { appConfig } from 'potber-client/config/app.config';
 import { setupTest } from 'potber-client/tests/helpers';
 
 // Compile-time guard: the schema output and the hand-written type must stay identical.
@@ -720,6 +721,32 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
     });
   });
 
+  test('sends the current bearer token and invalidates once on HTTP 401', async function (assert) {
+    let invalidations = 0;
+    this.owner.register(
+      'service:session',
+      class extends Service {
+        accessToken = 'forum-token';
+
+        async invalidate() {
+          invalidations += 1;
+        }
+      },
+    );
+    window.fetch = async (_url, request) => {
+      assert.strictEqual(
+        new Headers(request?.headers).get('Authorization'),
+        'Bearer forum-token',
+      );
+      return new Response(null, { status: 401 });
+    };
+    const api = this.owner.lookup('service:api') as ApiService;
+
+    await assert.rejects(api.getSession(), ApiError);
+    assert.strictEqual(invalidations, 1);
+    assert.deepEqual(notifications, []);
+  });
+
   test('prefers a matching HTTP error notification over the wildcard', async function (assert) {
     const api = this.owner.lookup('service:api') as ApiService;
     window.fetch = async () => new Response(null, { status: 404 });
@@ -766,6 +793,44 @@ module('Unit | Service | Api | Read payloads', function (hooks) {
       throw new TypeError('Network unavailable');
     };
     await assert.rejects(api.fetch('/test', options), TypeError);
+
+    assert.deepEqual(notifications, []);
+  });
+
+  test('warns about a slow request only when requested', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    const originalThreshold = appConfig.httpTimeoutWarningThreshold;
+    appConfig.httpTimeoutWarningThreshold = 0;
+    window.fetch = async () => {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      return new Response(null, { status: 204 });
+    };
+
+    try {
+      await api.fetch('/test', { schema: v.undefined() });
+      assert.deepEqual(notifications, []);
+
+      await api.fetch('/test', {
+        schema: v.undefined(),
+        timeoutWarning: true,
+      });
+      assert.deepEqual(notifications, [api.intl.t('error.timeout.warning')]);
+    } finally {
+      appConfig.httpTimeoutWarningThreshold = originalThreshold;
+    }
+  });
+
+  test('does not notify for an unmatched status without a wildcard', async function (assert) {
+    const api = this.owner.lookup('service:api') as ApiService;
+    window.fetch = async () => new Response(null, { status: 503 });
+
+    await assert.rejects(
+      api.fetch('/test', {
+        schema: v.undefined(),
+        statusNotifications: [{ statusCode: 404, message: 'Item not found' }],
+      }),
+      ApiError,
+    );
 
     assert.deepEqual(notifications, []);
   });

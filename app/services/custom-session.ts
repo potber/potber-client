@@ -3,7 +3,9 @@ import { tracked } from '@glimmer/tracking';
 import BaseSessionService from 'ember-simple-auth/services/session';
 import { ApiError } from './api/error';
 import type { Session } from './api/types/session';
-import type ApiService from './api';
+import type IntlService from 'ember-intl/services/intl';
+import type ForumTransport from './forum-transport';
+import { sessionPath, sessionRequest } from './api/endpoints/session.endpoints';
 
 /**
  * Ember Simple Auth's persisted session data. The `authenticated` record comes from the
@@ -18,7 +20,8 @@ export interface SessionData {
 }
 
 export default class CustomSession extends BaseSessionService<SessionData> {
-  @service declare api: ApiService;
+  @service declare forumTransport: ForumTransport;
+  @service declare intl: IntlService;
   @tracked sessionData: Session | null = null;
 
   /**
@@ -41,14 +44,18 @@ export default class CustomSession extends BaseSessionService<SessionData> {
   /**
    * Reloads forum session data. Only HTTP 401 signs the user out. Other failures (network
    * errors, timeouts, 5xx, unexpected payloads) keep the user signed in and leave `sessionData`
-   * as it was, which is `null` on first load. `ApiService` already logs and reports them.
+   * as it was, which is `null` on first load. The forum transport logs them and handles notifications.
    */
   async update() {
     if (!this.isAuthenticated) {
       this.sessionData = null;
     } else {
       try {
-        this.sessionData = await this.api.getSession();
+        this.sessionData = await this.forumTransport.fetch(
+          sessionPath,
+          sessionRequest(this.intl),
+          this.accessToken,
+        );
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
           this.invalidate();
