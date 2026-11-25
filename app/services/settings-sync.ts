@@ -27,7 +27,6 @@ import {
   type WriteUserConfiguration,
 } from 'potber-client/utils/settings-sync-transport';
 import {
-  mergeSettings,
   type MergeResult,
   type SettingsSyncMetadata,
 } from 'potber-client/utils/settings-sync-merge';
@@ -36,6 +35,7 @@ import {
   createLocalFieldClock,
   recordLocalFieldChange,
   readSyncMetadata,
+  mergeAndStoreRemoteSettings,
   writeSyncMetadata,
 } from 'potber-client/utils/settings-sync-metadata-storage';
 import {
@@ -392,14 +392,11 @@ export default class SettingsSyncService extends Service {
     localValues: Record<string, unknown>,
   ): Promise<MergeResult> {
     const payload = await this.decryptPayload(remote, key);
-    const merged = mergeSettings(
+    return mergeAndStoreRemoteSettings(
+      this.requireUserId(),
       localValues,
       payload,
-      readSyncMetadata(this.userId),
-      createLocalFieldClock,
     );
-    writeSyncMetadata(this.requireUserId(), merged.metadata);
-    return merged;
   }
 
   private decryptPayload = (remote: RemoteUserConfiguration, key: CryptoKey) =>
