@@ -132,6 +132,71 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
 
     assert.strictEqual(scrollToCalls[0]?.behavior, 'auto');
   });
+  test('resets to the top when the URL does not request a scroll target', async function (this: Context, assert) {
+    const scrollCalls: ScrollToOptions[] = [];
+    window.scrollTo = (options?: ScrollToOptions | number) => {
+      if (typeof options === 'object') scrollCalls.push(options);
+    };
+    window.history.replaceState(null, '', '/thread?TID=1');
+
+    await render<Context>(hbs`<span {{this.threadScrollPosition}}></span>`);
+    await nextAnimationFrame();
+
+    assert.deepEqual(scrollCalls, [{ top: 0, behavior: 'auto' }]);
+  });
+
+  module('With scroll to bottom enabled', function (hooks) {
+    hooks.beforeEach(function () {
+      this.owner.register(
+        'service:settings',
+        class extends Service {
+          getSetting() {
+            return true;
+          }
+        },
+      );
+      window.history.replaceState(null, '', '/thread?TID=1&scrollToBottom');
+    });
+
+    test('targets the last post inside the thread page', async function (this: Context, assert) {
+      this.owner.register(
+        'service:renderer',
+        class extends Service {
+          scrollToElement(element: HTMLElement, options: ScrollToOptions) {
+            assert.step(element.id);
+            assert.deepEqual(options, { behavior: 'auto' });
+            return false;
+          }
+        },
+      );
+
+      await render<Context>(hbs`
+        <div class='thread-page'>
+          <article class='post' id='first-post'></article>
+          <article class='post' id='last-thread-post'></article>
+          <span {{this.threadScrollPosition}}></span>
+        </div>
+        <article class='post' id='unrelated-post'></article>
+      `);
+      await nextAnimationFrame();
+
+      assert.verifySteps(['last-thread-post']);
+    });
+
+    test('leaves the scroll position alone when the thread has no posts', async function (this: Context, assert) {
+      window.scrollTo = () => assert.step('scrollTo');
+      window.scrollBy = () => assert.step('scrollBy');
+
+      await render<Context>(hbs`
+        <div class='thread-page'>
+          <span {{this.threadScrollPosition}}></span>
+        </div>
+      `);
+      await nextAnimationFrame();
+
+      assert.verifySteps([]);
+    });
+  });
 });
 
 function nextAnimationFrame() {
