@@ -1,0 +1,32 @@
+# Changes to the gate policy and its ownership require maintainer review.
+/.github/CODEOWNERS @potber/quality-gate-maintainers
+
+# Required CI jobs.
+/.github/workflows/pull-request.yml @potber/quality-gate-maintainers
+/.github/workflows/pr-coverage.yml @potber/quality-gate-maintainers
+/.github/workflows/structural-checks.yml @potber/quality-gate-maintainers
+
+# Analyzer, lint, and type-check configuration.
+/.jscpd.json @potber/quality-gate-maintainers
+/knip.json @potber/quality-gate-maintainers
+/eslint.config.js @potber/quality-gate-maintainers
+/.prettierrc.js @potber/quality-gate-maintainers
+/.prettierignore @potber/quality-gate-maintainers
+/tsconfig.json @potber/quality-gate-maintainers
+/jsconfig.json @potber/quality-gate-maintainers
+
+# Coverage instrumentation and verification tooling.
+/babel.config.mjs @potber/quality-gate-maintainers
+/ember-cli-build.js @potber/quality-gate-maintainers
+/vite.config.mjs @potber/quality-gate-maintainers
+/testem.js @potber/quality-gate-maintainers
+/config/coverage.js @potber/quality-gate-maintainers
+/config/coverage-thresholds.json @potber/quality-gate-maintainers
+/scripts/structural-*.mjs @potber/quality-gate-maintainers
+/scripts/*coverage.mjs @potber/quality-gate-maintainers
+/scripts/tests/coverage.test.mjs @potber/quality-gate-maintainers
+
+# npm scripts and analyzer versions.
+/package.json @potber/quality-gate-maintainers
+/package-lock.json @potber/quality-gate-maintainers
+/.nvmrc @potber/quality-gate-maintainers
