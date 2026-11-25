@@ -570,6 +570,11 @@ module('Unit | Service | SettingsSync', function (hooks) {
     const firstKeyCharacter = recoveryKey[keyOffset] === 'A' ? 'B' : 'A';
     const incorrectKey = `${recoveryKey.slice(0, keyOffset)}${firstKeyCharacter}${recoveryKey.slice(keyOffset + 1)}`;
 
+    await assert.rejects(
+      service.unlockHasDifferences(incorrectKey, settings),
+      /Wiederherstellungsschlüssel/,
+    );
+    assert.strictEqual(service.state, 'locked');
     await assert.rejects(service.unlock(incorrectKey, settings, 'remote'));
     assert.strictEqual(service.state, 'locked');
     assert.notOk(service.persistedKey, 'the incorrect key is not persisted');
@@ -638,6 +643,59 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(service.state, 'disabled');
     assert.strictEqual(service.remoteValue, null);
     assert.notOk(service.persistedKey);
+  });
+
+  test('syncs a blocklist change to the next startup', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication, undefined, collections);
+    await service.enable(settings);
+
+    const blockedUsers = [
+      ...collections.blockedUsers,
+      { id: '77', name: 'Mallory' },
+    ];
+    service.blockedUsersChanged(blockedUsers);
+    await service.syncNow();
+    assert.strictEqual(service.writes.length, 2);
+
+    const applied: SyncedCollections[] = [];
+    await service.initialize(
+      settings,
+      authentication,
+      undefined,
+      collections,
+      (remoteCollections) => applied.push(remoteCollections),
+    );
+    assert.deepEqual(applied.at(-1)?.blockedUsers, blockedUsers);
+  });
+
+  test('disables sync at startup when another device deleted the remote copy', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    await service.enable(settings);
+    service.settingChanged('theme', { ...settings, theme: Theme.default });
+    assert.ok(readSyncMetadata('123'), 'field clocks are stored');
+
+    service.remoteValue = null;
+    const local = { ...settings, debug: false };
+    assert.deepEqual(await service.initialize(local, authentication), local);
+
+    assert.strictEqual(service.state, 'disabled');
+    assert.false(service.hasRemoteConfiguration);
+    assert.strictEqual(service.lastError, null);
+    assert.strictEqual(service.persistedKey, undefined);
+    assert.strictEqual(readSyncMetadata('123'), undefined);
+
+    service.settingChanged('theme', local);
+    await service.syncNow();
+    assert.strictEqual(service.writes.length, 1, 'nothing is uploaded');
+    assert.strictEqual(service.remoteValue, null);
   });
 
   test('reuses stored device metadata and clears only the current account on forget', async function (assert) {

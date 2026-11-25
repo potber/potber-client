@@ -124,9 +124,7 @@ export default class SettingsSyncService extends Service {
     try {
       const remote = await this.fetchRemote();
       if (!remote) {
-        await this.clearLocalSyncState();
-        this.remote = undefined;
-        this.state = 'disabled';
+        await this.disableWithoutRemote();
         return localSettings;
       }
 
@@ -340,11 +338,7 @@ export default class SettingsSyncService extends Service {
   async deleteSyncedConfiguration() {
     this.ensureAuthenticated();
     await this.deleteRemote();
-    await this.clearLocalSyncState();
-    this.key = undefined;
-    this.remote = undefined;
-    this.state = 'disabled';
-    this.lastError = null;
+    await this.disableWithoutRemote();
   }
 
   protected async fetchRemote(): Promise<RemoteUserConfiguration | null> {
@@ -437,10 +431,7 @@ export default class SettingsSyncService extends Service {
   private async resolveConflict(localValues: Record<string, unknown>) {
     const remote = await this.fetchRemote();
     if (!remote) {
-      await this.clearLocalSyncState();
-      this.key = undefined;
-      this.remote = undefined;
-      this.state = 'disabled';
+      await this.disableWithoutRemote();
       return;
     }
     const merged = await this.decryptAndMerge(remote, this.key!, localValues);
@@ -481,6 +472,18 @@ export default class SettingsSyncService extends Service {
   private validateValues(values: Record<string, unknown>) {
     preferencesFromSyncValues(values, this.currentSettings);
     collectionsFromValues(values);
+  }
+
+  /**
+   * Settles the service after the account's remote copy is gone: forgets the
+   * device key and field clocks so a later setup starts fresh.
+   */
+  private async disableWithoutRemote() {
+    await this.clearLocalSyncState();
+    this.key = undefined;
+    this.remote = undefined;
+    this.state = 'disabled';
+    this.lastError = null;
   }
 
   private async clearLocalSyncState() {
