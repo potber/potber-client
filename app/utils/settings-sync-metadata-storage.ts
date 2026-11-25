@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { nextModifiedAt } from './settings-sync-clocks';
+import { createInitialMetadata, nextModifiedAt } from './settings-sync-clocks';
 import type {
   EncryptedSettingsPayload,
   FieldClock,
@@ -68,6 +68,22 @@ export function createLocalFieldClock(
     modifiedAt: nextModifiedAt(metadata, Date.now()),
     deviceId: getOrCreateDeviceId(),
   };
+}
+
+/**
+ * Returns the stored field clocks for an upload. When none are stored, it
+ * stamps every current field as a local change and persists those clocks so
+ * later edits advance from them.
+ */
+export function readOrCreateSyncMetadata(
+  userId: string,
+  values: Record<string, unknown>,
+): SettingsSyncMetadata {
+  const stored = readSyncMetadata(userId);
+  if (stored) return stored;
+  const metadata = createInitialMetadata(values, createLocalFieldClock);
+  writeSyncMetadata(userId, metadata);
+  return metadata;
 }
 
 export function recordLocalFieldChange(userId: string, field: string): void {
