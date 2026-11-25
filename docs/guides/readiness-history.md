@@ -4,6 +4,7 @@ Each report describes the repository at the listed commit. Start with the newest
 
 | Date             | Assessed commit | Report                                                               |
 | ---------------- | --------------- | -------------------------------------------------------------------- |
+| 25 November 2026 | `60313c1`       | [Reassessment](../../AGENT_READY_REASSESSMENT_2026-11-25_60313c1.md) |
 | 25 November 2026 | `ade9774`       | [Reassessment](../../AGENT_READY_REASSESSMENT_2026-11-25_ade9774.md) |
 | 25 November 2026 | `e7187fc`       | [Reassessment](../../AGENT_READY_REASSESSMENT_2026-11-25_e7187fc.md) |
 | 25 November 2026 | `b3834d5`       | [Reassessment](../../AGENT_READY_REASSESSMENT_2026-11-25_b3834d5.md) |
