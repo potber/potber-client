@@ -31,9 +31,11 @@ module('Unit | Utility | Settings sync crypto', function () {
       [`${prefix}${'A'.repeat(42)}+`, /encoding/],
       [`${prefix}${'A'.repeat(42)}B`, /Non-canonical/],
     ] as const) {
-      // importRecoveryKey throws synchronously; callers await it in async code.
-      const imported = (async () => importRecoveryKey(recoveryKey))();
-      await assert.rejects(imported, message, recoveryKey);
+      await assert.rejects(
+        importRecoveryKey(recoveryKey),
+        message,
+        recoveryKey,
+      );
     }
   });
 
