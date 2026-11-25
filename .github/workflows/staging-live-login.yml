@@ -12,10 +12,10 @@ concurrency:
 
 jobs:
   smoke:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/rehearsal/staging-session-continuity'
     environment: test
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,8 +27,30 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/staging-smoke" --no-save --no-audit --no-fund playwright@1.65.1
           "$RUNNER_TEMP/staging-smoke/node_modules/.bin/playwright" install --with-deps chromium
-      - name: Verify one live staging login
+      - name: Establish the staging session
         env:
           STAGING_SMOKE_USERNAME: ${{ secrets.STAGING_SMOKE_USERNAME }}
           STAGING_SMOKE_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
-        run: NODE_PATH="$RUNNER_TEMP/staging-smoke/node_modules" node scripts/staging-live-login.mjs
+        run: |
+          marker="$RUNNER_TEMP/rehearsal"
+          (
+            set +e
+            REHEARSAL_MARKER="$marker" NODE_PATH="$RUNNER_TEMP/staging-smoke/node_modules" node scripts/staging-live-login.mjs >"$marker.log" 2>&1
+            echo "$?" >"$marker.exit"
+          ) </dev/null >/dev/null 2>&1 &
+          while [[ ! -e "$marker.baseline" && ! -e "$marker.exit" ]]; do sleep 1; done
+          cat "$marker.log"
+          test -s "$marker.baseline"
+      - name: Observe the rolled-back build
+        run: |
+          marker="$RUNNER_TEMP/rehearsal"
+          while [[ ! -e "$marker.rollback" && ! -e "$marker.exit" ]]; do sleep 1; done
+          cat "$marker.log"
+          test -s "$marker.rollback"
+      - name: Observe the restored build
+        run: |
+          marker="$RUNNER_TEMP/rehearsal"
+          while [[ ! -e "$marker.exit" ]]; do sleep 1; done
+          cat "$marker.log"
+          test -s "$marker.restore"
+          test "$(cat "$marker.exit")" = 0

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
+import { setTimeout as delay } from 'node:timers/promises';
 import { createRequire } from 'node:module';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -13,7 +15,10 @@ const client = 'https://test.potber.de';
 const auth = 'https://test-auth.potber.de';
 const api = 'https://test-api.potber.de';
 const origins = new Set([client, auth, api]);
-const maxSessionReads = 2;
+const maxSessionReads = 3;
+const marker = process.env.REHEARSAL_MARKER;
+assert.ok(marker, 'Expected a local rehearsal marker path.');
+const rollbackEntry = '/assets/main-Dt_m2G-K.js';
 const cors = { 'access-control-allow-origin': client };
 const browser = await chromium.launch();
 
@@ -30,7 +35,7 @@ try {
   let sessionReads = 0;
   let identity;
   let sessionRequest;
-  let sessionAuthorization;
+  let initialAuthorization;
   const problems = [];
   let step;
   function begin(name) {
@@ -93,7 +98,7 @@ try {
         const authorization = request.headers().authorization;
         if (
           !authorization?.startsWith('Bearer ') ||
-          (sessionRequest && authorization !== sessionAuthorization)
+          (initialAuthorization && authorization !== initialAuthorization)
         ) {
           problems.push(
             'Staging session read used missing or inconsistent credentials.',
@@ -108,7 +113,7 @@ try {
             return;
           }
           sessionReads += 1;
-          sessionAuthorization = authorization;
+          initialAuthorization ??= authorization;
           sessionRequest = fetchResponse();
         }
         response = await sessionRequest;
@@ -148,7 +153,10 @@ try {
   });
 
   async function verifyHome() {
-    await page.waitForURL(`${client}/home`, { timeout: 20_000 });
+    await page.waitForURL(
+      (url) => url.origin === client && url.pathname === '/home',
+      { timeout: 20_000 },
+    );
     // The URL can already be /home while Ember is still loading the session.
     await page.getByRole('heading', { name: /^Hallo,\s*\S.*!$/ }).waitFor({
       timeout: 15_000,
@@ -192,16 +200,65 @@ try {
     await verifyHome();
 
     assert.equal(sessionReads, 1, 'Sign-in fetched the session once.');
-    identity = undefined;
-    sessionRequest = undefined;
-    sessionAuthorization = undefined;
-    begin('reload the staging client');
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: 20_000 });
-    begin('verify the session after reload');
-    await verifyHome();
-    assert.equal(loginAttempts, 1);
-    assert.equal(sessionReads, 2, 'Reload fetched the session once more.');
-    assert.equal(problems.length, 0, problems.join(' '));
+    const startingEntry = await page
+      .locator('script[type="module"][src^="/assets/main-"]')
+      .getAttribute('src');
+    assert.ok(
+      startingEntry && startingEntry !== rollbackEntry,
+      'Expected a distinct starting build.',
+    );
+    console.log(`Starting entry ${startingEntry}.`);
+    writeFileSync(`${marker}.baseline`, startingEntry);
+
+    for (const [phase, entry] of [
+      ['rollback', rollbackEntry],
+      ['restore', startingEntry],
+    ]) {
+      begin(`wait for the ${phase} build`);
+      const deadline = Date.now() + 420_000;
+      let served = false;
+      while (Date.now() < deadline) {
+        try {
+          const response = await fetch(`${client}/?rehearsal=${Date.now()}`, {
+            cache: 'no-store',
+            redirect: 'error',
+            signal: AbortSignal.timeout(5_000),
+          });
+          if (
+            response.ok &&
+            (await response.text()).includes(`src="${entry}"`)
+          ) {
+            served = true;
+            break;
+          }
+        } catch {
+          // Staging may be temporarily unavailable during the file switch.
+        }
+        await delay(5_000);
+      }
+      assert.ok(served, 'Expected the planned staging entry.');
+      identity = undefined;
+      sessionRequest = undefined;
+      begin(`verify the existing session after ${phase}`);
+      await page.goto(`${client}/home?rehearsal=${Date.now()}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 20_000,
+      });
+      await verifyHome();
+      const actualEntry = await page
+        .locator('script[type="module"][src^="/assets/main-"]')
+        .getAttribute('src');
+      assert.equal(
+        actualEntry,
+        entry,
+        'The browser loaded the expected build.',
+      );
+      assert.equal(loginAttempts, 1);
+      assert.equal(sessionReads, phase === 'rollback' ? 2 : 3);
+      assert.equal(problems.length, 0, problems.join(' '));
+      console.log(`Existing session verified after ${phase} on ${entry}.`);
+      writeFileSync(`${marker}.${phase}`, entry);
+    }
   } catch {
     // Browser errors can include a callback URL with a bearer token or form values.
     throw new Error(
@@ -210,7 +267,7 @@ try {
   }
 
   console.log(
-    `Live staging login and reload passed with one login and ${sessionReads} browser session reads.`,
+    `Live staging login, rollback, and restore passed with one login and ${sessionReads} browser session reads.`,
   );
 } finally {
   await browser.close();
