@@ -1,4 +1,5 @@
 import Service, { service } from '@ember/service';
+import { waitForPromise } from '@ember/test-waiters';
 import { appConfig } from 'potber-client/config/app.config';
 import type IntlService from 'ember-intl/services/intl';
 import type * as v from 'valibot';
@@ -61,13 +62,21 @@ export default class ForumTransport extends Service {
 
   /**
    * Triggers a `fetch` to the API server and returns the data. Any errors will be logged automatically.
+   * Tests' `settled()` waits for the request, so it cannot outlive the test that started it.
    * @returns The data.
    */
-  fetch = async <Schema extends v.GenericSchema>(
+  fetch = <Schema extends v.GenericSchema>(
     path: string,
     options: ProtectedFetchOptions<Schema>,
     accessToken: string | undefined,
-  ): Promise<v.InferOutput<Schema>> => {
+  ): Promise<v.InferOutput<Schema>> =>
+    waitForPromise(this.request(path, options, accessToken));
+
+  private async request<Schema extends v.GenericSchema>(
+    path: string,
+    options: ProtectedFetchOptions<Schema>,
+    accessToken: string | undefined,
+  ): Promise<v.InferOutput<Schema>> {
     const { request, query, timeoutWarning, schema } = {
       timeoutWarning: false,
       ...options,
@@ -118,7 +127,7 @@ export default class ForumTransport extends Service {
     } finally {
       window.clearTimeout(timeoutId);
     }
-  };
+  }
 
   private handleErrors(error: unknown, options?: PublicFetchOptions) {
     const { statusNotifications, silent } = {

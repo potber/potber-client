@@ -4,15 +4,14 @@ import {
   fillIn,
   find,
   findAll,
+  settled,
   visit,
   waitFor,
   waitUntil,
 } from '@ember/test-helpers';
-import { waitForPromise } from '@ember/test-waiters';
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
-import type BookmarkStore from 'potber-client/services/stores/bookmark';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -91,12 +90,6 @@ module('Acceptance | Writing posts', function (hooks) {
 
   hooks.beforeEach(async function () {
     this.owner.register('session-store:application', EphemeralSessionStore);
-    const bookmarkStore = this.owner.lookup(
-      'service:stores/bookmark',
-    ) as BookmarkStore;
-    const reload = bookmarkStore.reload;
-    // The thread schedules a bookmark refresh outside Ember's run loop.
-    bookmarkStore.reload = (options) => waitForPromise(reload(options));
     originalOnError = window.onerror;
     storedValues = new Map(
       [
@@ -242,6 +235,9 @@ module('Acceptance | Writing posts', function (hooks) {
   });
 
   hooks.afterEach(async function () {
+    // QUnit runs this hook before ember-qunit's teardown, so let app work finish
+    // against the fetch mock before restoring the real one.
+    await settled();
     // Allow the thread's scroll frame to run before Ember tears down its owner.
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => resolve()),
