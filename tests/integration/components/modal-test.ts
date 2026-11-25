@@ -1,4 +1,10 @@
-import { click, settled, triggerEvent, waitUntil } from '@ember/test-helpers';
+import {
+  click,
+  fillIn,
+  settled,
+  triggerEvent,
+  waitUntil,
+} from '@ember/test-helpers';
 import Service from '@ember/service';
 import type { ImgpotImage } from 'potber-client/services/imgpot';
 import ModalService from 'potber-client/services/modal';
@@ -178,6 +184,98 @@ module('Integration | Component | Modal', function (hooks) {
       assert.dom(loadMore).doesNotExist();
       await click(back);
       assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.verifySteps([]);
+    });
+  });
+
+  module('Image insertion', function () {
+    const form = '#image-insert-modal-form';
+    const source = `${form} input[type="url"]:required`;
+    const thumbnail = `${form} input[type="url"]:not(:required)`;
+    const large = 'https://images.example/full.gif';
+    const medium = 'https://images.example/preview.gif';
+
+    test('keeps the entered URLs when returning from the Imgpot picker', async function (assert) {
+      this.owner.register(
+        'service:imgpot',
+        class extends Service {
+          async listImages() {
+            return { images: [], page: 1, limit: 20, total: 0 };
+          }
+        },
+      );
+      const modal = this.owner.lookup('service:modal') as ModalService;
+      modal.imageInsert({
+        onSubmit(values) {
+          assert.deepEqual(values, { src: large, thumbnail: medium });
+          assert.step('submitted');
+        },
+      });
+      await settled();
+      await fillIn(source, large);
+      await fillIn(thumbnail, medium);
+      await click(`${form} button:has([data-icon="images"])`);
+      assert
+        .dom('#modal')
+        .includesText('Du hast noch keine Bilder hochgeladen.');
+
+      await click('#modal .modal-footer button');
+      assert.dom(source).hasValue(large);
+      assert.dom(thumbnail).hasValue(medium);
+      await click('#modal button[type="submit"]');
+      assert.verifySteps(['submitted']);
+    });
+
+    test('shows an upload failure and fills the URLs after retrying the same file', async function (assert) {
+      let attempts = 0;
+      this.owner.register(
+        'service:imgpot',
+        class extends Service {
+          async uploadImage(file: File): Promise<ImgpotImage> {
+            assert.strictEqual(file.name, 'image.gif');
+            attempts++;
+            if (attempts === 1) throw new Error('Upload fehlgeschlagen');
+            return {
+              id: 1,
+              originalFilename: file.name,
+              variations: [
+                { variationType: 'large', cdnUrl: large },
+                { variationType: 'medium', cdnUrl: medium },
+              ],
+            };
+          }
+        },
+      );
+      const modal = this.owner.lookup('service:modal') as ModalService;
+      modal.imageInsert({ onSubmit: () => assert.step('submitted') });
+      await settled();
+      const input = document.querySelector<HTMLInputElement>(
+        `${form} input[type="file"]`,
+      );
+      if (!input) throw new Error('Image upload input is missing');
+
+      await triggerEvent(input, 'change');
+      assert.strictEqual(attempts, 0);
+      const file = new File(['image'], 'image.gif', { type: 'image/gif' });
+      const selectFile = async () => {
+        const selection = new DataTransfer();
+        selection.items.add(file);
+        input.files = selection.files;
+        await triggerEvent(input, 'change');
+      };
+      await selectFile();
+
+      assert.dom('#modal').includesText('Upload fehlgeschlagen');
+      assert.dom(input).hasValue('');
+      assert.dom(source).hasValue('');
+
+      await selectFile();
+
+      assert.strictEqual(attempts, 2);
+      assert.dom('#modal').doesNotIncludeText('Upload fehlgeschlagen');
+      assert.dom(input).hasValue('');
+      assert.dom(source).hasValue(large);
+      assert.dom(thumbnail).hasValue(medium);
       assert.verifySteps([]);
     });
   });
