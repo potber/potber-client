@@ -692,6 +692,29 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(service.writes[1]?.expectedRevision, 1);
   });
 
+  test('keeps the device locked when both recovery overwrite attempts conflict', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    const key = await service.enable(settings);
+    await service.forgetThisDevice();
+
+    const local = { ...settings, theme: Theme.default };
+    await service.initialize(local, authentication);
+    service.conflictsRemaining = 2;
+
+    await assert.rejects(
+      service.unlock(key, local, 'local'),
+      /Wiederherstellungsschlüssel/,
+    );
+    assert.strictEqual(service.conflictsRemaining, 0);
+    assert.strictEqual(service.state, 'locked');
+    assert.strictEqual(service.remoteValue?.revision, 1);
+    assert.strictEqual(service.writes.length, 1);
+  });
+
   test('keeps the pending edit after a non-conflict upload failure', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
