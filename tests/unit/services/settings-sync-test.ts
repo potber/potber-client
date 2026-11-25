@@ -46,6 +46,7 @@ class SettingsSyncStub extends SettingsSyncService {
   persistedKey?: CryptoKey;
   conflictsRemaining = 0;
   writeError?: Error;
+  writeAttempts = 0;
   writes: Array<{
     version: number;
     iv: string;
@@ -63,6 +64,7 @@ class SettingsSyncStub extends SettingsSyncService {
     ciphertext: string;
     expectedRevision?: number;
   }) {
+    this.writeAttempts += 1;
     if (this.writeError) throw this.writeError;
     if (this.conflictsRemaining > 0) {
       this.conflictsRemaining -= 1;
@@ -768,6 +770,52 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(service.state, 'enabled');
     assert.strictEqual(service.remoteValue?.revision, 2);
     assert.strictEqual(service.writes[1]?.expectedRevision, 1);
+  });
+
+  test('does not retry a recovery overwrite that fails with HTTP 503', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    const key = await service.enable(settings);
+    await service.forgetThisDevice();
+
+    const local = { ...settings, theme: Theme.default };
+    await service.initialize(local, authentication);
+    const failure = new SettingsSyncRequestError(503, 'Unavailable');
+    service.writeError = failure;
+
+    await assert.rejects(
+      service.unlock(key, local, 'local'),
+      (error: unknown) => error instanceof Error && error.cause === failure,
+    );
+    assert.strictEqual(service.state, 'locked');
+    assert.strictEqual(service.persistedKey, undefined);
+    assert.strictEqual(service.remoteValue?.revision, 1);
+    assert.strictEqual(
+      service.writeAttempts,
+      2,
+      'one setup write and one overwrite attempt',
+    );
+  });
+
+  test('rejects recovery when the account has no remote settings', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    const key = await service.enable(settings);
+    await service.deleteSyncedConfiguration();
+
+    await assert.rejects(
+      service.unlock(key, settings, 'remote'),
+      /Wiederherstellungsschlüssel/,
+    );
+    assert.strictEqual(service.state, 'disabled');
+    assert.strictEqual(service.persistedKey, undefined);
+    assert.strictEqual(service.writes.length, 1);
   });
 
   test('keeps the device locked when both recovery overwrite attempts conflict', async function (assert) {
