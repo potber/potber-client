@@ -23,6 +23,10 @@ if (typeof module !== 'undefined') {
           '--mute-audio',
           '--remote-debugging-port=0',
           '--window-size=1440,900',
+          // On GitHub runners, about 6% of cold launches lose the first page load
+          // when the separate network-service process crashes. Testem then times
+          // out. Running the service in the browser process avoids that crash.
+          '--enable-features=NetworkServiceInProcess2',
         ].filter(Boolean),
       },
     },
