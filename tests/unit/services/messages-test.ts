@@ -112,4 +112,82 @@ module('Unit | Service | Messages', function (hooks) {
 
     messages.removeNotification(notification);
   });
+
+  test('writes debug logs to the console with the matching severity and context', function (assert) {
+    this.owner.register(
+      'service:settings',
+      class extends Service {
+        getSetting() {
+          return true;
+        }
+      },
+    );
+    const messages = this.owner.lookup('service:messages') as MessagesService;
+    const { debug, warn, error } = console;
+    console.debug = (message) => assert.step(`debug ${message}`);
+    console.warn = (message) => assert.step(`warn ${message}`);
+    console.error = (message) => assert.step(`error ${message}`);
+
+    try {
+      messages.log('Opened');
+      messages.log('Retrying', { context: 'Session', type: 'warning' });
+      messages.log('Unavailable', { context: 'Session', type: 'error' });
+    } finally {
+      Object.assign(console, { debug, warn, error });
+    }
+
+    assert.verifySteps([
+      `debug [${messages.constructor.name}] [info] Opened`,
+      'warn [Session] [warning] Retrying',
+      'error [Session] [error] Unavailable',
+    ]);
+    assert.deepEqual(
+      messages.messages.map(({ text, type, context }) => ({
+        text,
+        type,
+        context,
+      })),
+      [
+        { text: 'Opened', type: 'info', context: messages.constructor.name },
+        { text: 'Retrying', type: 'warning', context: 'Session' },
+        { text: 'Unavailable', type: 'error', context: 'Session' },
+      ],
+    );
+  });
+
+  test('logs the error detail and shows a user-facing notification', function (assert) {
+    this.owner.register(
+      'service:settings',
+      class extends Service {
+        getSetting() {
+          return false;
+        }
+      },
+    );
+    this.owner.register(
+      'service:notifications',
+      class extends Service {
+        error(message: string) {
+          assert.step(message);
+        }
+      },
+    );
+    const messages = this.owner.lookup('service:messages') as MessagesService;
+
+    messages.logErrorAndNotify('Could not save', new Error('Offline'), 'Save');
+    messages.logErrorAndNotify('Could not load', 'Timed out', 'Load');
+
+    assert.verifySteps(['Could not save', 'Could not load']);
+    assert.deepEqual(
+      messages.messages.map(({ text, type, context }) => ({
+        text,
+        type,
+        context,
+      })),
+      [
+        { text: 'Offline', type: 'error', context: 'Save' },
+        { text: 'Timed out', type: 'error', context: 'Load' },
+      ],
+    );
+  });
 });
