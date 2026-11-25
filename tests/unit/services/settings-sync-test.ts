@@ -673,6 +673,58 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(service.writes[1]!.expectedRevision, 1);
   });
 
+  test('disables sync when the remote copy disappears during an upload conflict', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    await service.enable(settings);
+
+    service.settingChanged('theme', { ...settings, theme: Theme.default });
+    service.conflictsRemaining = 1;
+    service.remoteValue = null;
+    await service.syncNow();
+
+    assert.strictEqual(service.state, 'disabled');
+    assert.strictEqual(service.lastError, null);
+    assert.strictEqual(service.persistedKey, undefined);
+    assert.strictEqual(service.remoteValue, null);
+    assert.strictEqual(
+      service.writes.length,
+      1,
+      'does not recreate the remote copy',
+    );
+  });
+
+  test('rejects recovery when the remote copy disappears during an overwrite conflict', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    const key = await service.enable(settings);
+    await service.forgetThisDevice();
+
+    const local = { ...settings, theme: Theme.default };
+    await service.initialize(local, authentication);
+    service.conflictsRemaining = 1;
+    service.remoteValue = null;
+
+    await assert.rejects(
+      service.unlock(key, local, 'local'),
+      /Wiederherstellungsschlüssel/,
+    );
+    assert.strictEqual(service.conflictsRemaining, 0);
+    assert.strictEqual(service.persistedKey, undefined);
+    assert.strictEqual(service.remoteValue, null);
+    assert.strictEqual(
+      service.writes.length,
+      1,
+      'does not recreate the remote copy',
+    );
+  });
+
   test('recovers with the local settings after an overwrite conflict', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
