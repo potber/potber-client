@@ -1,0 +1,34 @@
+name: Staging live login
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-live-login
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: github.ref == 'refs/heads/main'
+    environment: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install Chromium smoke tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/staging-smoke" --no-save --no-audit --no-fund playwright@1.65.1
+          "$RUNNER_TEMP/staging-smoke/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify one live staging login
+        env:
+          STAGING_SMOKE_USERNAME: ${{ secrets.STAGING_SMOKE_USERNAME }}
+          STAGING_SMOKE_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
+        run: NODE_PATH="$RUNNER_TEMP/staging-smoke/node_modules" node scripts/staging-live-login.mjs
