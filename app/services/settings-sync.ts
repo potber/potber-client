@@ -309,27 +309,30 @@ export default class SettingsSyncService extends Service {
     this.lastError = null;
 
     try {
+      await this.uploadWithConflictRetry(values, this.key);
+    } catch (error) {
+      this.lastError = errorMessage(error);
+      this.pendingValues = values;
+    }
+  }
+
+  private async uploadWithConflictRetry(
+    values: Record<string, unknown>,
+    key: CryptoKey,
+  ) {
+    try {
       const metadata =
         readSyncMetadata(this.userId) ??
         createInitialMetadata(values, this.createClock);
       writeSyncMetadata(this.requireUserId(), metadata);
-      const encrypted = await this.encrypt(values, this.key, metadata);
+      const encrypted = await this.encrypt(values, key, metadata);
       this.remote = await this.writeRemote({
         ...encrypted,
         expectedRevision: this.remote?.revision,
       });
     } catch (error) {
-      if (error instanceof SettingsSyncRequestError && error.status === 409) {
-        try {
-          await this.resolveConflict(values);
-        } catch (conflictError) {
-          this.lastError = errorMessage(conflictError);
-          this.pendingValues = values;
-        }
-        return;
-      }
-      this.lastError = errorMessage(error);
-      this.pendingValues = values;
+      if (!isRevisionConflict(error)) throw error;
+      await this.resolveConflict(values);
     }
   }
 
@@ -436,11 +439,7 @@ export default class SettingsSyncService extends Service {
         });
         return { metadata, remote: written };
       } catch (error) {
-        if (
-          attempt !== 0 ||
-          !(error instanceof SettingsSyncRequestError) ||
-          error.status !== 409
-        ) {
+        if (attempt !== 0 || !isRevisionConflict(error)) {
           throw error;
         }
 
@@ -576,6 +575,10 @@ function cloneCollections(collections: SyncedCollections): SyncedCollections {
     boardFavoriteIds: [...collections.boardFavoriteIds],
     savedPosts: collections.savedPosts.map((post) => ({ ...post })),
   };
+}
+
+function isRevisionConflict(error: unknown): boolean {
+  return error instanceof SettingsSyncRequestError && error.status === 409;
 }
 
 function errorMessage(error: unknown) {

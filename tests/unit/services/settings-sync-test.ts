@@ -44,6 +44,7 @@ class SettingsSyncStub extends SettingsSyncService {
   remoteValue: RemoteUserConfiguration | null = null;
   persistedKey?: CryptoKey;
   conflictsRemaining = 0;
+  writeError?: Error;
   writes: Array<{
     version: number;
     iv: string;
@@ -61,6 +62,7 @@ class SettingsSyncStub extends SettingsSyncService {
     ciphertext: string;
     expectedRevision?: number;
   }) {
+    if (this.writeError) throw this.writeError;
     if (this.conflictsRemaining > 0) {
       this.conflictsRemaining -= 1;
       throw new SettingsSyncRequestError(409, 'Conflict');
@@ -688,6 +690,30 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.strictEqual(service.state, 'enabled');
     assert.strictEqual(service.remoteValue?.revision, 2);
     assert.strictEqual(service.writes[1]?.expectedRevision, 1);
+  });
+
+  test('keeps the pending edit after a non-conflict upload failure', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    const authentication = { userId: '123', accessToken: 'token' };
+    await service.initialize(settings, authentication);
+    await service.enable(settings);
+
+    const local = { ...settings, theme: Theme.default };
+    service.settingChanged('theme', local);
+    service.writeError = new SettingsSyncRequestError(503, 'Unavailable');
+    await service.syncNow();
+
+    assert.strictEqual(service.state, 'enabled');
+    assert.strictEqual(service.lastError, 'Unavailable');
+    assert.strictEqual(service.writes.length, 1);
+
+    service.writeError = undefined;
+    await service.syncNow();
+    assert.strictEqual(service.lastError, null);
+    assert.strictEqual(service.writes[1]?.expectedRevision, 1);
+    assert.deepEqual(await service.initialize(settings, authentication), local);
   });
 
   test('keeps the pending edit when the conflict retry also fails', async function (assert) {
