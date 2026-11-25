@@ -44,3 +44,5 @@ DRY_RUN=1 BUNNY_STORAGE_ZONE=rehearsal deploy/upload-to-bunny-storage.sh dist
 Expect hashed assets before the three entry files. The dry run checks ordering only. The staging rehearsal checks the deployment, cache purge, and browser behavior.
 
 See the [23 November 2026 staging rehearsal](staging-rollback-rehearsal-2026-11-23.md) for a verified rollback and restore.
+
+Run the [authenticated staging smoke test](staging-auth-smoke.md) to verify sign-in and session persistence in the deployed client with isolated fixtures.

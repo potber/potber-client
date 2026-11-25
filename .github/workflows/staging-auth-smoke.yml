@@ -1,0 +1,23 @@
+name: staging-auth-smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install Chromium smoke tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/staging-smoke" --no-save --no-audit --no-fund playwright@1.65.1
+          "$RUNNER_TEMP/staging-smoke/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Check sign-in on the deployed staging client
+        run: NODE_PATH="$RUNNER_TEMP/staging-smoke/node_modules" node scripts/staging-auth-smoke.mjs
