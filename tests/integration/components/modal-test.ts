@@ -85,6 +85,42 @@ module('Integration | Component | Modal', function (hooks) {
     assert.strictEqual(submissions, 0);
   });
 
+  test('uses the destructive submit variant and can hide cancellation', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.confirm({
+      title: 'Remove data',
+      text: 'Remove this entry?',
+      variant: 'error',
+      hideCancel: true,
+      onSubmit: () => assert.step('submitted'),
+    });
+    await settled();
+
+    assert.dom('#modal .modal-footer button').exists({ count: 1 });
+    assert.dom('#modal button.modal-submit').hasText('OK');
+    assert.dom('#modal button.modal-submit').hasClass('control-variant-error');
+    await click('#modal button.modal-submit');
+    assert.verifySteps(['submitted']);
+  });
+
+  test('closes a confirmation and invokes its cancel callback', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.confirm({
+      title: 'Choose data',
+      text: 'Continue?',
+      onCancel: () => assert.step('cancelled'),
+    });
+    await settled();
+
+    assert
+      .dom('#modal .modal-footer button[type="button"]')
+      .hasText('Abbrechen');
+    await click('#modal .modal-footer button[type="button"]');
+
+    assert.dom('#modal').doesNotHaveAttribute('open');
+    assert.verifySteps(['cancelled']);
+  });
+
   module('Imgpot picker', function () {
     const imageData =
       'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
