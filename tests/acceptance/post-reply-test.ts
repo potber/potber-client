@@ -363,6 +363,31 @@ module('Acceptance | Writing posts', function (hooks) {
     });
   }
 
+  for (const thumbnail of [false, true]) {
+    test(`inserts image markup ${thumbnail ? 'with a linked thumbnail' : 'without a thumbnail'}`, async function (assert) {
+      await visit(`/thread?TID=${threadId}`);
+      await waitUntil(() => startupRefreshed);
+      await waitFor(replyLink);
+      await click(replyLink);
+
+      await click('#create-post-form button[title="Bild"]');
+      const fullUrl = 'https://example.com/full.png';
+      const thumbnailUrl = 'https://example.com/thumb.png';
+      const form = '#image-insert-modal-form';
+      await fillIn(`${form} input[type="url"]:required`, fullUrl);
+      if (thumbnail) {
+        await fillIn(`${form} input[type="url"]:not(:required)`, thumbnailUrl);
+      }
+      await click('button[form="image-insert-modal-form"]');
+
+      const expected = thumbnail
+        ? `[url=${fullUrl}][img]${thumbnailUrl}[/img][/url]`
+        : `[img]${fullUrl}[/img]`;
+      assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.dom(editor).hasValue(expected);
+    });
+  }
+
   test('inserting a link updates the reply draft and restores the caret', async function (assert) {
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
