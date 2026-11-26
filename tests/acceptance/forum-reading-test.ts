@@ -11,7 +11,7 @@ import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
 import type RendererService from 'potber-client/services/renderer';
-import { LandingPage } from 'potber-client/services/settings';
+import { LandingPage, Transitions } from 'potber-client/services/settings';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -276,6 +276,61 @@ module('Acceptance | Reading the forum', function (hooks) {
 
     await click(`${pageControls}[href*="page=1"]`);
     await waitFor('#post-101');
+    assert.dom('#post-101').includesText('The opening post');
+    assert.dom('#post-102').doesNotExist();
+  });
+
+  test('refreshes the last page and displays its updated posts', async function (assert) {
+    await visit('/thread?TID=42&page=2');
+    await waitFor('#post-102');
+    assert.dom('#post-102').includesText('A post on page two');
+
+    const currentFetch = window.fetch;
+    const requestedPages: (string | null)[] = [];
+    window.fetch = async (input, init) => {
+      const request = new Request(input, init);
+      const url = new URL(request.url);
+      if (request.method === 'GET' && url.pathname === '/threads/42') {
+        requestedPages.push(url.searchParams.get('page'));
+        return Response.json({
+          ...thread,
+          page: {
+            number: 2,
+            offset: 1,
+            postCount: 1,
+            posts: [{ ...latestPost, message: 'Updated post on page two' }],
+          },
+        } satisfies Threads.Read);
+      } else {
+        return currentFetch(input, init);
+      }
+    };
+
+    await click('.nav-element-center button:has([data-icon="rotate-right"])');
+    await waitUntil(() =>
+      document
+        .querySelector('#post-102')
+        ?.textContent?.includes('Updated post on page two'),
+    );
+    assert.deepEqual(requestedPages, ['2']);
+    assert.dom('#post-102').includesText('Updated post on page two');
+    assert
+      .dom('.nav-element-center button:has([data-icon="rotate-right"])')
+      .isNotDisabled();
+  });
+
+  test('falls back to the first page for an invalid page query in static mode', async function (assert) {
+    localStorage.setItem(
+      'potber-settings',
+      JSON.stringify({
+        landingPage: LandingPage.home,
+        autoRefreshSidebar: false,
+        transitions: Transitions.static,
+      }),
+    );
+
+    await visit('/thread?TID=42&page=invalid&PID=102&lastReadPost=102');
+
     assert.dom('#post-101').includesText('The opening post');
     assert.dom('#post-102').doesNotExist();
   });
