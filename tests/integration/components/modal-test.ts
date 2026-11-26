@@ -1,12 +1,14 @@
 import {
   click,
   fillIn,
+  findAll,
   settled,
   triggerEvent,
   waitUntil,
 } from '@ember/test-helpers';
 import Service from '@ember/service';
 import type { ImgpotImage } from 'potber-client/services/imgpot';
+import { ListType } from 'potber-client/components/modal/types/list';
 import ModalService from 'potber-client/services/modal';
 import { setupRenderingTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
@@ -156,6 +158,50 @@ module('Integration | Component | Modal', function (hooks) {
 
     await click('#modal .modal-footer button');
     assert.dom('#modal').doesNotHaveAttribute('open');
+  });
+
+  test('inserts and removes list entries while preserving the chosen list type', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.list({
+      onSubmit(type, entries) {
+        assert.strictEqual(type, ListType.Alphabetical);
+        assert.deepEqual(entries, ['Keep me']);
+        assert.step('submitted');
+      },
+    });
+    await settled();
+
+    const last = '#list-modal-form .list-modal-entry:last-child';
+    const remove = 'button:has([data-icon="minus"])';
+    assert.dom('#list-modal-form .list-modal-entry').exists({ count: 1 });
+    await fillIn('#list-modal-form .list-modal-entry input', 'Remove me');
+    const firstEntry = findAll('#list-modal-form .list-modal-entry')[0];
+    const addButton = firstEntry?.querySelector(
+      'button:has([data-icon="plus"])',
+    );
+    if (!addButton) throw new Error('Add list entry action missing');
+    await click(addButton);
+    await fillIn(`${last} input`, 'Keep me');
+    await click(addButton);
+
+    for (const remaining of [2, 1]) {
+      const removeButton = findAll(
+        '#list-modal-form .list-modal-entry',
+      )[0]?.querySelector(remove);
+      if (!removeButton) throw new Error('Remove list entry action missing');
+      await click(removeButton);
+      assert
+        .dom('#list-modal-form .list-modal-entry')
+        .exists({ count: remaining });
+    }
+
+    assert.dom(`${last} input`).hasValue('Keep me');
+    assert.dom(`${last} ${remove}`).doesNotExist();
+    await click('#list-modal-form .dropdown-toggle');
+    await click('#list-modal-form .dropdown-item:last-child');
+    await click('#modal button[type="submit"]');
+
+    assert.verifySteps(['submitted']);
   });
 
   module('Imgpot picker', function () {
