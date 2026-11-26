@@ -115,6 +115,87 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
     });
   });
 
+  test('stops retrying a scroll correction when the anchor cannot move', async function (this: Context, assert) {
+    const observer = Object.getOwnPropertyDescriptor(window, 'ResizeObserver');
+    Object.defineProperty(window, 'ResizeObserver', {
+      configurable: true,
+      value: undefined,
+    });
+    const corrections: ScrollToOptions[] = [];
+    window.scrollTo = () => undefined;
+    window.scrollBy = (options?: ScrollToOptions | number) => {
+      if (typeof options === 'object') corrections.push(options);
+    };
+    window.history.replaceState(null, '', '/thread?TID=1&PID=123');
+
+    try {
+      await render<Context>(hbs`
+        <div class='thread-page' data-test-thread-page>
+          <span {{this.threadScrollPosition}}></span>
+        </div>
+      `);
+      await nextAnimationFrame();
+
+      const page = document.querySelector('[data-test-thread-page]');
+      if (!page) throw new Error('Thread page fixture missing');
+      const post = document.createElement('article');
+      post.id = 'post-123';
+      const navHeight = document.getElementById('top-nav')?.clientHeight ?? 0;
+      post.getBoundingClientRect = () => new DOMRect(0, navHeight + 100);
+      page.append(post);
+
+      await waitUntil(() => corrections.length >= 5);
+      await nextAnimationFrame();
+      await nextAnimationFrame();
+
+      assert.strictEqual(corrections.length, 5);
+      assert.true(
+        corrections.every(
+          ({ top, behavior }) => top === 100 && behavior === 'auto',
+        ),
+      );
+      await clearRender();
+    } finally {
+      if (observer) Object.defineProperty(window, 'ResizeObserver', observer);
+      else Reflect.deleteProperty(window, 'ResizeObserver');
+    }
+  });
+
+  test('cancels the initial scroll frame when the thread leaves before it runs', async function (this: Context, assert) {
+    const requestFrame = window.requestAnimationFrame;
+    const cancelFrame = window.cancelAnimationFrame;
+    const pending = new Map<number, FrameRequestCallback>();
+    let nextId = 0;
+
+    window.requestAnimationFrame = (callback) => {
+      const id = ++nextId;
+      pending.set(id, callback);
+      return id;
+    };
+    window.cancelAnimationFrame = (id) => {
+      pending.delete(id);
+    };
+
+    try {
+      await render<Context>(hbs`
+        <div class='thread-page'>
+          <span {{this.threadScrollPosition}}></span>
+        </div>
+      `);
+      assert.strictEqual(
+        pending.size,
+        1,
+        'the modifier requests a scroll frame',
+      );
+
+      await clearRender();
+      assert.strictEqual(pending.size, 0, 'teardown cancels the scroll frame');
+    } finally {
+      window.requestAnimationFrame = requestFrame;
+      window.cancelAnimationFrame = cancelFrame;
+    }
+  });
+
   test('stops correcting after the user scrolls', async function (this: Context, assert) {
     this.threadScrollPosition = threadScrollPosition;
     window.history.replaceState(null, '', '/thread?TID=1&PID=123');
