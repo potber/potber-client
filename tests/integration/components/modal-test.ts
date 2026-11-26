@@ -204,6 +204,39 @@ module('Integration | Component | Modal', function (hooks) {
     assert.verifySteps(['submitted']);
   });
 
+  test('shows a private last login and a fallback title for an unnamed profile', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.userProfile({ user: { id: '42' } });
+    await settled();
+
+    assert.dom('#modal .modal-header h3').hasText('Unbekannt');
+    assert.dom('#modal .user-profile i').hasText('privat');
+    assert.dom('#modal .user-profile .avatar').doesNotExist();
+    assert.dom('#modal .user-profile a').hasText('42');
+    assert
+      .dom('#modal .user-profile a')
+      .hasAttribute('rel', 'noopener noreferrer');
+    await click('#modal .modal-footer button');
+    assert.dom('#modal').doesNotHaveAttribute('open');
+  });
+
+  test('renders the avatar and a public last login for a named profile', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    const avatarUrl =
+      'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    modal.userProfile({
+      user: { id: '42', name: 'Forum member', avatarUrl, lastLogin: 'Heute' },
+    });
+    await settled();
+
+    assert.dom('#modal .modal-header h3').hasText('Forum member');
+    assert
+      .dom('#modal .user-profile .avatar img')
+      .hasAttribute('src', avatarUrl);
+    assert.dom('#modal .user-profile').includesText('Heute');
+    assert.dom('#modal .user-profile i').doesNotExist();
+  });
+
   module('Imgpot picker', function () {
     const imageData =
       'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
