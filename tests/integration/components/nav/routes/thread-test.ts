@@ -9,6 +9,7 @@ import {
 import { hbs } from 'ember-cli-htmlbars';
 import PortalTarget from 'ember-stargate/components/portal-target';
 import { module, test } from 'qunit';
+import type { InputModalOptions } from 'potber-client/components/modal/types/input';
 import ThreadNav from 'potber-client/components/nav/routes/thread';
 import type { Threads } from 'potber-client/services/api/types';
 import { setupRenderingTest } from 'potber-client/tests/helpers';
@@ -124,5 +125,85 @@ module('Integration | Component | Thread navigation', function (hooks) {
     if (!focus) throw new Error('Focus linked post action missing');
     await click(focus);
     assert.verifySteps(['post-123']);
+  });
+  test('opens a bounded page prompt and navigates to the chosen page', async function (this: Context, assert) {
+    this.thread = thread;
+    this.page = 1;
+    let submit: ((value: string) => void) | undefined;
+    this.owner.register(
+      'service:modal',
+      class extends Service {
+        input(options: InputModalOptions) {
+          assert.strictEqual(options.min, 1);
+          assert.strictEqual(options.max, 3);
+          assert.strictEqual(options.type, 'number');
+          submit = options.onSubmit;
+          assert.step('prompt');
+        }
+
+        close() {
+          assert.step('closed');
+        }
+      },
+    );
+    this.owner.register(
+      'service:router',
+      class extends Service {
+        transitionTo(route: string, options: { queryParams: object }) {
+          assert.strictEqual(route, 'authenticated.thread');
+          assert.deepEqual(options.queryParams, { TID: '42', page: '2' });
+          assert.step('navigated');
+        }
+      },
+    );
+
+    await renderThreadNav();
+    await click('[data-test-bottom-nav] .menu-button');
+    const goToPage = findAll('menu[data-visible="true"] button.menu-item').find(
+      (button) => button.textContent?.trim() === 'Zur Seite...',
+    );
+    if (!goToPage) throw new Error('Go to page action missing');
+    await click(goToPage);
+    if (!submit) throw new Error('Page prompt did not provide a submit action');
+    submit('2');
+
+    assert.verifySteps(['prompt', 'navigated', 'closed']);
+  });
+
+  test('deletes the bookmark for the current thread and reports success', async function (this: Context, assert) {
+    this.thread = thread;
+    this.page = 1;
+    this.owner.register(
+      'service:stores/bookmark',
+      class extends Service {
+        all = [
+          { thread: { id: 'other' } },
+          {
+            thread,
+            delete: async () => assert.step('deleted current bookmark'),
+          },
+        ];
+      },
+    );
+    this.owner.register(
+      'service:messages',
+      class extends Service {
+        showNotification(message: string, type: string) {
+          assert.strictEqual(message, 'Das Lesezeichen wurde entfernt.');
+          assert.strictEqual(type, 'success');
+          assert.step('notified');
+        }
+      },
+    );
+
+    await renderThreadNav();
+    await click('[data-test-bottom-nav] .menu-button');
+    const remove = findAll('menu[data-visible="true"] button.menu-item').find(
+      (button) => button.textContent?.trim() === 'Bookmark löschen',
+    );
+    if (!remove) throw new Error('Delete bookmark action missing');
+    await click(remove);
+
+    assert.verifySteps(['deleted current bookmark', 'notified']);
   });
 });
