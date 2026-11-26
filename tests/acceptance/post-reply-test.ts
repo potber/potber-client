@@ -296,6 +296,28 @@ module('Acceptance | Writing posts', function (hooks) {
     });
   }
 
+  for (const [label, option, modifier] of [
+    ['unordered', 1, ''],
+    ['numbered', 2, '=1'],
+    ['alphabetical', 3, '=a'],
+  ] as const) {
+    test(`inserts ${label} list markup from the reply toolbar`, async function (assert) {
+      await visit(`/thread?TID=${threadId}`);
+      await waitUntil(() => startupRefreshed);
+      await waitFor(replyLink);
+      await click(replyLink);
+
+      await click('button[title="Liste"]');
+      await fillIn('#list-modal-form .list-modal-entry input', 'First item');
+      await click('#list-modal-form .dropdown-toggle');
+      await click(`#list-modal-form .dropdown-item:nth-child(${option})`);
+      await click('#modal button[type="submit"]');
+
+      assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.dom(editor).hasValue(`[list${modifier}]\n[*]First item[/list]`);
+    });
+  }
+
   test('inserting a link updates the reply draft and restores the caret', async function (assert) {
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
