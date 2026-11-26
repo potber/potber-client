@@ -1,5 +1,4 @@
 import { service } from '@ember/service';
-import { htmlSafe } from '@ember/template';
 import Component from '@glimmer/component';
 import FaIcon from '@fortawesome/ember-fontawesome/components/fa-icon';
 import RendererService from 'potber-client/services/renderer';
@@ -9,8 +8,8 @@ import ButtonLink from 'potber-client/components/common/button-link';
 import BoardIcon from 'potber-client/components/board/icon';
 import classNames from 'potber-client/helpers/class-names';
 import styles from './styles.module.css';
-import { Posts, Threads } from 'potber-client/services/api/types';
-import { formatDateTime } from 'potber-client/utils/date';
+import type { Threads } from 'potber-client/services/api/types';
+import formatDate from 'potber-client/helpers/date';
 
 export interface Signature {
   Args: {
@@ -81,10 +80,6 @@ export default class BoardItem extends Component<Signature> {
     return this.args.thread.firstPost?.icon || undefined;
   }
 
-  get subtitle() {
-    return this.args.thread.subtitle || '';
-  }
-
   get pagesLabel() {
     if (this.args.thread.pagesCount > 1) {
       return `${this.args.thread.pagesCount} Seiten`;
@@ -93,17 +88,8 @@ export default class BoardItem extends Component<Signature> {
     } else return undefined;
   }
 
-  get lastPostLabel() {
-    let post: Posts.Preview;
-    const { lastPost, firstPost } = this.args.thread;
-    if (lastPost) {
-      post = lastPost;
-    } else if (firstPost) {
-      post = firstPost;
-    } else return undefined;
-    return htmlSafe(
-      `<b>${post.author.name}</b> am ${formatDateTime(post.date)}`,
-    );
+  get latestPost() {
+    return this.args.thread.lastPost ?? this.args.thread.firstPost;
   }
 
   <template>
@@ -151,7 +137,13 @@ export default class BoardItem extends Component<Signature> {
         {{/if}}
         <div class={{classNames this 'activity-details'}}>
           <p class='subtitle'>
-            {{this.lastPostLabel}}
+            {{#let this.latestPost as |post|}}
+              {{#if post}}
+                <b>{{post.author.name}}</b>
+                am
+                {{formatDate post.date}}
+              {{/if}}
+            {{/let}}
           </p>
           <p class='subtitle'>
             {{this.pagesLabel}}
