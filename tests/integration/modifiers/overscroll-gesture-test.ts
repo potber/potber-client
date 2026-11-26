@@ -113,4 +113,50 @@ module('Integration | Modifier | overscroll-gesture', function (hooks) {
     await waitUntil(() => indicator.style.height === '0px');
     assert.strictEqual(indicator.style.height, '0px');
   });
+
+  test('uses the document scroll element and falls back to the document root', async function (this: Context, assert) {
+    this.overscrollGesture = overscrollGesture;
+    this.handleOverscroll = () => assert.step('overscroll');
+    const scrollingElement = Object.getOwnPropertyDescriptor(
+      document,
+      'scrollingElement',
+    );
+    const root = document.documentElement;
+    const rootScrollTop = Object.getOwnPropertyDescriptor(root, 'scrollTop');
+    const container = document.createElement('div');
+    Object.defineProperty(container, 'scrollTop', { value: 20 });
+    let active: HTMLElement | null = container;
+    Object.defineProperty(document, 'scrollingElement', {
+      configurable: true,
+      get: () => active,
+    });
+    Object.defineProperty(root, 'scrollTop', { configurable: true, value: 0 });
+
+    try {
+      await render<Context>(hbs`
+        <div data-test-gesture {{this.overscrollGesture
+          direction='down'
+          minimumPullDistance=40
+          onOverscroll=this.handleOverscroll
+        }}></div>
+      `);
+
+      const target = find('[data-test-gesture]');
+      if (!(target instanceof HTMLElement))
+        throw new Error('Missing overscroll fixture');
+      dispatchDrag(target, [30, 30], [30, 100]);
+      assert.verifySteps([]);
+
+      active = null;
+      dispatchDrag(target, [30, 30], [30, 100]);
+      assert.verifySteps(['overscroll']);
+    } finally {
+      if (scrollingElement)
+        Object.defineProperty(document, 'scrollingElement', scrollingElement);
+      else Reflect.deleteProperty(document, 'scrollingElement');
+      if (rootScrollTop)
+        Object.defineProperty(root, 'scrollTop', rootScrollTop);
+      else Reflect.deleteProperty(root, 'scrollTop');
+    }
+  });
 });
