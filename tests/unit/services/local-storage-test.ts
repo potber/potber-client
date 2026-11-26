@@ -1,4 +1,5 @@
 import Service from '@ember/service';
+import { appConfig } from 'potber-client/config/app.config';
 import LocalStorageService from 'potber-client/services/local-storage';
 import { setupTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
@@ -61,6 +62,7 @@ module('Unit | Service | LocalStorage', function (hooks) {
     const posts = await service.getSavedPosts({ reload: true });
 
     assert.strictEqual(api.maxActiveRequests, 4);
+    assert.strictEqual(await service.getSavedPosts(), posts);
     assert.deepEqual(
       posts?.map(({ id, threadId }) => ({ id, threadId })),
       persistedPosts,
@@ -265,5 +267,26 @@ module('Unit | Service | LocalStorage', function (hooks) {
     service.setEncounteredVersion('1.28.1');
 
     assert.strictEqual(service.getEncounteredVersion(), '1.29.0');
+  });
+
+  test('ignores a non-array saved-post record and leaves missing removals alone', function (assert) {
+    const service = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+    localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify({ id: 'post' }));
+    assert.deepEqual(service.readPersistedSavedPosts(), []);
+
+    const saved = JSON.stringify([{ id: '1', threadId: '42' }]);
+    localStorage.setItem(SAVED_POSTS_KEY, saved);
+    service.removeSavedPost('missing');
+    assert.strictEqual(localStorage.getItem(SAVED_POSTS_KEY), saved);
+  });
+
+  test('stores the current app version when called without a version', function (assert) {
+    const service = this.owner.lookup(
+      'service:local-storage',
+    ) as LocalStorageService;
+    service.setEncounteredVersion();
+    assert.strictEqual(service.getEncounteredVersion(), appConfig.version);
   });
 });
