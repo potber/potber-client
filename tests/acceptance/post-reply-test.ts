@@ -467,6 +467,27 @@ module('Acceptance | Writing posts', function (hooks) {
     assert.strictEqual(submittedThread?.title, 'Weekend meetup');
   });
 
+  test('previews a new thread’s opening post from mobile navigation', async function (assert) {
+    await visit('/board?BID=14');
+    await waitUntil(() => startupRefreshed);
+    await click('a[href^="/create-thread?"][href*="BID=14"]');
+    const renderer = this.owner.lookup('service:renderer') as RendererService;
+    renderer.isDesktop = false;
+    await fillIn(threadTitle, 'Weekend meetup');
+    const draft = '[b]Let’s meet on Saturday.[/b]';
+    await fillIn(threadEditor, draft);
+
+    await click('.nav-element-right button:has([data-icon="eye"])');
+
+    assert.dom('#modal').hasAttribute('open');
+    assert.dom('#modal div.post p b').hasText('Let’s meet on Saturday.');
+    await click('#modal .modal-footer button');
+
+    assert.dom(threadTitle).hasValue('Weekend meetup');
+    assert.dom(threadEditor).hasValue(draft);
+    assert.strictEqual(submittedThread, undefined);
+  });
+
   test('quoting a post prefills the reply and submits the quote with new text', async function (assert) {
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
