@@ -137,6 +137,44 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.false(service.persistedKey!.extractable);
   });
 
+  test('does not schedule uploads or enable sync before authentication', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+
+    service.boardFavoritesChanged(['14']);
+    service.savedPostsChanged([{ id: '1234', threadId: '5678' }]);
+    service.scheduleUpload({ 'settings.debug': true });
+    await service.syncNow();
+
+    await assert.rejects(service.enable(settings), /requires authentication/);
+    assert.strictEqual(service.writeAttempts, 0);
+    assert.strictEqual(service.persistedKey, undefined);
+  });
+
+  test('reports a failed initial upload and lets setup be retried', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    await service.initialize(settings, { userId: '123', accessToken: 'token' });
+    service.writeError = new Error('Service unavailable');
+
+    await assert.rejects(service.enable(settings), /Service unavailable/);
+    assert.strictEqual(service.state, 'unavailable');
+    assert.strictEqual(service.lastError, 'Service unavailable');
+    assert.strictEqual(service.remoteValue, null);
+    assert.strictEqual(service.persistedKey, undefined);
+
+    service.writeError = undefined;
+    const recoveryKey = await service.enable(settings);
+
+    assert.true(recoveryKey.startsWith('potber-sync-v1-'));
+    assert.strictEqual(service.lastError, null);
+    assert.strictEqual(service.state, 'enabled');
+    assert.strictEqual(service.writes.length, 1);
+    assert.ok(service.persistedKey);
+  });
+
   test('does not replace settings that another device already synced', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
