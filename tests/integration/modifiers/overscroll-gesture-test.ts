@@ -1,5 +1,5 @@
 import { module, test } from 'qunit';
-import { find, render } from '@ember/test-helpers';
+import { find, render, waitUntil } from '@ember/test-helpers';
 import { hbs } from 'ember-cli-htmlbars';
 import type { TestContext } from '@ember/test-helpers';
 import OverscrollContainer from 'potber-client/components/features/gestures/overscroll-container';
@@ -11,6 +11,7 @@ interface Context extends TestContext {
   OverscrollContainer: typeof OverscrollContainer;
   handleOverscroll: () => void;
   overscrollGesture: typeof overscrollGesture;
+  scrollContainer?: HTMLElement;
 }
 
 module('Integration | Modifier | overscroll-gesture', function (hooks) {
@@ -71,5 +72,45 @@ module('Integration | Modifier | overscroll-gesture', function (hooks) {
     dispatchDrag(target, [30, 30], [30, 100]);
 
     assert.verifySteps(['overscroll']);
+  });
+
+  test('shows and clears the indicator after pulling up at the bottom edge', async function (this: Context, assert) {
+    this.overscrollGesture = overscrollGesture;
+    this.handleOverscroll = () => assert.step('overscroll');
+    this.scrollContainer = document.createElement('div');
+    Object.defineProperties(this.scrollContainer, {
+      scrollTop: { value: 198 },
+      scrollHeight: { value: 300 },
+      clientHeight: { value: 100 },
+    });
+
+    await render<Context>(hbs`
+      <div data-test-gesture {{this.overscrollGesture
+        direction='up'
+        scrollContainer=this.scrollContainer
+        minimumPullDistance=40
+        tolerance=2
+        delay=0
+        onOverscroll=this.handleOverscroll
+      }}>
+        <span data-overscroll-indicator></span>
+      </div>
+    `);
+
+    const target = find('[data-test-gesture]');
+    const indicator = find('[data-overscroll-indicator]');
+    if (
+      !(target instanceof HTMLElement) ||
+      !(indicator instanceof HTMLElement)
+    ) {
+      throw new Error('Missing overscroll indicator fixture');
+    }
+
+    dispatchDrag(target, [30, 100], [30, 30]);
+    assert.verifySteps(['overscroll']);
+    assert.strictEqual(indicator.style.height, 'var(--control-default-height)');
+
+    await waitUntil(() => indicator.style.height === '0px');
+    assert.strictEqual(indicator.style.height, '0px');
   });
 });
