@@ -74,6 +74,7 @@ import {
   faChevronRight,
   faChevronUp,
   faCircleNotch,
+  faCircleXmark,
   faCog,
   faCode,
   faComment,
@@ -266,4 +267,5 @@ library.add([
   faUser,
   faWarning,
   faGlobe,
+  faCircleXmark,
 ]);
