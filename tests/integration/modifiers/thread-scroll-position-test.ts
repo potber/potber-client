@@ -1,5 +1,10 @@
 import Service from '@ember/service';
-import { render, type TestContext, waitUntil } from '@ember/test-helpers';
+import {
+  clearRender,
+  render,
+  type TestContext,
+  waitUntil,
+} from '@ember/test-helpers';
 import { hbs } from 'ember-cli-htmlbars';
 import threadScrollPosition from 'potber-client/modifiers/thread-scroll-position';
 import { setupRenderingTest } from 'potber-client/tests/helpers';
@@ -108,6 +113,78 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
       top: 150,
       behavior: 'auto',
     });
+  });
+
+  test('stops correcting after the user scrolls', async function (this: Context, assert) {
+    this.threadScrollPosition = threadScrollPosition;
+    window.history.replaceState(null, '', '/thread?TID=1&PID=123');
+    let focused = false;
+    window.scrollTo = () => {
+      focused = true;
+    };
+    window.scrollBy = () => assert.step('corrected position');
+
+    await render<Context>(hbs`
+      <div class='thread-page' data-test-thread-page>
+        <span {{this.threadScrollPosition}}></span>
+      </div>
+    `);
+    await nextAnimationFrame();
+
+    const page = document.querySelector('[data-test-thread-page]');
+    if (!page) throw new Error('Thread page fixture missing');
+    const post = document.createElement('article');
+    post.id = 'post-123';
+    let top = document.getElementById('top-nav')?.clientHeight ?? 0;
+    post.getBoundingClientRect = () => new DOMRect(0, top);
+    page.append(post);
+    await waitUntil(() => focused);
+    await nextAnimationFrame();
+    assert.verifySteps([]);
+
+    top += 150;
+    const video = document.createElement('video');
+    post.append(video);
+    video.dispatchEvent(new Event('loadedmetadata'));
+    window.dispatchEvent(new Event('wheel'));
+    video.dispatchEvent(new Event('loadeddata'));
+    await nextAnimationFrame();
+
+    assert.verifySteps([]);
+  });
+
+  test('cancels pending scroll correction when the thread view is removed', async function (this: Context, assert) {
+    window.history.replaceState(null, '', '/thread?TID=1&PID=123');
+    let focused = false;
+    window.scrollTo = () => {
+      focused = true;
+    };
+    window.scrollBy = () => assert.step('corrected position');
+
+    await render<Context>(hbs`
+      <div class='thread-page' data-test-thread-page>
+        <span {{this.threadScrollPosition}}></span>
+      </div>
+    `);
+    await nextAnimationFrame();
+    const page = document.querySelector('[data-test-thread-page]');
+    if (!page) throw new Error('Thread page fixture missing');
+    const post = document.createElement('article');
+    post.id = 'post-123';
+    let top = document.getElementById('top-nav')?.clientHeight ?? 0;
+    post.getBoundingClientRect = () => new DOMRect(0, top);
+    page.append(post);
+    await waitUntil(() => focused);
+    await nextAnimationFrame();
+
+    await clearRender();
+    top += 150;
+    const image = document.createElement('img');
+    post.append(image);
+    image.dispatchEvent(new Event('load'));
+    await nextAnimationFrame();
+
+    assert.verifySteps([]);
   });
 
   test('scrolls to a post that is already rendered', async function (this: Context, assert) {
