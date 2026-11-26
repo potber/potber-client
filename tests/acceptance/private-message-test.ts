@@ -29,6 +29,17 @@ const inboundMessage: PrivateMessages.Read = {
   content: 'Shall we meet on Saturday?',
 };
 
+const systemMessage: PrivateMessages.Read = {
+  id: '44',
+  title: 'Maintenance notice',
+  date: '2026-01-01T12:00:00Z',
+  folder: 'system',
+  unread: false,
+  important: false,
+  sender: { id: '0', name: 'Forum system' },
+  content: 'Scheduled maintenance.',
+};
+
 const recipientInput =
   '#private-message-form input[aria-placeholder="Empfänger:in"]';
 const subjectInput = '#private-message-form input[aria-placeholder="Betreff"]';
@@ -112,6 +123,7 @@ module('Acceptance | Private messages', function (hooks) {
           if (folder === 'outbound') {
             return Response.json(sentMessage ? [sentMessage] : []);
           }
+          if (folder === 'system') return Response.json([systemMessage]);
           const unreadOnly = searchParams.get('unread') === 'true';
           return Response.json(
             (!folder || folder === message.folder) &&
@@ -132,6 +144,8 @@ module('Acceptance | Private messages', function (hooks) {
           } satisfies PrivateMessages.Create);
         case 'GET /usernames':
           return Response.json(['Another Member']);
+        case 'GET /privateMessages/44':
+          return Response.json(systemMessage);
         case 'GET /privateMessages/43':
           return Response.json(sentMessage);
         case 'GET /privateMessages/42/forward':
@@ -221,6 +235,24 @@ module('Acceptance | Private messages', function (hooks) {
       assert.strictEqual(renderer.sidebarExpanded, isDesktop);
     });
   }
+
+  test('shows system messages in their folder with the system subtitle', async function (assert) {
+    const systemPath = '/private-messages/system';
+    const systemLink = 'a[href="/private-messages/44"]';
+    await visit(systemPath);
+    await waitFor(systemLink);
+
+    assert.dom(systemLink).includesText('Maintenance notice');
+    assert.dom(systemLink).includesText('Systemnachricht');
+
+    await click(systemLink);
+
+    assert.strictEqual(currentURL(), '/private-messages/44');
+    assert.dom('.private-message-view-header').includesText('Ordner: System');
+    assert
+      .dom('.private-message-view-content')
+      .hasText('Scheduled maintenance.');
+  });
 
   test('replying sends the message to the original sender and shows confirmation', async function (assert) {
     await visit(inboxPath);
