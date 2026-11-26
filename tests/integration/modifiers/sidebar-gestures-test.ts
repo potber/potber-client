@@ -139,6 +139,32 @@ module('Integration | Modifier | sidebar gestures', function (hooks) {
     assert.true(this.renderer.widths.includes(160));
   });
 
+  test('closes a right sidebar only after a long drag toward its edge', async function (this: Context, assert) {
+    this.settings.right = true;
+    await render<Context>(
+      hbs`<div data-test-gesture {{this.close preventScroll=true}}></div>`,
+    );
+    const target = gestureTarget();
+    target.setPointerCapture = () => undefined;
+
+    dispatchDrag(target, [120, 20], [40, 20]);
+    dispatchDrag(target, [40, 20], [80, 20]);
+    dispatchDrag(target, [40, 20], [180, 20]);
+
+    assert.deepEqual(this.renderer.actions, ['open', 'open', 'close']);
+    assert.true(this.renderer.widths.includes(160));
+  });
+
+  test('does not respond to a close drag when gestures are disabled', async function (this: Context, assert) {
+    this.settings.gestures = Gestures.none;
+    await render<Context>(hbs`<div data-test-gesture {{this.close}}></div>`);
+
+    dispatchDrag(gestureTarget(), [180, 20], [40, 20]);
+
+    assert.deepEqual(this.renderer.actions, []);
+    assert.deepEqual(this.renderer.widths, []);
+  });
+
   test('does not attach the close gesture in desktop mode', async function (this: Context, assert) {
     this.renderer.isDesktop = true;
     await render<Context>(hbs`<div data-test-gesture {{this.close}}></div>`);
