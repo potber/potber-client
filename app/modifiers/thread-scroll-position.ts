@@ -1,6 +1,8 @@
+import { registerDestructor } from '@ember/destroyable';
+import type Owner from '@ember/owner';
 import RouterService from '@ember/routing/router-service';
 import { service } from '@ember/service';
-import Modifier from 'ember-modifier';
+import Modifier, { type ArgsFor } from 'ember-modifier';
 import RendererService from 'potber-client/services/renderer';
 import SettingsService from 'potber-client/services/settings';
 import { getAnchorId, getThreadScrollTarget } from 'potber-client/utils/misc';
@@ -31,6 +33,11 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
   private scrollAnchorElement: HTMLElement | null = null;
   private removeResetListeners: Array<() => void> = [];
 
+  constructor(owner: Owner, args: ArgsFor<ThreadScrollPositionSignature>) {
+    super(owner, args);
+    registerDestructor(this, () => this.cleanup());
+  }
+
   modify(element: ThreadScrollPositionSignature['Element']) {
     this.cleanup();
 
@@ -38,10 +45,6 @@ export default class ThreadScrollPositionModifier extends Modifier<ThreadScrollP
       this.setupFrame = undefined;
       this.updateScrollPosition(element);
     });
-
-    return () => {
-      this.cleanup();
-    };
   }
 
   private addScrollStabilizationResetListeners() {
