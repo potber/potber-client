@@ -318,6 +318,51 @@ module('Acceptance | Writing posts', function (hooks) {
     });
   }
 
+  test('inserts an empty bold tag and wraps a selected phrase', async function (assert) {
+    await visit(`/thread?TID=${threadId}`);
+    await waitUntil(() => startupRefreshed);
+    await waitFor(replyLink);
+    await click(replyLink);
+    const bold = '#create-post-form button:has([data-icon="bold"])';
+    const textarea = find(editor);
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+      throw new Error('Reply textarea missing');
+    }
+
+    await click(bold);
+    assert.dom(editor).hasValue('[b][/b]');
+    assert.strictEqual(textarea.selectionStart, 3);
+    assert.strictEqual(textarea.selectionEnd, 3);
+
+    await fillIn(editor, 'Keep this phrase around');
+    textarea.setSelectionRange(5, 16);
+    await click(bold);
+
+    assert.dom(editor).hasValue('Keep [b]this phrase[/b] around');
+    assert.dom(editor).isFocused();
+    assert.strictEqual(textarea.selectionStart, 19);
+    assert.strictEqual(textarea.selectionEnd, 19);
+  });
+
+  for (const [icon, field, tag, value] of [
+    ['code', 'textarea', 'code', 'one line\nsecond line'],
+    ['youtube', 'input[type="url"]', 'video', 'https://example.com/video'],
+  ] as const) {
+    test(`inserts ${tag} markup from the reply toolbar prompt`, async function (assert) {
+      await visit(`/thread?TID=${threadId}`);
+      await waitUntil(() => startupRefreshed);
+      await waitFor(replyLink);
+      await click(replyLink);
+
+      await click(`#create-post-form button:has([data-icon="${icon}"])`);
+      await fillIn(`#input-modal-form ${field}`, value);
+      await click('button[form="input-modal-form"]');
+
+      assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.dom(editor).hasValue(`[${tag}]${value}[/${tag}]`);
+    });
+  }
+
   test('inserting a link updates the reply draft and restores the caret', async function (assert) {
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
