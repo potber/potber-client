@@ -6,7 +6,7 @@ import PostComponent from 'potber-client/components/board/post';
 import styles from 'potber-client/components/board/post/styles.module.css';
 import type Post from 'potber-client/models/post';
 import SettingsService, { AvatarStyle } from 'potber-client/services/settings';
-import type SocialsService from 'potber-client/services/socials';
+import SocialsService from 'potber-client/services/socials';
 import { setupRenderingTest } from 'potber-client/tests/helpers';
 
 interface Context extends TestContext {
@@ -193,4 +193,63 @@ module('Integration | Component | Board | Post', function (hooks) {
       ]);
     });
   }
+  test('unblocks the author from the post menu and removes the mask', async function (this: Context, assert) {
+    this.post = createPost();
+    const post = this.post;
+    this.owner.register(
+      'service:session',
+      class extends Service {
+        sessionData = null;
+      },
+    );
+    this.owner.register(
+      'service:socials',
+      class extends SocialsService {
+        override save = () => assert.step('saved blocklist');
+      },
+    );
+    this.owner.register(
+      'service:messages',
+      class extends Service {
+        showNotification(message: string, type: string) {
+          assert.strictEqual(type, 'success');
+          assert.true(message.includes('Test author'));
+          assert.step('showed notice');
+        }
+      },
+    );
+    const socials = this.owner.lookup('service:socials') as SocialsService;
+    socials.blockedUsers = [{ id: post.author.id, name: 'Test author' }];
+
+    await render<Context>(hbs`<this.PostComponent @post={{this.post}} />`);
+    const mask = `button.${styles['blocked-mask']}`;
+    assert.dom(mask).exists();
+    await click('.post .menu-button');
+    const unblock = findAll(
+      '.post menu[data-visible="true"] button.menu-item',
+    ).find(
+      (button) => button.textContent?.trim() === 'Nutzer:in nicht mehr blocken',
+    );
+    if (!unblock) throw new Error('Unblock action missing');
+
+    await click(unblock);
+    assert.verifySteps(['saved blocklist', 'showed notice']);
+    assert.false(socials.isUserBlocked(post.author.id));
+    assert.dom(mask).doesNotExist();
+  });
+
+  test('reveals trigger content only when that paragraph is clicked', async function (this: Context, assert) {
+    this.post = createPost({ message: '[trigger]Hidden detail[/trigger]' });
+    await render<Context>(
+      hbs`<this.PostComponent @post={{this.post}} @disableMenu={{true}} />`,
+    );
+
+    assert.dom('.post p.trigger').hasText('Hidden detail');
+    await click(`.${styles['body']}`);
+    assert.dom('.post p.trigger').exists();
+
+    await click('.post p.trigger');
+    assert.dom('.post p.trigger').doesNotExist();
+    assert.dom(`.${styles['body']}`).includesText('Hidden detail');
+  });
 });
