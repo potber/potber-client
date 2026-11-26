@@ -280,6 +280,45 @@ module('Acceptance | Reading the forum', function (hooks) {
     assert.dom('#post-102').doesNotExist();
   });
 
+  test('refreshes the last page and displays its updated posts', async function (assert) {
+    await visit('/thread?TID=42&page=2');
+    await waitFor('#post-102');
+    assert.dom('#post-102').includesText('A post on page two');
+
+    const currentFetch = window.fetch;
+    const requestedPages: (string | null)[] = [];
+    window.fetch = async (input, init) => {
+      const request = new Request(input, init);
+      const url = new URL(request.url);
+      if (request.method === 'GET' && url.pathname === '/threads/42') {
+        requestedPages.push(url.searchParams.get('page'));
+        return Response.json({
+          ...thread,
+          page: {
+            number: 2,
+            offset: 1,
+            postCount: 1,
+            posts: [{ ...latestPost, message: 'Updated post on page two' }],
+          },
+        } satisfies Threads.Read);
+      } else {
+        return currentFetch(input, init);
+      }
+    };
+
+    await click('.nav-element-center button:has([data-icon="rotate-right"])');
+    await waitUntil(() =>
+      document
+        .querySelector('#post-102')
+        ?.textContent?.includes('Updated post on page two'),
+    );
+    assert.deepEqual(requestedPages, ['2']);
+    assert.dom('#post-102').includesText('Updated post on page two');
+    assert
+      .dom('.nav-element-center button:has([data-icon="rotate-right"])')
+      .isNotDisabled();
+  });
+
   test('resumes a bookmarked thread at the last-read post and links to the unread page', async function (assert) {
     bookmarks = [bookmark];
     await visit('/board?BID=14');
