@@ -361,6 +361,59 @@ module('Integration | Component | Modal', function (hooks) {
       assert.dom('#modal').doesNotHaveAttribute('open');
       assert.verifySteps([]);
     });
+
+    test('falls back to a medium preview and handles an image with no variants', async function (assert) {
+      const mediumOnly: ImgpotImage = {
+        id: 1,
+        originalFilename: 'medium.gif',
+        variations: [{ variationType: 'medium', cdnUrl: medium }],
+      };
+      const noVariants: ImgpotImage = {
+        id: 2,
+        originalFilename: 'missing.gif',
+        variations: [],
+      };
+      this.owner.register(
+        'service:imgpot',
+        class extends Service {
+          async listImages() {
+            return {
+              images: [mediumOnly, noVariants],
+              page: 1,
+              limit: 20,
+              total: 2,
+            };
+          }
+        },
+      );
+      const modal = this.owner.lookup('service:modal') as ModalService;
+
+      modal.imgpotSelect({ onSelect: () => assert.step('selected') });
+      await settled();
+
+      assert.dom(`${images} img[alt="medium.gif"]`).hasAttribute('src', medium);
+      assert.dom(`${images} img[alt="missing.gif"]`).hasAttribute('src', '');
+      assert.verifySteps([]);
+    });
+
+    test('shows the generic message for a failure without error details', async function (assert) {
+      this.owner.register(
+        'service:imgpot',
+        class extends Service {
+          listImages() {
+            return Promise.reject();
+          }
+        },
+      );
+      const modal = this.owner.lookup('service:modal') as ModalService;
+
+      modal.imgpotSelect({ onSelect: () => assert.step('selected') });
+      await settled();
+
+      assert.dom('#modal').includesText('Bilder konnten nicht geladen werden.');
+      assert.dom(images).doesNotExist();
+      assert.verifySteps([]);
+    });
   });
 
   module('Image insertion', function () {
@@ -451,6 +504,42 @@ module('Integration | Component | Modal', function (hooks) {
       assert.dom(input).hasValue('');
       assert.dom(source).hasValue(large);
       assert.dom(thumbnail).hasValue(medium);
+      assert.verifySteps([]);
+    });
+
+    test('prevents submitting an invalid URL and shows a generic upload failure', async function (assert) {
+      this.owner.register(
+        'service:imgpot',
+        class extends Service {
+          uploadImage() {
+            return Promise.reject();
+          }
+        },
+      );
+      const modal = this.owner.lookup('service:modal') as ModalService;
+      modal.imageInsert({ onSubmit: () => assert.step('submitted') });
+      await settled();
+
+      await fillIn(source, 'not a URL');
+      await triggerEvent(form, 'submit');
+      assert.verifySteps([]);
+
+      const input = document.querySelector<HTMLInputElement>(
+        `${form} input[type="file"]`,
+      );
+      if (!input) throw new Error('Image upload input is missing');
+      const selection = new DataTransfer();
+      selection.items.add(
+        new File(['image'], 'image.gif', { type: 'image/gif' }),
+      );
+      input.files = selection.files;
+      await triggerEvent(input, 'change');
+
+      assert
+        .dom('#modal')
+        .includesText('Bild konnte nicht hochgeladen werden.');
+      assert.dom(source).hasValue('not a URL');
+      assert.dom(input).hasValue('');
       assert.verifySteps([]);
     });
   });
