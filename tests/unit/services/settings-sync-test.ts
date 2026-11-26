@@ -175,6 +175,35 @@ module('Unit | Service | SettingsSync', function (hooks) {
     assert.ok(service.persistedKey);
   });
 
+  test('can forget the device locally before authentication is initialized', async function (assert) {
+    this.owner.register('service:settings-sync', SettingsSyncService);
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncService;
+
+    await service.forgetThisDevice();
+
+    assert.strictEqual(service.state, 'disabled');
+    assert.false(service.hasRemoteConfiguration);
+  });
+
+  test('keeps edits local while sync is unavailable and reports the error name', async function (assert) {
+    const service = this.owner.lookup(
+      'service:settings-sync',
+    ) as SettingsSyncStub;
+    await service.initialize(settings, { userId: '123', accessToken: 'token' });
+    service.writeError = new TypeError();
+
+    await assert.rejects(service.enable(settings), TypeError);
+    assert.strictEqual(service.state, 'unavailable');
+    assert.strictEqual(service.lastError, 'TypeError');
+
+    service.settingChanged('debug', { ...settings, debug: false });
+    await service.syncNow();
+    assert.strictEqual(service.writeAttempts, 1);
+    assert.strictEqual(service.remoteValue, null);
+  });
+
   test('does not replace settings that another device already synced', async function (assert) {
     const service = this.owner.lookup(
       'service:settings-sync',
