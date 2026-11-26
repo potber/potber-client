@@ -87,6 +87,29 @@ module('Integration | Component | Modal', function (hooks) {
     assert.strictEqual(submissions, 0);
   });
 
+  test('renders a default secondary alternative and safely dismisses without callbacks', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.confirm({
+      title: 'Confirm',
+      text: 'Check the current choice.',
+      alternativeLabel: 'Other choice',
+    });
+    await settled();
+
+    const alternative = '[data-test-modal-alternative]';
+    assert.dom(alternative).hasClass('control-variant-secondary');
+    await click(alternative);
+    assert.dom('#modal').hasAttribute('open');
+
+    await click('#modal button.modal-submit');
+    assert.dom('#modal').hasAttribute('open');
+
+    await click(
+      '#modal .modal-footer button[type="button"]:not([data-test-modal-alternative])',
+    );
+    assert.dom('#modal').doesNotHaveAttribute('open');
+  });
+
   test('uses the destructive submit variant and can hide cancellation', async function (assert) {
     const modal = this.owner.lookup('service:modal') as ModalService;
     modal.confirm({
