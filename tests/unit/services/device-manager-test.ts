@@ -1,4 +1,6 @@
+import Service from '@ember/service';
 import DeviceManagerService from 'potber-client/services/device-manager';
+import { Gestures } from 'potber-client/services/settings';
 import { setupTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -51,5 +53,77 @@ module('Unit | Service | DeviceManager', function (hooks) {
     assert.strictEqual(deviceManager.getBrowser(webKitUserAgent), 'WebKit');
     assert.strictEqual(deviceManager.getBrowser(chromeUserAgent), 'Chrome');
     assert.strictEqual(deviceManager.getBrowser(firefoxUserAgent), 'Firefox');
+  });
+
+  test('falls back to unknown for an unrecognized user agent', function (assert) {
+    const deviceManager = this.owner.lookup(
+      'service:device-manager',
+    ) as DeviceManagerService;
+    assert.strictEqual(
+      deviceManager.getOperatingSystem('OtherDevice'),
+      'unknown',
+    );
+    assert.strictEqual(deviceManager.getBrowser('OtherBrowser'), 'unknown');
+  });
+
+  test('sets overscroll behavior for each gesture preference', function (assert) {
+    let gestures: Gestures;
+    const styles = new Map<string, string>();
+    this.owner.register(
+      'service:settings',
+      class extends Service {
+        getSetting() {
+          return gestures;
+        }
+      },
+    );
+    this.owner.register(
+      'service:renderer',
+      class extends Service {
+        setStyleVariable(property: string, value: string) {
+          styles.set(property, value);
+        }
+      },
+    );
+    const deviceManager = this.owner.lookup(
+      'service:device-manager',
+    ) as DeviceManagerService;
+
+    const cases = [
+      [Gestures.all, 'none', 'none'],
+      [Gestures.onlySidebar, 'none', 'unset'],
+      [Gestures.none, 'unset', 'unset'],
+    ] as const;
+
+    for (const [preference, horizontal, vertical] of cases) {
+      gestures = preference;
+      deviceManager.toggleGesturesSupport();
+      assert.strictEqual(styles.get('--app-overscroll-behavior-x'), horizontal);
+      assert.strictEqual(styles.get('--app-overscroll-behavior-y'), vertical);
+    }
+  });
+
+  test('applies the iOS navigation inset on initialization', function (assert) {
+    const deviceManager = this.owner.lookup(
+      'service:device-manager',
+    ) as DeviceManagerService;
+    const root = document.documentElement;
+    const originalStyle = root.getAttribute('style');
+    const originalIOS = root.getAttribute('data-ios');
+    deviceManager.operatingSystem = 'iOS';
+
+    try {
+      deviceManager.initialize();
+      assert.strictEqual(root.getAttribute('data-ios'), 'true');
+      assert.strictEqual(
+        root.style.getPropertyValue('--bottom-nav-bottom-border'),
+        'var(--bottom-nav-bottom-border-ios)',
+      );
+    } finally {
+      if (originalIOS === null) root.removeAttribute('data-ios');
+      else root.setAttribute('data-ios', originalIOS);
+      if (originalStyle === null) root.removeAttribute('style');
+      else root.setAttribute('style', originalStyle);
+    }
   });
 });
