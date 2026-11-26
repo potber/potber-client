@@ -64,6 +64,7 @@ import {
   faBold,
   faBookmark,
   faBullhorn,
+  faGlobe,
   faChain,
   faCheck,
   faCheckCircle,
@@ -264,4 +265,5 @@ library.add([
   faCloudArrowUp,
   faUser,
   faWarning,
+  faGlobe,
 ]);
