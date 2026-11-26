@@ -115,4 +115,67 @@ module('Unit | Service | Deployment version', function (hooks) {
     await deployment.checkForDeployedVersion({ force: true });
     assert.deepEqual(navigations, ['1.30.0']);
   });
+
+  test('shares an in-flight check and throttles later foreground checks', async function (assert) {
+    const deployment = this.owner.lookup(
+      'service:deployment-version',
+    ) as DeploymentVersionService;
+    deployment.deploymentVersionCheckIntervalMs = Infinity;
+    deployment.navigateToDeployedVersion = (version) => assert.step(version);
+
+    let completeRequest!: (response: Response) => void;
+    const response = new Promise<Response>((resolve) => {
+      completeRequest = resolve;
+    });
+    globalThis.fetch = async () => {
+      assert.step('fetch');
+      return (await response).clone();
+    };
+
+    deployment.initialize();
+    deployment.initialize();
+    const pendingCheck = deployment.checkForDeployedVersion({ force: true });
+    assert.verifySteps(['fetch']);
+    completeRequest(Response.json({ version: '1.30.0' }));
+    await pendingCheck;
+    assert.verifySteps(['1.30.0']);
+
+    window.dispatchEvent(new Event('pageshow'));
+    await deployment.checkForDeployedVersion();
+    assert.verifySteps([]);
+
+    await deployment.checkForDeployedVersion({ force: true });
+    assert.verifySteps(['fetch', '1.30.0']);
+  });
+
+  test('ignores an unavailable marker and can check again after recovery', async function (assert) {
+    const deployment = this.owner.lookup(
+      'service:deployment-version',
+    ) as DeploymentVersionService;
+    deployment.navigateToDeployedVersion = (version) => assert.step(version);
+    globalThis.fetch = async () =>
+      Response.json({ version: '1.30.0' }, { status: 503 });
+
+    await deployment.checkForDeployedVersion({ force: true });
+    assert.verifySteps([]);
+
+    globalThis.fetch = async () => Response.json({ version: '1.30.0' });
+    await deployment.checkForDeployedVersion({ force: true });
+    assert.verifySteps(['1.30.0']);
+  });
+
+  test('uses a manual reload when the running version cannot be compared', async function (assert) {
+    const deployment = this.owner.lookup(
+      'service:deployment-version',
+    ) as DeploymentVersionService;
+    deployment.navigateToDeployedVersion = (version) => assert.step(version);
+    appConfig.version = 'unversioned';
+    globalThis.fetch = async () => Response.json({ version: '1.30.0' });
+
+    await deployment.checkForDeployedVersion({ force: true });
+    assert.verifySteps([]);
+
+    deployment.refreshApp();
+    assert.verifySteps(['refresh']);
+  });
 });
