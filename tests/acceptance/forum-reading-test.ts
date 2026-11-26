@@ -204,6 +204,29 @@ module('Acceptance | Reading the forum', function (hooks) {
     }
   });
 
+  for (const [landingPage, label, expectedUrl, expectedContent] of [
+    [LandingPage.pot, 'pOT', '/board?BID=14', threadLink],
+    [
+      LandingPage.boardOverview,
+      'board overview',
+      '/board-overview',
+      '#page-content button:has([data-icon="chevron-right"])',
+    ],
+  ] as const) {
+    test(`opens the configured ${label} landing page from Home`, async function (assert) {
+      localStorage.setItem(
+        'potber-settings',
+        JSON.stringify({ landingPage, autoRefreshSidebar: false }),
+      );
+
+      await visit('/home');
+      await waitFor(expectedContent);
+
+      assert.strictEqual(currentURL(), expectedUrl);
+      assert.dom(expectedContent).exists();
+    });
+  }
+
   test('following the bookmarks link closes the mobile sidebar', async function (assert) {
     await visit('/board-overview');
     await waitUntil(() => startupRefreshed);
