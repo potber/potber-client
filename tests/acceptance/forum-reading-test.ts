@@ -11,7 +11,7 @@ import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { IBookmark } from 'potber-client/services/api/models/bookmark';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
 import type RendererService from 'potber-client/services/renderer';
-import { LandingPage } from 'potber-client/services/settings';
+import { LandingPage, Transitions } from 'potber-client/services/settings';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -317,6 +317,22 @@ module('Acceptance | Reading the forum', function (hooks) {
     assert
       .dom('.nav-element-center button:has([data-icon="rotate-right"])')
       .isNotDisabled();
+  });
+
+  test('falls back to the first page for an invalid page query in static mode', async function (assert) {
+    localStorage.setItem(
+      'potber-settings',
+      JSON.stringify({
+        landingPage: LandingPage.home,
+        autoRefreshSidebar: false,
+        transitions: Transitions.static,
+      }),
+    );
+
+    await visit('/thread?TID=42&page=invalid&PID=102&lastReadPost=102');
+
+    assert.dom('#post-101').includesText('The opening post');
+    assert.dom('#post-102').doesNotExist();
   });
 
   test('resumes a bookmarked thread at the last-read post and links to the unread page', async function (assert) {
