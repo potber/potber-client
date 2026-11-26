@@ -178,4 +178,41 @@ module('Unit | Service | Deployment version', function (hooks) {
     deployment.refreshApp();
     assert.verifySteps(['refresh']);
   });
+  test('checks again when the tab becomes visible and skips hidden tabs', async function (assert) {
+    const deployment = this.owner.lookup(
+      'service:deployment-version',
+    ) as DeploymentVersionService;
+    deployment.deploymentVersionCheckIntervalMs = 0;
+    globalThis.fetch = async () => {
+      assert.step('checked');
+      return Response.json({ version: '1.29.0' });
+    };
+    const original = Object.getOwnPropertyDescriptor(
+      document,
+      'visibilityState',
+    );
+    let visibility: DocumentVisibilityState = 'hidden';
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => visibility,
+    });
+
+    try {
+      deployment.initialize();
+      await deployment.checkForDeployedVersion({ force: true });
+      assert.verifySteps(['checked']);
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      assert.verifySteps([]);
+
+      visibility = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      await deployment.checkForDeployedVersion({ force: true });
+      assert.verifySteps(['checked']);
+    } finally {
+      if (original)
+        Object.defineProperty(document, 'visibilityState', original);
+      else Reflect.deleteProperty(document, 'visibilityState');
+    }
+  });
 });

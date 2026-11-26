@@ -1,7 +1,7 @@
 import Service from '@ember/service';
 import { settled } from '@ember/test-helpers';
 import RendererService from 'potber-client/services/renderer';
-import { SidebarLayout } from 'potber-client/services/settings';
+import { SidebarLayout, Theme } from 'potber-client/services/settings';
 import { setupTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -192,5 +192,46 @@ module('Unit | Service | Renderer', function (hooks) {
         'none',
       );
     });
+  });
+  test('updates both browser navigation color markers with the chosen theme', function (assert) {
+    this.owner.register(
+      'service:settings',
+      class extends Service {
+        getSetting() {
+          return Theme.snowman;
+        }
+      },
+    );
+    const root = document.documentElement;
+    const originalTheme = root.getAttribute('data-theme');
+    const originalStyle = root.getAttribute('style');
+    const themeColor = document.createElement('meta');
+    themeColor.name = 'theme-color';
+    const statusBar = document.createElement('meta');
+    statusBar.name = 'apple-mobile-web-app-status-bar-style';
+    document.head.prepend(themeColor, statusBar);
+
+    try {
+      root.style.setProperty('--color-nav', '#123456');
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      renderer.updateTheme();
+
+      assert.strictEqual(root.getAttribute('data-theme'), 'snowman');
+      assert.strictEqual(themeColor.content, '#123456');
+      assert.strictEqual(statusBar.content, '#123456');
+
+      renderer.getStyleVariable = () => '';
+      renderer.updateTheme();
+
+      assert.strictEqual(themeColor.content, '#123456');
+      assert.strictEqual(statusBar.content, '#123456');
+    } finally {
+      themeColor.remove();
+      statusBar.remove();
+      if (originalTheme === null) root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', originalTheme);
+      if (originalStyle === null) root.removeAttribute('style');
+      else root.setAttribute('style', originalStyle);
+    }
   });
 });
