@@ -237,6 +237,29 @@ module('Integration | Component | Modal', function (hooks) {
     assert.dom('#modal .user-profile i').doesNotExist();
   });
 
+  test('keeps the custom link label when the URL changes', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.linkInsert({
+      onSubmit(url, label) {
+        assert.strictEqual(url, 'https://example.com/updated');
+        assert.strictEqual(label, 'Custom label');
+        assert.step('submitted');
+      },
+    });
+    await settled();
+
+    const url = '#link-insert-modal-form input[type="url"]';
+    const label = '#link-insert-modal-form input[type="text"]';
+    await fillIn(url, 'https://example.com/original');
+    assert.dom(label).hasValue('https://example.com/original');
+    await fillIn(label, 'Custom label');
+    await fillIn(url, 'https://example.com/updated');
+    assert.dom(label).hasValue('Custom label');
+
+    await click('#modal button[type="submit"]');
+    assert.verifySteps(['submitted']);
+  });
+
   module('Imgpot picker', function () {
     const imageData =
       'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
