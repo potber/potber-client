@@ -95,10 +95,12 @@ module('Acceptance | Reading the forum', function (hooks) {
 
   let startupRefreshed: boolean;
   let bookmarks: IBookmark[];
+  let failSavedPostRead: boolean;
 
   hooks.beforeEach(async function () {
     startupRefreshed = false;
     bookmarks = [];
+    failSavedPostRead = false;
     this.owner.register('session-store:application', EphemeralSessionStore);
     originalOnError = window.onerror;
     storedValues = new Map(
@@ -167,7 +169,12 @@ module('Acceptance | Reading the forum', function (hooks) {
           if (searchParams.get('threadId') !== '42') {
             throw new Error('Saved post was requested from a different thread');
           }
-          return Response.json(openingPost);
+          return failSavedPostRead
+            ? Response.json(
+                { message: 'Temporarily unavailable' },
+                { status: 503 },
+              )
+            : Response.json(openingPost);
         case 'GET /boards/14':
           return Response.json(board);
         case 'GET /threads/42': {
@@ -203,6 +210,29 @@ module('Acceptance | Reading the forum', function (hooks) {
       else localStorage.setItem(key, value);
     }
   });
+
+  for (const [landingPage, label, expectedUrl, expectedContent] of [
+    [LandingPage.pot, 'pOT', '/board?BID=14', threadLink],
+    [
+      LandingPage.boardOverview,
+      'board overview',
+      '/board-overview',
+      '#page-content button:has([data-icon="chevron-right"])',
+    ],
+  ] as const) {
+    test(`opens the configured ${label} landing page from Home`, async function (assert) {
+      localStorage.setItem(
+        'potber-settings',
+        JSON.stringify({ landingPage, autoRefreshSidebar: false }),
+      );
+
+      await visit('/home');
+      await waitFor(expectedContent);
+
+      assert.strictEqual(currentURL(), expectedUrl);
+      assert.dom(expectedContent).exists();
+    });
+  }
 
   test('following the bookmarks link closes the mobile sidebar', async function (assert) {
     await visit('/board-overview');
@@ -400,6 +430,32 @@ module('Acceptance | Reading the forum', function (hooks) {
     assert.strictEqual(currentURL(), bookmarksPath);
     await click(`a[href="${savedPostsPath}"]`);
     assert.strictEqual(currentURL(), savedPostsPath);
+    assert.dom(bookmarkLink).includesText('The opening post');
+  });
+
+  test('keeps the saved-post reference when its content fails to load', async function (assert) {
+    const savedPostsPath = '/bookmarks/saved-posts';
+    const savedReference = JSON.stringify([{ id: '101', threadId: '42' }]);
+    localStorage.setItem('potber-savedPosts', savedReference);
+    failSavedPostRead = true;
+
+    await visit(bookmarksPath);
+    await click(`a[href="${savedPostsPath}"]`);
+
+    assert
+      .dom('#page-content')
+      .includesText(
+        'Beim Laden Deiner gespeicherten Posts ist etwas schiefgegangen.',
+      );
+    assert.strictEqual(
+      localStorage.getItem('potber-savedPosts'),
+      savedReference,
+    );
+
+    failSavedPostRead = false;
+    await visit(bookmarksPath);
+    await click(`a[href="${savedPostsPath}"]`);
+
     assert.dom(bookmarkLink).includesText('The opening post');
   });
 
