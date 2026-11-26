@@ -121,6 +121,43 @@ module('Integration | Component | Modal', function (hooks) {
     assert.verifySteps(['cancelled']);
   });
 
+  test('allows choosing no post icon', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.iconSelect({
+      type: 'post-icon',
+      onSelect: (key) => assert.step(key),
+    });
+    await settled();
+
+    assert.dom('#modal').includesText('Wähle ein Post-Icon');
+    assert
+      .dom('#modal img[alt="2"]')
+      .hasAttribute('src', '/images/post-icons/2.gif');
+    await click('.modal-select-icon-option-container button:first-child');
+    assert.verifySteps(['0']);
+  });
+
+  test('selects an emoji key from the emoji picker', async function (assert) {
+    const modal = this.owner.lookup('service:modal') as ModalService;
+    modal.iconSelect({
+      type: 'post-emoji',
+      onSelect: (key) => assert.step(key),
+    });
+    await settled();
+
+    assert.dom('#modal').includesText('Wähle einen Emoji');
+    assert
+      .dom('#modal img[alt=":zzz:"]')
+      .hasAttribute('src', '/images/post-emojis/sleepy.gif');
+    await click(
+      '.modal-select-icon-option-container button:has(img[alt=":zzz:"])',
+    );
+    assert.verifySteps([':zzz:']);
+
+    await click('#modal .modal-footer button');
+    assert.dom('#modal').doesNotHaveAttribute('open');
+  });
+
   module('Imgpot picker', function () {
     const imageData =
       'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
