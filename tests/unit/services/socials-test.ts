@@ -89,4 +89,28 @@ module('Unit | Service | Socials', function (hooks) {
     ]);
     assert.strictEqual(writeCalls, 0);
   });
+
+  test('keeps the original entry when the same user is blocked again', function (assert) {
+    class LocalStorageStub extends LocalStorageService {
+      readSocials(): Socials {
+        return { blockedUsers: [{ id: '1', name: 'Alice' }] };
+      }
+
+      writeSocials(): void {
+        assert.step('unexpected write');
+      }
+    }
+
+    this.owner.register('service:local-storage', LocalStorageStub);
+    const socials = this.owner.lookup('service:socials') as SocialsService;
+
+    socials.load();
+    socials.blockUser('1', 'Another name');
+
+    assert.deepEqual(socials.blockedUsers, [{ id: '1', name: 'Alice' }]);
+    assert.true(socials.isUserBlocked('1'));
+    assert.true(socials.isUserBlocked('Alice'));
+    assert.false(socials.isUserBlocked('Another name'));
+    assert.verifySteps([]);
+  });
 });
