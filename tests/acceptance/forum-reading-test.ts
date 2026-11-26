@@ -218,6 +218,28 @@ module('Acceptance | Reading the forum', function (hooks) {
     assert.false(renderer.sidebarExpanded);
   });
 
+  for (const isDesktop of [false, true]) {
+    test(`following a Quickstart bookmark on ${isDesktop ? 'desktop' : 'mobile'} ${isDesktop ? 'keeps the sidebar open' : 'closes the sidebar'}`, async function (assert) {
+      bookmarks = [bookmark];
+      await visit('/board-overview');
+      await waitUntil(() => startupRefreshed);
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      renderer.isDesktop = isDesktop;
+      await renderer.openSidebar();
+      assert.true(renderer.sidebarExpanded);
+
+      const resume =
+        '#sidebar-content .quickstart-item a[href*="lastReadPost=101"]';
+      await waitFor(resume);
+      await click(resume);
+      await waitFor('#post-101');
+
+      const page = new URL(currentURL(), window.location.origin);
+      assert.strictEqual(page.searchParams.get('lastReadPost'), '101');
+      assert.strictEqual(renderer.sidebarExpanded, isDesktop);
+    });
+  }
+
   test('opens a board and reads a thread from the board overview', async function (assert) {
     await visit('/board-overview');
     await waitUntil(() => startupRefreshed);
