@@ -1,5 +1,5 @@
 import Service from '@ember/service';
-import { click, render, type TestContext } from '@ember/test-helpers';
+import { click, findAll, render, type TestContext } from '@ember/test-helpers';
 import { hbs } from 'ember-cli-htmlbars';
 import { module, test } from 'qunit';
 import PostComponent from 'potber-client/components/board/post';
@@ -136,4 +136,61 @@ module('Integration | Component | Board | Post', function (hooks) {
     await click(`button.${styles['author']}`);
     assert.verifySteps(['opened profile']);
   });
+
+  for (const storageFails of [false, true]) {
+    const title = storageFails
+      ? 'shows an error when saving a post fails'
+      : 'tells the user when a post is already saved';
+
+    test(title, async function (this: Context, assert) {
+      this.post = createPost();
+      const post = this.post;
+      const failure = new Error('Storage unavailable');
+
+      this.owner.register(
+        'service:session',
+        class extends Service {
+          sessionData = null;
+        },
+      );
+      this.owner.register(
+        'service:local-storage',
+        class extends Service {
+          addSavedPost(saved: Post) {
+            assert.strictEqual(saved, post);
+            if (storageFails) throw failure;
+            return false;
+          }
+        },
+      );
+      this.owner.register(
+        'service:messages',
+        class extends Service {
+          showNotification(message: string, type: string) {
+            assert.strictEqual(type, 'error');
+            assert.step(message);
+          }
+
+          logErrorAndNotify(message: string, error: unknown) {
+            assert.strictEqual(error, failure);
+            assert.step(message);
+          }
+        },
+      );
+
+      await render<Context>(hbs`<this.PostComponent @post={{this.post}} />`);
+      await click('.post .menu-button');
+      const save = findAll('.post menu[data-visible="true"] .menu-item').find(
+        (button) => button.textContent?.trim() === 'Post speichern',
+      );
+      if (!save) throw new Error('Save post menu action missing');
+
+      await click(save);
+      assert.verifySteps([
+        storageFails
+          ? 'Das hat leider nicht geklappt.'
+          : 'Du hast diesen Post bereits gespeichert.',
+      ]);
+    });
+  }
 });
