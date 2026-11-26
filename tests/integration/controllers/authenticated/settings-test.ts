@@ -167,4 +167,79 @@ module('Integration | Controller | Authenticated | Settings', function (hooks) {
     assert.ok(modal.confirmOptions!.onAlternative);
     assert.false(controller.syncActionBusy);
   });
+  test('unlocks identical settings without prompting and clears busy state if unlock fails', async function (assert) {
+    const local = { theme: 'local' };
+    this.owner.register(
+      'service:settings',
+      class extends Service {
+        getSettings() {
+          return local;
+        }
+      },
+    );
+    this.owner.register(
+      'service:settings-sync',
+      class extends Service {
+        lastError = 'Sync unavailable';
+
+        async unlockHasDifferences(key: string, settings: object) {
+          assert.strictEqual(key, 'recovery-key');
+          assert.strictEqual(settings, local);
+          assert.step('validated');
+          return false;
+        }
+
+        async unlock(key: string, settings: object, source: string) {
+          assert.strictEqual(key, 'recovery-key');
+          assert.strictEqual(settings, local);
+          assert.strictEqual(source, 'remote');
+          assert.step('unlock');
+          throw Error('Sync unavailable');
+        }
+      },
+    );
+
+    let submit: InputModalOptions['onSubmit'];
+    this.owner.register(
+      'service:modal',
+      class extends Service {
+        input(options: InputModalOptions) {
+          submit = options.onSubmit;
+        }
+
+        confirm() {
+          assert.step('showed choice');
+        }
+
+        async close() {
+          assert.step('closed');
+        }
+      },
+    );
+    this.owner.register(
+      'service:messages',
+      class extends Service {
+        showNotification(message: string, severity: string) {
+          assert.strictEqual(
+            message,
+            'Die verschlüsselte Synchronisierung konnte nicht aktualisiert werden. Versuche es später erneut.',
+          );
+          assert.strictEqual(severity, 'error');
+          assert.step('reported failure');
+        }
+      },
+    );
+
+    const controller = this.owner.lookup(
+      'controller:authenticated.settings',
+    ) as SettingsController;
+    controller.handleUnlockSync();
+    if (!submit)
+      throw new Error('Recovery prompt did not provide a submit action');
+    submit('recovery-key');
+    assert.true(controller.syncActionBusy);
+
+    await waitUntil(() => !controller.syncActionBusy);
+    assert.verifySteps(['validated', 'unlock', 'closed', 'reported failure']);
+  });
 });
