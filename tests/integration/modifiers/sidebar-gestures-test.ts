@@ -114,6 +114,21 @@ module('Integration | Modifier | sidebar gestures', function (hooks) {
     assert.true(this.renderer.widths.some((width) => width > 100));
   });
 
+  test('does not start opening from an outward edge drag and accepts the next inward drag', async function (this: Context, assert) {
+    await render<Context>(hbs`<div data-test-gesture {{this.edgeOpen}}></div>`);
+    const target = gestureTarget();
+
+    dispatchDrag(target, [40, 20], [26, 20]);
+
+    assert.deepEqual(this.renderer.actions, ['close']);
+    assert.deepEqual(this.renderer.widths, []);
+
+    dispatchDrag(target, [40, 20], [180, 20]);
+
+    assert.deepEqual(this.renderer.actions, ['close', 'open']);
+    assert.true(this.renderer.widths.some((width) => width > 100));
+  });
+
   test('removes the page-wide opening listener on teardown', async function (this: Context, assert) {
     await render<Context>(hbs`<div data-test-gesture {{this.edgeOpen}}></div>`);
     await clearRender();
