@@ -2,6 +2,7 @@ import {
   click,
   currentURL,
   fillIn,
+  findAll,
   visit,
   waitFor,
   waitUntil,
@@ -29,11 +30,31 @@ const inboundMessage: PrivateMessages.Read = {
   content: 'Shall we meet on Saturday?',
 };
 
+const systemMessage: PrivateMessages.Read = {
+  id: '44',
+  title: 'Maintenance notice',
+  date: '2026-01-01T12:00:00Z',
+  folder: 'system',
+  unread: false,
+  important: false,
+  sender: { id: '0', name: 'Forum system' },
+  content: 'Scheduled maintenance.',
+};
+
 const recipientInput =
   '#private-message-form input[aria-placeholder="Empfänger:in"]';
 const subjectInput = '#private-message-form input[aria-placeholder="Betreff"]';
 const bodyInput = '#private-message-form textarea';
 const submitButton = 'button[type="submit"][form="private-message-form"]';
+
+async function clickMessageAction(label: string) {
+  await click('.nav-element-center .menu-button');
+  const action = findAll('menu[data-visible="true"] button.menu-item').find(
+    (button) => button.textContent?.trim() === label,
+  );
+  if (!action) throw new Error(`Missing message action: ${label}`);
+  await click(action);
+}
 
 async function sendMessage(assert: Assert) {
   // Ember's test router does not create browser history entries. Seed one at
@@ -82,6 +103,7 @@ module('Acceptance | Private messages', function (hooks) {
     );
 
     const message = { ...inboundMessage };
+    let messageDeleted = false;
     sentMessages = [];
     failNextSend = false;
     let sentMessage: PrivateMessages.Read | undefined;
@@ -112,9 +134,17 @@ module('Acceptance | Private messages', function (hooks) {
           if (folder === 'outbound') {
             return Response.json(sentMessage ? [sentMessage] : []);
           }
+          if (folder === 'system') {
+            return Response.json(
+              !messageDeleted && message.folder === 'system'
+                ? [systemMessage, message]
+                : [systemMessage],
+            );
+          }
           const unreadOnly = searchParams.get('unread') === 'true';
           return Response.json(
-            (!folder || folder === message.folder) &&
+            !messageDeleted &&
+              (!folder || folder === message.folder) &&
               (!unreadOnly || message.unread)
               ? [message]
               : [],
@@ -123,6 +153,19 @@ module('Acceptance | Private messages', function (hooks) {
         case `GET /privateMessages/${inboundMessage.id}`:
           message.unread = false;
           return Response.json(message);
+        case `PUT /privateMessages/${inboundMessage.id}/markAsUnread`:
+          message.unread = true;
+          return new Response(null, { status: 204 });
+        case `PUT /privateMessages/${inboundMessage.id}/moveToFolder`: {
+          const payload = await request.json();
+          if (payload.folder !== 'system')
+            throw new Error('Unexpected destination');
+          message.folder = payload.folder;
+          return new Response(null, { status: 204 });
+        }
+        case `DELETE /privateMessages/${inboundMessage.id}`:
+          messageDeleted = true;
+          return new Response(null, { status: 204 });
         case `GET /privateMessages/${inboundMessage.id}/reply`:
           return Response.json({
             recipientName: 'Forum Member',
@@ -132,6 +175,8 @@ module('Acceptance | Private messages', function (hooks) {
           } satisfies PrivateMessages.Create);
         case 'GET /usernames':
           return Response.json(['Another Member']);
+        case 'GET /privateMessages/44':
+          return Response.json(systemMessage);
         case 'GET /privateMessages/43':
           return Response.json(sentMessage);
         case 'GET /privateMessages/42/forward':
@@ -221,6 +266,64 @@ module('Acceptance | Private messages', function (hooks) {
       assert.strictEqual(renderer.sidebarExpanded, isDesktop);
     });
   }
+
+  test('shows system messages in their folder with the system subtitle', async function (assert) {
+    const systemPath = '/private-messages/system';
+    const systemLink = 'a[href="/private-messages/44"]';
+    await visit(systemPath);
+    await waitFor(systemLink);
+
+    assert.dom(systemLink).includesText('Maintenance notice');
+    assert.dom(systemLink).includesText('Systemnachricht');
+
+    await click(systemLink);
+
+    assert.strictEqual(currentURL(), '/private-messages/44');
+    assert.dom('.private-message-view-header').includesText('Ordner: System');
+    assert
+      .dom('.private-message-view-content')
+      .hasText('Scheduled maintenance.');
+  });
+
+  test('marks a read message as unread and shows its inbox indicator again', async function (assert) {
+    await visit(inboxPath);
+    await click(messageLink);
+    await clickMessageAction('Als ungelesen markieren');
+
+    await visit(inboxPath);
+    assert.dom(unreadIndicator).exists();
+  });
+
+  test('moves a message from the inbox to the system folder', async function (assert) {
+    await visit(inboxPath);
+    await click(messageLink);
+    await clickMessageAction('Verschieben nach System');
+
+    assert.dom('.private-message-view-header').includesText('Ordner: System');
+    await visit(inboxPath);
+    assert.dom(messageLink).doesNotExist();
+
+    await visit('/private-messages/system');
+    assert.dom(messageLink).includesText('Forum meetup');
+  });
+
+  test('deletes a message only after confirmation and returns to its folder', async function (assert) {
+    await visit(inboxPath);
+    await click(messageLink);
+    await clickMessageAction('Nachricht löschen');
+    await click('#modal .modal-footer button[type="button"]');
+
+    assert.strictEqual(currentURL(), messagePath);
+    assert
+      .dom('.private-message-view-content')
+      .hasText('Shall we meet on Saturday?');
+
+    await clickMessageAction('Nachricht löschen');
+    await click('#modal .modal-footer button.modal-submit');
+
+    assert.strictEqual(currentURL(), inboxPath);
+    assert.dom(messageLink).doesNotExist();
+  });
 
   test('replying sends the message to the original sender and shows confirmation', async function (assert) {
     await visit(inboxPath);
