@@ -1,10 +1,17 @@
-import { render } from '@ember/test-helpers';
+import { render, waitFor } from '@ember/test-helpers';
 import type { TestContext } from '@ember/test-helpers';
+import Service from '@ember/service';
+import { tracked } from '@glimmer/tracking';
 import { hbs } from 'ember-cli-htmlbars';
 import { setupRenderingTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 import { privateMessageMocks } from './_mock/private-messages';
-import type { PrivateMessage } from 'potber-client/services/api/models/private-message';
+import type ApiService from 'potber-client/services/api';
+import { PrivateMessage } from 'potber-client/services/api/models/private-message';
+
+class StubScrollObserver extends Service {
+  @tracked scrollPosition = { x: 0, y: 0, xMax: 0, yMax: 100 };
+}
 
 interface Context extends TestContext {
   element: HTMLElement;
@@ -92,6 +99,48 @@ module(
         0,
         'should not have an important indicator',
       );
+    });
+
+    test('shows more messages after scrolling near the end of a long list', async function (this: Context, assert) {
+      this.owner.register('service:scroll-observer', StubScrollObserver);
+      const scrollObserver = this.owner.lookup(
+        'service:scroll-observer',
+      ) as StubScrollObserver;
+      const api = this.owner.lookup('service:api') as ApiService;
+      this.messages = Array.from(
+        { length: 103 },
+        (_, index) =>
+          new PrivateMessage(
+            {
+              id: String(index + 1),
+              title: `Message ${index + 1}`,
+              date: '2026-01-01T12:00:00Z',
+              folder: 'inbound',
+              unread: false,
+              important: false,
+              sender: { id: '7', name: 'Forum Member' },
+            },
+            { api },
+          ),
+      );
+
+      await render<Context>(
+        hbs`<Features::PrivateMessages::List @messages={{this.messages}} />`,
+      );
+
+      assert.dom('.private-messages-list-item').exists({ count: 100 });
+      assert.dom('[data-icon="circle-notch"]').exists();
+
+      scrollObserver.scrollPosition = {
+        ...scrollObserver.scrollPosition,
+        y: 85,
+      };
+      await waitFor('.private-messages-list-item', { count: 103 });
+
+      assert
+        .dom('.private-messages-list-item:last-child')
+        .includesText('Message 103');
+      assert.dom('[data-icon="circle-notch"]').doesNotExist();
     });
   },
 );

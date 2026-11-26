@@ -9,6 +9,7 @@ import {
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { PrivateMessages } from 'potber-client/services/api/types';
+import type RendererService from 'potber-client/services/renderer';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -196,6 +197,30 @@ module('Acceptance | Private messages', function (hooks) {
     assert.dom(messageLink).includesText('Forum meetup');
     assert.dom(unreadIndicator).doesNotExist();
   });
+
+  for (const isDesktop of [false, true]) {
+    test(`opens an unread Quickstart message on ${isDesktop ? 'desktop' : 'mobile'}`, async function (assert) {
+      await visit(inboxPath);
+      await waitUntil(() => startupRefreshed);
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      renderer.isDesktop = isDesktop;
+      await renderer.openSidebar();
+
+      const quickstartLink = `#sidebar-content .quickstart-item ${messageLink}`;
+      await waitFor(quickstartLink);
+      assert.dom(`${quickstartLink} .title`).hasText('Forum meetup');
+      assert.dom(`${quickstartLink} .subtitle`).hasText('Forum Member');
+      assert.dom(`${quickstartLink} [data-icon="envelope"]`).exists();
+
+      await click(quickstartLink);
+
+      assert.strictEqual(currentURL(), messagePath);
+      assert
+        .dom('.private-message-view-content')
+        .hasText('Shall we meet on Saturday?');
+      assert.strictEqual(renderer.sidebarExpanded, isDesktop);
+    });
+  }
 
   test('replying sends the message to the original sender and shows confirmation', async function (assert) {
     await visit(inboxPath);
