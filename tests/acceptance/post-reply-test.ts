@@ -12,6 +12,7 @@ import {
 import EphemeralSessionStore from 'ember-simple-auth/session-stores/ephemeral';
 import { authenticateSession } from 'ember-simple-auth/test-support';
 import type { Boards, Posts, Threads } from 'potber-client/services/api/types';
+import type RendererService from 'potber-client/services/renderer';
 import { setupApplicationTest } from 'potber-client/tests/helpers';
 import { module, test } from 'qunit';
 
@@ -267,6 +268,55 @@ module('Acceptance | Writing posts', function (hooks) {
       [{ threadId, message: 'A reply from the browser' }],
     );
   });
+
+  for (const isDesktop of [false, true]) {
+    test(`previews a reply on ${isDesktop ? 'desktop' : 'mobile'} and keeps its draft`, async function (assert) {
+      await visit(`/thread?TID=${threadId}`);
+      await waitUntil(() => startupRefreshed);
+      await waitFor(replyLink);
+      await click(replyLink);
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      renderer.isDesktop = isDesktop;
+      const draft = '[b]Preview this reply[/b]';
+      await fillIn(editor, draft);
+
+      const preview = isDesktop
+        ? '#create-post-form button:has([data-icon="eye"])'
+        : '.nav-element-right button:has([data-icon="eye"])';
+      await click(preview);
+
+      assert.dom('#modal').hasAttribute('open');
+      assert.dom('#modal').includesText('Test User');
+      assert.dom('#modal div.post p b').hasText('Preview this reply');
+      await click('#modal .modal-footer button');
+
+      assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.dom(editor).hasValue(draft);
+      assert.deepEqual(submittedReplies, []);
+    });
+  }
+
+  for (const [label, option, modifier] of [
+    ['unordered', 1, ''],
+    ['numbered', 2, '=1'],
+    ['alphabetical', 3, '=a'],
+  ] as const) {
+    test(`inserts ${label} list markup from the reply toolbar`, async function (assert) {
+      await visit(`/thread?TID=${threadId}`);
+      await waitUntil(() => startupRefreshed);
+      await waitFor(replyLink);
+      await click(replyLink);
+
+      await click('button[title="Liste"]');
+      await fillIn('#list-modal-form .list-modal-entry input', 'First item');
+      await click('#list-modal-form .dropdown-toggle');
+      await click(`#list-modal-form .dropdown-item:nth-child(${option})`);
+      await click('#modal button[type="submit"]');
+
+      assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.dom(editor).hasValue(`[list${modifier}]\n[*]First item[/list]`);
+    });
+  }
 
   test('inserting a link updates the reply draft and restores the caret', async function (assert) {
     await visit(`/thread?TID=${threadId}`);
