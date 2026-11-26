@@ -155,6 +155,36 @@ module('Unit | Service | Renderer', function (hooks) {
       }
     });
 
+    test('keeps an open sidebar expanded across desktop resize events', function (assert) {
+      const innerWidth = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      renderer.sidebarExpanded = true;
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        value: 1440,
+      });
+
+      try {
+        renderer.updateIsDesktop();
+        assert.true(renderer.isDesktop);
+        assert.true(renderer.sidebarExpanded);
+        assert.strictEqual(
+          root.style.getPropertyValue('--sidebar-shell-offset'),
+          '0px',
+        );
+
+        root.style.setProperty('--sidebar-width', '260px');
+        renderer.updateIsDesktop();
+        assert.strictEqual(
+          root.style.getPropertyValue('--sidebar-width'),
+          '260px',
+        );
+      } finally {
+        if (innerWidth) Object.defineProperty(window, 'innerWidth', innerWidth);
+        else Reflect.deleteProperty(window, 'innerWidth');
+      }
+    });
+
     test('refreshes once on opening and resets the right sidebar when closing', async function (assert) {
       layout = SidebarLayout.rightTop;
       this.owner.register(
@@ -233,5 +263,48 @@ module('Unit | Service | Renderer', function (hooks) {
       if (originalStyle === null) root.removeAttribute('style');
       else root.setAttribute('style', originalStyle);
     }
+  });
+
+  test('removes the startup placeholder and leaves subsequent cleanup safe', async function (assert) {
+    const renderer = this.owner.lookup('service:renderer') as RendererService;
+    const placeholder = document.createElement('div');
+    placeholder.id = 'app-skeleton';
+    document.body.prepend(placeholder);
+
+    try {
+      await renderer.removeAppSkeleton(0);
+      assert.false(placeholder.isConnected);
+      await renderer.removeAppSkeleton(0);
+      assert.dom('#app-skeleton').doesNotExist();
+    } finally {
+      placeholder.remove();
+    }
+  });
+
+  test('clears stale click ripples without adding one when there is no target', async function (assert) {
+    const renderer = this.owner.lookup('service:renderer') as RendererService;
+    const stale = document.createElement('span');
+    stale.className = 'click-ripple-container';
+    document.body.append(stale);
+
+    try {
+      await renderer.createClickRipple(new MouseEvent('click'));
+      assert.false(stale.isConnected);
+      assert.dom('.click-ripple-container').doesNotExist();
+    } finally {
+      stale.remove();
+    }
+  });
+
+  test('waits before scrolling to the bottom when no delay is supplied', async function (assert) {
+    const renderer = this.owner.lookup('service:renderer') as RendererService;
+    const scroll = renderer.waitAndScrollToBottom();
+    assert.deepEqual(scrollCalls, []);
+
+    await scroll;
+
+    assert.deepEqual(scrollCalls, [
+      { top: document.body.scrollHeight, behavior: 'smooth' },
+    ]);
   });
 });
