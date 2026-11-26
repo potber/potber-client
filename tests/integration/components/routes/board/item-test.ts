@@ -113,4 +113,32 @@ module('Integration | Component | Routes | Board | Item', function (hooks) {
       assert.dom(`a [data-icon="${icon}"]`).exists();
     }
   });
+
+  test('prefers the latest reply and renders its author name as text', async function (this: Context, assert) {
+    const opening = {
+      author: { id: '1', name: 'Opening author' },
+      date: '2026-11-25T12:00:00.000Z',
+      threadId: thread.id,
+      boardId: thread.boardId,
+    };
+    this.threads = [
+      {
+        ...thread,
+        firstPost: opening,
+        lastPost: {
+          ...opening,
+          author: { id: '2', name: 'Sam <team>' },
+        },
+      },
+    ];
+
+    await render<Context>(hbs`
+      {{#each this.threads as |item|}}
+        <this.BoardItem @thread={{item}} />
+      {{/each}}
+    `);
+
+    assert.dom('a .subtitle b').hasText('Sam <team>');
+    assert.dom('a .subtitle b team').doesNotExist();
+  });
 });
