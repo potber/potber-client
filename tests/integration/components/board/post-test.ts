@@ -1,5 +1,11 @@
 import Service from '@ember/service';
-import { click, findAll, render, type TestContext } from '@ember/test-helpers';
+import {
+  clearRender,
+  click,
+  findAll,
+  render,
+  type TestContext,
+} from '@ember/test-helpers';
 import { hbs } from 'ember-cli-htmlbars';
 import { module, test } from 'qunit';
 import PostComponent from 'potber-client/components/board/post';
@@ -251,5 +257,120 @@ module('Integration | Component | Board | Post', function (hooks) {
     await click('.post p.trigger');
     assert.dom('.post p.trigger').doesNotExist();
     assert.dom(`.${styles['body']}`).includesText('Hidden detail');
+  });
+
+  test('omits the avatar when the viewing preference disables it', async function (this: Context, assert) {
+    class TestSettings extends SettingsService {
+      override load() {
+        return { ...super.load(), avatarStyle: AvatarStyle.none };
+      }
+    }
+
+    this.owner.register('service:settings', TestSettings);
+    this.post = createPost({
+      avatarUrl:
+        'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+      title: 'Title without an icon',
+      message: undefined,
+    });
+
+    await render<Context>(
+      hbs`<this.PostComponent @post={{this.post}} @disableMenu={{true}} />`,
+    );
+
+    assert.dom('.post .avatar').doesNotExist();
+    assert.dom(`.${styles['title']}`).hasText('Title without an icon');
+    assert.dom('.post .post-icon').doesNotExist();
+    assert.dom(`.${styles['message']}`).hasNoText();
+  });
+
+  test('uses a fallback name when blocking an unnamed author', async function (this: Context, assert) {
+    this.post = createPost({ author: { id: '200' } });
+    this.owner.register(
+      'service:session',
+      class extends Service {
+        sessionData = null;
+      },
+    );
+    this.owner.register(
+      'service:socials',
+      class extends SocialsService {
+        override save = () => assert.step('saved blocklist');
+      },
+    );
+    this.owner.register(
+      'service:messages',
+      class extends Service {
+        showNotification(message: string, type: string) {
+          assert.strictEqual(type, 'success');
+          assert.true(message.includes('Unbekannt'));
+          assert.step('notified');
+        }
+      },
+    );
+    const socials = this.owner.lookup('service:socials') as SocialsService;
+
+    await render<Context>(hbs`<this.PostComponent @post={{this.post}} />`);
+    await click('.post .menu-button');
+    const block = findAll(
+      '.post menu[data-visible="true"] button.menu-item',
+    ).find((button) => button.textContent?.trim() === 'Nutzer:in blocken');
+    if (!block) throw new Error('Block action missing');
+    await click(block);
+
+    assert.verifySteps(['saved blocklist', 'notified']);
+    assert.deepEqual(socials.blockedUsers, [{ id: '200', name: 'Unbekannt' }]);
+    assert.dom(`button.${styles['blocked-mask']}`).exists();
+  });
+
+  test('copies the original post link only when menu actions are enabled', async function (this: Context, assert) {
+    this.post = createPost();
+    this.owner.register(
+      'service:session',
+      class extends Service {
+        sessionData = null;
+      },
+    );
+    this.owner.register(
+      'service:messages',
+      class extends Service {
+        showNotification(message: string, type: string) {
+          assert.strictEqual(message, 'Link in Zwischenablage kopiert.');
+          assert.strictEqual(type, 'success');
+          assert.step('notified');
+        }
+      },
+    );
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        async writeText(value: string) {
+          const copied = new URL(value);
+          assert.true(copied.pathname.endsWith('/thread.php'));
+          assert.strictEqual(copied.searchParams.get('TID'), '300');
+          assert.strictEqual(copied.searchParams.get('PID'), '100');
+          assert.strictEqual(copied.hash, '#reply_100');
+          assert.step('copied');
+        },
+      },
+    });
+
+    try {
+      const date = `button.${styles['date']}`;
+      await render<Context>(
+        hbs`<this.PostComponent @post={{this.post}} @disableMenu={{true}} />`,
+      );
+      await click(date);
+      assert.verifySteps([]);
+      await clearRender();
+
+      await render<Context>(hbs`<this.PostComponent @post={{this.post}} />`);
+      await click(date);
+      assert.verifySteps(['copied', 'notified']);
+    } finally {
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
   });
 });
