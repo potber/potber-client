@@ -427,6 +427,25 @@ module('Acceptance | Reading the forum', function (hooks) {
     assert.strictEqual(localStorage.getItem('potber-savedPosts'), '[]');
   });
 
+  for (const isDesktop of [false, true]) {
+    test(`opens a Quickstart board favorite on ${isDesktop ? 'desktop' : 'mobile'}`, async function (assert) {
+      localStorage.setItem('potber-boardFavorites', '14');
+      await visit('/board-overview');
+      await waitUntil(() => startupRefreshed);
+      const renderer = this.owner.lookup('service:renderer') as RendererService;
+      renderer.isDesktop = isDesktop;
+      await renderer.openSidebar();
+
+      const favorite = `#sidebar-content .quickstart-item ${boardLink}`;
+      await waitFor(favorite);
+      await click(favorite);
+      await waitFor(threadLink);
+
+      assert.strictEqual(currentURL(), '/board?BID=14');
+      assert.strictEqual(renderer.sidebarExpanded, isDesktop);
+    });
+  }
+
   test('adding and removing a board favorite updates Home and persisted favorites', async function (assert) {
     const favorite = `.home .quickstart-item ${boardLink}`;
     await visit('/board?BID=14');
