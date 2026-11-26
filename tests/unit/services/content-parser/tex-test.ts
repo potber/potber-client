@@ -28,4 +28,31 @@ module('Unit | Service | ContentParser | [tex]', (hooks) => {
       .dom(container.querySelector('[data-katex-source]'))
       .hasAttribute('data-katex-rendered', 'true');
   });
+
+  test('removes empty TeX tags', (assert) => {
+    assert.strictEqual(parseTex('Before [tex][/tex] after'), 'Before  after');
+  });
+
+  test('renders new formulas without reprocessing existing or empty placeholders', async (assert) => {
+    const container = document.createElement('div');
+    container.innerHTML = parseTex('[tex]x^2[/tex]');
+    await renderTexPlaceholders(container);
+
+    const existing = container.querySelector('.katex');
+    assert.ok(existing);
+    container.insertAdjacentHTML('beforeend', parseTex('[tex]y^2[/tex]'));
+    const empty = document.createElement('span');
+    empty.dataset['katexSource'] = '';
+    container.append(empty);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('data-katex-source', 'z');
+    container.append(svg);
+
+    await renderTexPlaceholders(container);
+
+    assert.strictEqual(container.querySelector('.katex'), existing);
+    assert.strictEqual(container.querySelectorAll('.katex').length, 2);
+    assert.strictEqual(empty.childElementCount, 0);
+    assert.strictEqual(svg.childElementCount, 0);
+  });
 });
