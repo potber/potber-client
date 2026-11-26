@@ -318,6 +318,76 @@ module('Acceptance | Writing posts', function (hooks) {
     });
   }
 
+  test('inserts an empty bold tag and wraps a selected phrase', async function (assert) {
+    await visit(`/thread?TID=${threadId}`);
+    await waitUntil(() => startupRefreshed);
+    await waitFor(replyLink);
+    await click(replyLink);
+    const bold = '#create-post-form button:has([data-icon="bold"])';
+    const textarea = find(editor);
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+      throw new Error('Reply textarea missing');
+    }
+
+    await click(bold);
+    assert.dom(editor).hasValue('[b][/b]');
+    assert.strictEqual(textarea.selectionStart, 3);
+    assert.strictEqual(textarea.selectionEnd, 3);
+
+    await fillIn(editor, 'Keep this phrase around');
+    textarea.setSelectionRange(5, 16);
+    await click(bold);
+
+    assert.dom(editor).hasValue('Keep [b]this phrase[/b] around');
+    assert.dom(editor).isFocused();
+    assert.strictEqual(textarea.selectionStart, 19);
+    assert.strictEqual(textarea.selectionEnd, 19);
+  });
+
+  for (const [icon, field, tag, value] of [
+    ['code', 'textarea', 'code', 'one line\nsecond line'],
+    ['youtube', 'input[type="url"]', 'video', 'https://example.com/video'],
+  ] as const) {
+    test(`inserts ${tag} markup from the reply toolbar prompt`, async function (assert) {
+      await visit(`/thread?TID=${threadId}`);
+      await waitUntil(() => startupRefreshed);
+      await waitFor(replyLink);
+      await click(replyLink);
+
+      await click(`#create-post-form button:has([data-icon="${icon}"])`);
+      await fillIn(`#input-modal-form ${field}`, value);
+      await click('button[form="input-modal-form"]');
+
+      assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.dom(editor).hasValue(`[${tag}]${value}[/${tag}]`);
+    });
+  }
+
+  for (const thumbnail of [false, true]) {
+    test(`inserts image markup ${thumbnail ? 'with a linked thumbnail' : 'without a thumbnail'}`, async function (assert) {
+      await visit(`/thread?TID=${threadId}`);
+      await waitUntil(() => startupRefreshed);
+      await waitFor(replyLink);
+      await click(replyLink);
+
+      await click('#create-post-form button[title="Bild"]');
+      const fullUrl = 'https://example.com/full.png';
+      const thumbnailUrl = 'https://example.com/thumb.png';
+      const form = '#image-insert-modal-form';
+      await fillIn(`${form} input[type="url"]:required`, fullUrl);
+      if (thumbnail) {
+        await fillIn(`${form} input[type="url"]:not(:required)`, thumbnailUrl);
+      }
+      await click('button[form="image-insert-modal-form"]');
+
+      const expected = thumbnail
+        ? `[url=${fullUrl}][img]${thumbnailUrl}[/img][/url]`
+        : `[img]${fullUrl}[/img]`;
+      assert.dom('#modal').doesNotHaveAttribute('open');
+      assert.dom(editor).hasValue(expected);
+    });
+  }
+
   test('inserting a link updates the reply draft and restores the caret', async function (assert) {
     await visit(`/thread?TID=${threadId}`);
     await waitUntil(() => startupRefreshed);
@@ -395,6 +465,27 @@ module('Acceptance | Writing posts', function (hooks) {
       .includesText('Let’s meet on Saturday.');
     assert.strictEqual(submittedThread?.boardId, '14');
     assert.strictEqual(submittedThread?.title, 'Weekend meetup');
+  });
+
+  test('previews a new thread’s opening post from mobile navigation', async function (assert) {
+    await visit('/board?BID=14');
+    await waitUntil(() => startupRefreshed);
+    await click('a[href^="/create-thread?"][href*="BID=14"]');
+    const renderer = this.owner.lookup('service:renderer') as RendererService;
+    renderer.isDesktop = false;
+    await fillIn(threadTitle, 'Weekend meetup');
+    const draft = '[b]Let’s meet on Saturday.[/b]';
+    await fillIn(threadEditor, draft);
+
+    await click('.nav-element-right button:has([data-icon="eye"])');
+
+    assert.dom('#modal').hasAttribute('open');
+    assert.dom('#modal div.post p b').hasText('Let’s meet on Saturday.');
+    await click('#modal .modal-footer button');
+
+    assert.dom(threadTitle).hasValue('Weekend meetup');
+    assert.dom(threadEditor).hasValue(draft);
+    assert.strictEqual(submittedThread, undefined);
   });
 
   test('quoting a post prefills the reply and submits the quote with new text', async function (assert) {
