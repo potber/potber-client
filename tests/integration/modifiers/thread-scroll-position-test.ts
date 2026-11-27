@@ -113,6 +113,24 @@ module('Integration | Modifier | thread-scroll-position', function (hooks) {
       top: 150,
       behavior: 'auto',
     });
+
+    for (const [tag, event] of [
+      ['video', 'loadedmetadata'],
+      ['iframe', 'load'],
+    ] as const) {
+      const previousCorrections = scrollByCalls.length;
+      const media = document.createElement(tag);
+      media.hidden = true;
+      post.append(media);
+      postTop = 175;
+      media.dispatchEvent(new Event(event));
+
+      await waitUntil(() => scrollByCalls.length > previousCorrections);
+      assert.deepEqual(scrollByCalls[previousCorrections], {
+        top: 125,
+        behavior: 'auto',
+      });
+    }
   });
 
   test('stops retrying a scroll correction when the anchor cannot move', async function (this: Context, assert) {
