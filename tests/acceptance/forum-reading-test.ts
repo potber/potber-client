@@ -2,6 +2,7 @@ import {
   click,
   currentURL,
   findAll,
+  settled,
   visit,
   waitFor,
   waitUntil,
@@ -228,6 +229,9 @@ module('Acceptance | Reading the forum', function (hooks) {
 
       await visit('/home');
       await waitFor(expectedContent);
+      // The redirect can render before session setup starts the newsfeed requests.
+      await waitUntil(() => startupRefreshed);
+      await settled();
 
       assert.strictEqual(currentURL(), expectedUrl);
       assert.dom(expectedContent).exists();
